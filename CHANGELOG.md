@@ -1,5 +1,30 @@
 # Karyalay Portal Changelog
 
+## 13.04 - 2026-09-08 - Minor
+
+**Release:** Full Coolify Deployment Fix Bundle
+
+- Full merge-ready source package based on v13.01 with the v13.02 npm/Coolify build fix and v13.04 lucide/Vite import fix applied directly to application source.
+- Docker frontend build uses `npm install --no-audit --no-fund --ignore-scripts --legacy-peer-deps` to avoid npm 10.x lockfile peer-resolution failure around optional WASM dependencies.
+- `IntegrationsPanel.tsx` now imports `Play as Youtube` from `lucide-react`; the invalid direct `Youtube` export that stopped Vite/Rollup is removed.
+- Persistent media bind mount is unchanged and present on `app`, `worker`, and `scheduler`: `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+- No business feature or database schema change in this deployment-fix release.
+
+## 13.03 - 2026-09-08 - Minor
+
+**Release:** Coolify Vite Icon Hotfix
+
+- Identified the Vite/Rollup build failure caused by an unavailable `Youtube` named export from the resolved `lucide-react` package.
+- Superseded by v13.04 because v13.03 patch delivery did not reliably modify the actual source file in the repository.
+
+## 13.02 - 2026-09-08 - Minor
+
+**Release:** Coolify npm Build Hotfix
+
+- Replaced strict Docker-stage `npm ci` with `npm install --legacy-peer-deps` for the production asset stage after npm 10.x rejected cross-platform optional WASM lock metadata.
+- Added project `.npmrc` with `legacy-peer-deps=true`, `audit=false`, and `fund=false`.
+
+
 ## 13.01 - 2026-09-08 - Minor
 
 **Release:** Coolify npm-ci Deployment Fix

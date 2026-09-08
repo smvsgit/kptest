@@ -1,67 +1,56 @@
-# Karyalay Portal v13.03 - Coolify Vite Icon Build Hotfix
+# Karyalay Portal v13.04 - Coolify Vite Lucide Import Fix
 
-## Error fixed
-
-The v13.02 dependency-install fix worked: Coolify successfully completed `npm install` and reached `npm run build`.
-
-The new failing build error is:
+The deployment log confirms the npm-install issue is fixed. The current fatal failure is now the Vite build:
 
 ```text
-[MISSING_EXPORT] "Youtube" is not exported by node_modules/lucide-react/dist/esm/lucide-react.mjs
+[MISSING_EXPORT] "Youtube" is not exported by lucide-react
 resources/js/Components/panels/IntegrationsPanel.tsx:2
 ```
 
-## Fix
+## Important
 
-Replace this import:
+The prior v13.03 patch package was merged to GitHub, but the deployment log still shows the **old source line**, so the actual `IntegrationsPanel.tsx` source file was never patched.
 
-```tsx
-import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Youtube } from "lucide-react";
+Do **not** simply upload/merge this hotfix folder as files. Apply the patch to the repository source.
+
+## Automatic fix
+
+Extract this hotfix. From your repository root run:
+
+```bash
+python3 /path/to/Karyalay_Portal_v13.04_Coolify_Vite_Import_Fix/APPLY_PATCH.py .
 ```
 
-with:
-
-```tsx
-import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Play as Youtube } from "lucide-react";
-```
-
-This preserves all existing `<Youtube />` JSX usages while using `Play`, which is a stable lucide-react export.
-
-## Recommended automatic application
-
-From the repository root, copy `APPLY_PATCH.py` there and run:
+or copy `APPLY_PATCH.py` to the repository root and run:
 
 ```bash
 python3 APPLY_PATCH.py .
 ```
 
-Then commit/push:
+The script validates that the bad import is gone before reporting success.
+
+Then:
 
 ```bash
-git add -A
-git commit -m "Fix Coolify Vite lucide icon build - v13.03"
+git add resources/js/Components/panels/IntegrationsPanel.tsx VERSION config/version.php
+git commit -m "Fix lucide Youtube import for Coolify build - v13.04"
 git push origin main
 ```
 
-In Coolify use **Redeploy / Force rebuild without cache**.
+In Coolify use Force Redeploy / rebuild without cache.
 
-## Expected build progression
+## Exact source change
 
-You should now see both of these steps pass:
+Old:
 
-```text
-RUN npm install --no-audit --no-fund --ignore-scripts --legacy-peer-deps
-RUN npm run build
+```tsx
+import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Youtube } from "lucide-react";
 ```
 
-The `lightningcss minify Unknown at rule: @theme` line shown before the failure is a warning in this log; the fatal error is the missing `Youtube` export.
+New:
 
-## Persistent media storage
-
-Do not change the existing media bind mount:
-
-```text
-/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads
+```tsx
+import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Play as Youtube } from "lucide-react";
 ```
 
-Keep the same mount for `app`, `worker`, and `scheduler`.
+The `@theme` LightningCSS message in the same log is a warning; it is not the fatal build error.
