@@ -4,8 +4,11 @@ FROM node:22-alpine AS assets
 WORKDIR /app
 
 COPY package.json package-lock.json* .npmrc* ./
-# Install the exact dependency graph recorded in package-lock.json.
-RUN npm ci --no-audit --no-fund --ignore-scripts
+# npm 10.9.8 on Coolify rejects the existing cross-platform optional WASM lock metadata
+# as out-of-sync (@emnapi/core/runtime). `npm install` reconciles package-lock.json
+# inside the build container before installing, while legacy-peer-deps avoids optional
+# peer-resolution conflicts. This is intentionally explicit instead of relying only on .npmrc.
+RUN npm install --no-audit --no-fund --ignore-scripts --legacy-peer-deps
 
 COPY vite.config.js tsconfig.json ./
 COPY resources ./resources

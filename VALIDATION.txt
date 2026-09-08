@@ -1,0 +1,20 @@
+Karyalay Portal v13.02 Coolify Deployment Hotfix
+Date: 2026-09-08
+
+Source evidence from deployment log:
+- Failure occurs at Dockerfile assets stage.
+- npm: 10.9.8.
+- Command: npm ci --no-audit --no-fund --ignore-scripts.
+- npm error EUSAGE: package.json and package-lock.json are not in sync.
+- Missing lock entries reported: @emnapi/core@1.10.0 and @emnapi/runtime@1.10.0.
+
+Patch validation:
+- Dockerfile npm command changed from npm ci to npm install with explicit --legacy-peer-deps.
+- .npmrc retains legacy-peer-deps=true.
+- Version bumped 13.01 -> 13.02.
+- No docker-compose or persistent media mapping change.
+- Dockerfile contains the same PHP/Composer/Apache stages as the currently logged deployment; only the frontend dependency install strategy is changed.
+
+Environment limitation:
+- This sandbox cannot reach npm/GitHub registries, so a full networked Docker build cannot be executed here.
+- The patch directly addresses the exact npm lock-sync failure reported by Coolify. Final proof is the next Coolify build of the patched Git commit.
