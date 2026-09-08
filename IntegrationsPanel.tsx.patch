@@ -1,0 +1,5 @@
+--- a/resources/js/Components/panels/IntegrationsPanel.tsx
++++ b/resources/js/Components/panels/IntegrationsPanel.tsx
+@@
+-import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Youtube } from "lucide-react";
++import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Play as Youtube } from "lucide-react";

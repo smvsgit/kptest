@@ -1,50 +1,67 @@
-# Karyalay Portal v13.02 - Coolify npm Lock Sync Hotfix
+# Karyalay Portal v13.03 - Coolify Vite Icon Build Hotfix
 
-## Root cause
-Coolify's `node:22-alpine` build is using npm 10.9.8. The current lock file is rejected by `npm ci` as out of sync because optional WASM dependency metadata references `@emnapi/core@1.10.0` and `@emnapi/runtime@1.10.0` without matching lock entries.
+## Error fixed
 
-The previous `.npmrc`-only hotfix is not sufficient on this npm version. The deployment log still executes `npm ci` and fails before Vite starts.
+The v13.02 dependency-install fix worked: Coolify successfully completed `npm install` and reached `npm run build`.
 
-## Files in this hotfix
-Copy these files into the **root of your existing v13.01 Git repository**, preserving all other application files:
+The new failing build error is:
 
-- `Dockerfile` -> replace repository-root `Dockerfile`
-- `.npmrc` -> repository-root `.npmrc`
-- `VERSION` -> repository-root `VERSION`
-- `config/version.php` -> replace `config/version.php`
-
-Do **not** replace your application with an older package. This ZIP is a deployment patch only.
-
-## Important Dockerfile change
-Old:
-
-```dockerfile
-RUN npm ci --no-audit --no-fund --ignore-scripts
+```text
+[MISSING_EXPORT] "Youtube" is not exported by node_modules/lucide-react/dist/esm/lucide-react.mjs
+resources/js/Components/panels/IntegrationsPanel.tsx:2
 ```
 
-New:
+## Fix
 
-```dockerfile
+Replace this import:
+
+```tsx
+import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Youtube } from "lucide-react";
+```
+
+with:
+
+```tsx
+import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Play as Youtube } from "lucide-react";
+```
+
+This preserves all existing `<Youtube />` JSX usages while using `Play`, which is a stable lucide-react export.
+
+## Recommended automatic application
+
+From the repository root, copy `APPLY_PATCH.py` there and run:
+
+```bash
+python3 APPLY_PATCH.py .
+```
+
+Then commit/push:
+
+```bash
+git add -A
+git commit -m "Fix Coolify Vite lucide icon build - v13.03"
+git push origin main
+```
+
+In Coolify use **Redeploy / Force rebuild without cache**.
+
+## Expected build progression
+
+You should now see both of these steps pass:
+
+```text
 RUN npm install --no-audit --no-fund --ignore-scripts --legacy-peer-deps
+RUN npm run build
 ```
 
-`npm install` is used here because npm itself reports that `package.json` and `package-lock.json` are out of sync and instructs updating the lock with `npm install`. It reconciles the lock metadata inside the build container and installs the resolved graph. `--legacy-peer-deps` is explicit so Coolify cannot ignore the intended peer-dependency behavior.
+The `lightningcss minify Unknown at rule: @theme` line shown before the failure is a warning in this log; the fatal error is the missing `Youtube` export.
 
 ## Persistent media storage
-This hotfix does not change `docker-compose.yml`. Keep your existing bind mount for app, worker and scheduler:
+
+Do not change the existing media bind mount:
 
 ```text
 /srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads
 ```
 
-## Deploy
-1. Apply the four files above to the existing v13.01 repository.
-2. Commit and push to `main`.
-3. In Coolify, use **Redeploy / Force Deploy**. If a no-cache option is available, use it once.
-4. In the new build log, confirm the assets stage now shows:
-
-```text
-RUN npm install --no-audit --no-fund --ignore-scripts --legacy-peer-deps
-```
-
-If the log still shows `RUN npm ci ...`, Coolify is building an older Git commit or the Dockerfile patch was not pushed to `main`.
+Keep the same mount for `app`, `worker`, and `scheduler`.
