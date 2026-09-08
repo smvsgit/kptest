@@ -1,8 +1,8 @@
 <?php
 return [
-    'current' => '13.00',
-    'previous' => '12.01',
-    'release_type' => 'major',
+    'current' => '13.01',
+    'previous' => '13.00',
+    'release_type' => 'minor',
     'release_date' => '2026-09-08',
-    'release_name' => 'Remaining Feature Completion',
+    'release_name' => 'Coolify npm-ci Deployment Fix',
 ];

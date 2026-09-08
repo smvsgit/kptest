@@ -4,7 +4,7 @@ SMVS centralized intranet media and document portal.
 
 ## Current release
 
-- Version: `13.00`
+- Version: `13.01`
 - Release: Remaining Feature Completion
 - Previous: `12.01`
 - Version is visible in `Settings -> System -> System Information`.
@@ -81,7 +81,7 @@ v13.00 completes the remaining non-testing feature implementation before the pro
 
 ### Important release boundary
 
-Do not interpret “development coding complete” as “production accepted.” UAT cases remain release-bound and must be executed against the exact v13.00 artifact. Production-scale performance, real NAS/Drive/YouTube, providers, backup/restore, browser flows and Management policy values are staging/go-live gates.
+Do not interpret “development coding complete” as “production accepted.” UAT cases remain release-bound and must be executed against the exact v13.01 artifact. Production-scale performance, real NAS/Drive/YouTube, providers, backup/restore, browser flows and Management policy values are staging/go-live gates.
 
 ## v12.01 Pre-Go-Live Stabilization
 

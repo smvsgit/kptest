@@ -1,7 +1,7 @@
-# Karyalay Portal v13.00 - UAT Execution Guide
+# Karyalay Portal v13.01 - UAT Execution Guide
 
 This guide is the execution companion for **Settings -> UAT / Go-Live**.
-> **v13.00 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
+> **v13.01 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
 
 A case is not complete merely because code exists. Execute it in the staging environment, record evidence, save the result, then sign off the Passed case.
 

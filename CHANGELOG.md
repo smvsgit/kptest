@@ -1,5 +1,15 @@
 # Karyalay Portal Changelog
 
+## 13.01 - 2026-09-08 - Minor
+
+**Release:** Coolify npm-ci Deployment Fix
+
+- Fixed Coolify/Docker frontend build failure where npm 10.9.x rejected the existing lockfile peer metadata for optional WASM dependencies (`@emnapi/*`).
+- Added project `.npmrc` with `legacy-peer-deps=true` so the existing `npm ci` production build remains lockfile-driven while avoiding the cross-platform optional peer-resolution conflict.
+- Confirmed `npm ci --dry-run` succeeds with npm 10.9.x using the updated project configuration.
+- Persistent media bind mount remains configured for `app`, `worker`, and `scheduler` at `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+- No business feature or database schema change in this patch release.
+
 ## 13.00 - 2026-09-08 - Major
 
 **Release:** Remaining Feature Completion

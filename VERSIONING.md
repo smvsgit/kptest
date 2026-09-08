@@ -19,7 +19,7 @@ The source-of-truth application version is `config/version.php` and is mirrored 
 
 ## Release lifecycle after v13.00
 
-1. Deploy the exact v13.00 artifact to staging.
+1. Deploy the exact v13.01 artifact to staging.
 2. Execute the complete release-bound UAT matrix and record evidence/sign-off.
 3. Resolve Management policy values or formally record approved risk decisions.
 4. If a **verified defect** is found, fix only that defect in `13.01`, then re-run affected/current-release UAT.

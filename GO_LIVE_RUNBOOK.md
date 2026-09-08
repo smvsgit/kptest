@@ -1,9 +1,9 @@
-# Karyalay Portal v13.00 - Go-Live Runbook
+# Karyalay Portal v13.01 - Go-Live Runbook
 
 
-## v13.00 feature-completion precondition
+## v13.01 deployment-fix precondition
 
-Before treating a staging result as release evidence, confirm the portal footer/System Information reports **13.00**, the deployed source checksum matches the approved v13.00 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
+Before treating a staging result as release evidence, confirm the portal footer/System Information reports **13.01**, the deployed source checksum matches the approved v13.01 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
 
 ## 1. Before the deployment window
 
@@ -18,7 +18,7 @@ Before treating a staging result as release evidence, confirm the portal footer/
 ## 2. Deployment
 
 1. Put the application into the approved maintenance/traffic-control state if required by the deployment plan.
-2. Deploy the exact v13.00 artifact and matching environment configuration.
+2. Deploy the exact v13.01 artifact and matching environment configuration.
 3. Run migrations: `php artisan migrate --force`.
 4. Ensure queue workers are running.
 5. Ensure the scheduler calls `php artisan schedule:run` every minute. The v13 scheduler heartbeat must become fresh within five minutes.

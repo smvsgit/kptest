@@ -11,10 +11,10 @@ class VersionAndDepartmentTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_application_version_is_12_01(): void
+    public function test_application_version_is_13_01(): void
     {
-        $this->assertSame('13.00', config('version.current'));
-        $this->assertSame('12.01', config('version.previous'));
+        $this->assertSame('13.01', config('version.current'));
+        $this->assertSame('13.00', config('version.previous'));
     }
 
     public function test_super_admin_can_create_department(): void

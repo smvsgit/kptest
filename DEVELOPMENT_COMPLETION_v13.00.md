@@ -21,7 +21,7 @@ The BRD tracker can remain below 100% even though coding is complete because the
 
 ## Testing policy for this project
 
-No UAT case is pre-passed. Deploy the **exact v13.00 artifact** to staging after development completion, run all cases in `UAT_EXECUTION_GUIDE.md`, record evidence, then create `13.01+` only for verified defects.
+No UAT case is pre-passed. Deploy the **exact v13.01 artifact** to staging after development completion, run all cases in `UAT_EXECUTION_GUIDE.md`, record evidence, then create `13.01+` only for verified defects.
 
 ## Runtime limitation of this build workspace
 

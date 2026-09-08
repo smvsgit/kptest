@@ -347,9 +347,9 @@ After deploying v05.00:
 7. Record a parseable planned go-live date/time, owners, rollback window and change freeze; run `php artisan readiness:check` immediately before final approval.
 
 
-## v13.00 feature-completion deployment checks
+## v13.01 deployment checks
 
-1. Confirm the exact deployed artifact reports **13.00** and `VERSION` matches `config/version.php`.
+1. Confirm the exact deployed artifact reports **13.01** and `VERSION` matches `config/version.php`.
 2. Run `php artisan migrate --force`; verify the v13 content organization, lifecycle, scheduled report and retention schema migrations complete successfully.
 3. Run queue workers and `php artisan schedule:run` every minute. Confirm scheduled reports, audit retention and Recycle Bin retention commands are registered.
 4. Review Super Admin settings for Maintenance, Network/VPN, 2FA, Branding, Lifecycle, Type Required Metadata, Watermark, Storage Quotas, Audit Retention and Recycle Bin Retention.
@@ -357,7 +357,7 @@ After deploying v05.00:
 6. Validate Forgot Password SMTP delivery, TOTP 2FA and network/VPN login behavior with a tested emergency Super Admin recovery path.
 7. Validate Folder/Collection/Related Assets and governed lifecycle transitions with representative departmental data.
 8. Validate XLSX import/export limits and Scheduled Report recipient-scope revalidation.
-9. Run the full `UAT_EXECUTION_GUIDE.md` against exact v13.00, including the v13 regression focus.
+9. Run the full `UAT_EXECUTION_GUIDE.md` against exact v13.01, including the v13 regression focus.
 10. Run `php artisan readiness:check` only after current-release UAT evidence, current verified backup/restore evidence and Management dependencies are complete.
 
 Do not mark UAT/Go-Live rows Done merely because v13 source coding exists.

@@ -1,5 +1,13 @@
 # SMVS Karyalay Portal - Project Change Notes
 
+## 2026-09-08 - Application v13.01 Coolify npm-ci Deployment Fix
+
+- Fixed Coolify build failure caused by npm 10.9.x strict peer-resolution validation against cross-platform optional WASM lock metadata.
+- Added `.npmrc` with `legacy-peer-deps=true`; production Docker build continues to use `npm ci`.
+- Media bind mounts remain unchanged for app/worker/scheduler.
+- No schema or business-feature change.
+
+
 ## 2026-09-07 - v04.00
 
 - Added Metadata & Master Data foundation with Super Admin UI.
