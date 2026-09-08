@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Youtube } from 'lucide-react';
+import { Activity, Database, HardDrive, Link2, RefreshCw, Save, Trash2, Play as Youtube } from 'lucide-react';
 import type { Category, Department, IntegrationConnection, IntegrationHealthSummary, MasterDataMap, MetadataSettings, UserRole } from '../../types';
 
 interface IssueRow { id:number; media_file_id:number; type:string; label:string|null; status:string; last_checked_at:string|null; last_success_at:string|null; broken_detected_at:string|null; last_error:string|null; media_name?:string|null; owner?:string|null; connection?:{id:number;name:string;type:string;status:string;is_active:boolean}|null; }
