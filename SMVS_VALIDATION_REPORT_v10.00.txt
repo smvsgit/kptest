@@ -1,0 +1,74 @@
+SMVS KARYALAY PORTAL - VALIDATION REPORT
+Application Version: 10.00
+Release: Integrations & Storage Health
+Date: 2026-09-07
+
+STATIC / SOURCE VALIDATION COMPLETED
+------------------------------------
+PASS - Application version markers synchronized: VERSION=10.00, config/version.php current=10.00, previous=09.00.
+PASS - PHP syntax lint: 123 PHP files across app/config/database/routes/tests are syntax-clean.
+PASS - TypeScript/TSX syntax/transpile parse: 20 TS/TSX files; 0 syntax/transpile errors.
+PASS - package.json, package-lock.json and composer.json parse as valid JSON.
+PASS - docker-compose.yml parses as valid YAML.
+PASS - package.json/package-lock root dependency parity.
+PASS - v10 integration/storage-health migration source is present and syntax-clean.
+PASS - IntegrationConnection, MediaSource and IntegrationHealthCheck data models are present.
+PASS - IntegrationController, MediaSourceController and IntegrationHealthController are present.
+PASS - IntegrationHealthService and scheduled health-check wiring are present.
+PASS - Super Admin Integrations & Storage Health UI is present.
+PASS - NAS path traversal guard is present in source delivery.
+PASS - Google Drive / YouTube reference URL/embed handling is present.
+PASS - Integration/source health status, retry/repair/enable-disable controls and audit wiring are present.
+PASS - Integration feature-test source is present.
+PASS - Updated BRD/Development Tracker v3.0 consistency: 128 active items = 82 Done, 17 WIP, 29 Pending, 0 Blocked.
+PASS - Updated BRD/Development Tracker render QA previously completed for 57 rendered pages; low-contrast Manager Summary formatting issue was corrected and re-rendered.
+
+V10.00 FUNCTIONAL SCOPE PRESENT IN SOURCE
+-----------------------------------------
+- Local / Portal Storage integration connection foundation.
+- NAS integration configuration with root-path safety checks and server-side path traversal protection.
+- Google Drive connection/reference configuration.
+- YouTube source/reference and embed URL handling.
+- Multiple sources per logical asset, including primary/enabled state.
+- Reference-only assets for external sources.
+- Source health states including active / inactive / missing / broken.
+- Last checked / last success / last error context.
+- Configurable connection health-check/sync frequency.
+- Scheduled integration health checks.
+- Storage capacity / used / free metrics for supported storage connections.
+- Broken/missing source detection and retry/repair workflow.
+- Owner / Super Admin notification hooks for integration/source health issues.
+- Integration Health dashboard and administrative connection management.
+- Sensitive integration credentials are not exposed to non-Super Admin users.
+- Integration/source management actions are included in audit logging.
+- Search/report source status/type integration foundation.
+
+RUNTIME / STAGING VALIDATION STILL REQUIRED
+-------------------------------------------
+This execution environment does not include a completed Composer vendor tree, project node_modules tree, or Docker runtime. Therefore the following are NOT claimed as runtime-passed:
+1. Laravel migration execution against the target MariaDB instance.
+2. PHPUnit feature tests, including IntegrationStorageHealthTest.
+3. npm ci + Vite production build.
+4. Docker/Coolify container startup and scheduled command execution.
+5. Real NAS mount connectivity/readability with production paths and permissions.
+6. Real Google Drive API credentials, scopes and production file references.
+7. Real YouTube availability/embed checks for representative production videos.
+8. Queue/scheduler-driven broken-source alerts through configured notification channels.
+9. Capacity/health reporting against production storage mounts.
+10. Browser UAT for Integrations panel, source repair/retry and media-source preview/open flows.
+
+RECOMMENDED STAGING GATE
+------------------------
+- Backup staging database/media first.
+- Run normal migrations.
+- Configure one Local/NAS test connection and validate root path, capacity metrics and source delivery.
+- Configure Google Drive and YouTube test references using non-production credentials/content first.
+- Run integration health checks manually, then through scheduler.
+- Intentionally break one NAS/external source and validate Broken/Missing status, alert generation, Retry and Repair flow.
+- Confirm Department Admin cannot see sensitive connection credentials/root configuration intended only for Super Admin.
+- Run PHPUnit and Vite production build before production rollout.
+
+RESULT
+------
+Static/source validation: PASS within available environment.
+Production readiness: REQUIRES staging/runtime validation listed above.

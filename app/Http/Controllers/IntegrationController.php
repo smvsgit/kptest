@@ -1,0 +1,16 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\IntegrationConnection;
+use App\Services\AuditService;
+use App\Services\IntegrationHealthService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Validation\Rule;
+class IntegrationController extends Controller {
+ public function store(Request $request,AuditService $audit){$d=$this->validated($request);$cred=$this->credentials($request);$c=IntegrationConnection::create($d+['credentials_encrypted'=>$cred?Crypt::encryptString(json_encode($cred)):null,'status'=>$request->boolean('is_active',true)?'unknown':'inactive']);$audit->log($request,'integration.created',$c,'Integration connection created.',['type'=>$c->type,'name'=>$c->name]);return back()->with('success','Integration connection created.');}
+ public function update(Request $request,IntegrationConnection $integrationConnection,AuditService $audit){$d=$this->validated($request,$integrationConnection->id);$cred=$this->credentials($request);if($cred){$existing=[];if($integrationConnection->credentials_encrypted){try{$existing=json_decode(Crypt::decryptString($integrationConnection->credentials_encrypted),true)?:[];}catch(\Throwable){}}$d['credentials_encrypted']=Crypt::encryptString(json_encode(array_merge($existing,$cred)));}if(!$d['is_active'])$d['status']='inactive';elseif($integrationConnection->status==='inactive')$d['status']='unknown';$before=$integrationConnection->only(['name','type','is_active','root_path','base_url','sync_frequency_minutes','storage_warning_percent']);$integrationConnection->update($d);$audit->log($request,'integration.updated',$integrationConnection,'Integration connection updated.',['before'=>$before,'after'=>$integrationConnection->only(array_keys($before))]);return back()->with('success','Integration connection updated.');}
+ public function destroy(Request $request,IntegrationConnection $integrationConnection,AuditService $audit){abort_if($integrationConnection->sources()->exists(),422,'Connection is linked to media sources. Deactivate it instead of deleting.');$audit->log($request,'integration.deleted',$integrationConnection,'Integration connection deleted.',['name'=>$integrationConnection->name,'type'=>$integrationConnection->type]);$integrationConnection->delete();return back()->with('success','Integration connection deleted.');}
+ public function check(Request $request,IntegrationConnection $integrationConnection,IntegrationHealthService $health,AuditService $audit){$r=$health->checkConnection($integrationConnection);$audit->log($request,'integration.checked',$integrationConnection,'Integration health check executed.',$r);return response()->json($r);}
+ private function validated(Request $r,?int $ignore=null):array{return $r->validate(['name'=>['required','string','max:120',Rule::unique('integration_connections')->where(fn($q)=>$q->where('type',$r->input('type')))->ignore($ignore)],'type'=>['required',Rule::in(['local','nas','google-drive','youtube'])],'is_active'=>'required|boolean','root_path'=>'nullable|string|max:1000','base_url'=>'nullable|url|max:1000','sync_frequency_minutes'=>'required|integer|min:15|max:10080','storage_warning_percent'=>'required|integer|min:50|max:99']);}
+ private function credentials(Request $r):array{$out=[];foreach(['api_key','access_token'] as $k)if($r->filled($k))$out[$k]=$r->input($k);return $out;}
+}

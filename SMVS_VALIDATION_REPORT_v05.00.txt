@@ -1,0 +1,56 @@
+SMVS Karyalay Portal - Validation Report
+Application Version: 05.00
+Release: File Lifecycle, Versioning & Recycle Bin
+Date: 2026-09-07
+
+STATIC VALIDATION COMPLETED
+- PHP syntax: PASS (76 PHP files across app/routes/migrations/config/tests)
+- TypeScript/TSX syntax/transpile parse: PASS (Parsed 16 TS/TSX files; syntax/transpile error files: 0)
+- JSON/YAML parse: PASS
+- package.json/package-lock dependency parity: PASS
+- VERSION/config sync: PASS (05.00; previous 04.00)
+- SoftDeletes / media_file_versions migration presence: PASS
+- Super Admin-only permanent-delete backend guard: PASS
+- Version chunk-upload routes: PASS
+- Lifecycle / Recycle Bin admin UI presence: PASS
+- User-visible duplicate warning: PASS
+- Runtime Google Fonts / Unsplash / JSZip source refs: PASS (none active)
+- Updated BRD tracker DOCX render QA: PASS (58 pages rendered and visually inspected; no clipping/overlap defects observed)
+
+v05.00 FUNCTIONAL SCOPE PRESENT IN SOURCE
+- Immutable per-asset version history with explicit current_version
+- Initial version creation for new uploads + migration backfill for existing assets
+- Changed By / Changed Date / Change Note / checksum per version
+- Chunked large-file Upload New Version with actual transferred-size / total-size + percent UI
+- Restore historical version as a NEW current version (history is not overwritten)
+- Authenticated historical-version download for lifecycle managers
+- Normal delete -> Soft Delete / Recycle Bin; bytes retained
+- Department Admin own-department restore; Super Admin global restore
+- Permanent delete restricted to Super Admin and only after Recycle Bin state
+- Archive / Unarchive preserving previous asset status
+- SHA-256 duplicate_of_id persistence + Potential Duplicate UI warning
+- Audit events for version create/restore, archive/unarchive, recycle move/restore and permanent delete
+- Feature-test source added for lifecycle behavior
+
+RUNTIME / STAGING VALIDATION STILL REQUIRED
+This environment does not contain the project vendor/ or node_modules/ trees and Docker runtime is unavailable here, so the following are NOT claimed as runtime-passed:
+1. composer install + php artisan migrate on a real MariaDB staging database
+2. php artisan test (including FileLifecycleTest)
+3. npm ci + npm run build / Vite production bundle
+4. queue worker execution for checksum/thumbnail/search indexing after version replacement
+5. >50 MB chunked version replacement through the deployed reverse proxy
+6. historical-version restore byte integrity and video/audio preview after restore
+7. Recycle Bin restore and Super Admin permanent-delete against real storage mount
+8. archive/unarchive + Meilisearch re-index behavior
+9. browser UI checks in Chrome/Edge for version progress, lifecycle controls and Recycle Bin
+
+MANAGEMENT DEPENDENCY
+- Recycle Bin automatic retention/purge remains deliberately disabled until Management approves the retention period.
+
+RECOMMENDED STAGING GATE BEFORE PRODUCTION
+- Backup staging DB/media first.
+- Run migrations.
+- Upload a test file, replace with a second version, restore v1 and verify a new v3 is created.
+- Test a large version upload and verify displayed bytes/percent.
+- Move to Recycle Bin, restore as Department Admin, then verify permanent delete is denied to Department Admin and allowed to Super Admin only.
+- Verify audit events and storage cleanup.

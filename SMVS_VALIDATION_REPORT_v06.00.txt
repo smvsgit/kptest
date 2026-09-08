@@ -1,0 +1,66 @@
+SMVS Karyalay Portal - Validation Report
+Application Version: 06.00
+Release: Search & Discovery Completion
+Date: 2026-09-07
+
+STATIC VALIDATION COMPLETED
+- PHP syntax: PASS (82 PHP files across app/routes/migrations/config/tests)
+- TypeScript/TSX syntax/transpile parse: PASS (Parsed 16 TS/TSX files; syntax/transpile error files: 0)
+- JSON/YAML parse: PASS
+- package.json/package-lock dependency parity: PASS
+- VERSION/config sync: PASS (06.00; previous 05.00)
+- Saved-search backend routes + user ownership guard: PASS (source inspection)
+- Favorites + Recently Viewed per-user endpoints: PASS (source inspection)
+- Search Everywhere / Current Department scope: PASS (backend + UI source inspection)
+- Advanced structured filters/date/uploader/source/status UI: PASS (source inspection)
+- Meilisearch filterable/searchable uploader + metadata alias changes: PASS (source inspection)
+- Option B Meilisearch / Option E Hybrid control remains present; Semantic/AI remains OFF
+- Runtime Google Fonts / Unsplash / JSZip source refs: PASS (none active)
+- Updated BRD tracker DOCX render QA: PASS (60 pages rendered; contact-sheet review plus full-size review of changed summary/search/release pages; no clipping/overlap defects observed)
+
+v06.00 FUNCTIONAL SCOPE PRESENT IN SOURCE
+- Full Browse/Search filters: type, date range, access policy, department, year, Country/State/City/Mandir, Event/Prasang, Guruji/Person, language, media type, uploader/owner, source and asset status
+- Explicit Search Everywhere vs Current Department scope, enforced server-side and in search-engine filters
+- Per-user Saved Searches: create/apply/delete; user cannot delete another user's saved search
+- Per-user Favorites/Bookmarks with quick view and count
+- Per-user Recently Viewed with latest-view ordering and quick view
+- Active filter chips, Clear All, advanced filter panel, responsive filter layout and improved empty state
+- Recently Updated sort plus Best Match/Newest/Oldest/Name/Size sorting
+- Meilisearch documents include uploader names and controlled master-data aliases; aliases participate in transliteration text
+- Database fallback search covers description/category/subcategory/event/person/location/language/uploader
+- Search-focused DB indexes added for uploader/date, department/year, event/language, source/status
+- Feature-test source added for saved searches, favorites visibility/security and recent-view upsert
+
+RUNTIME / STAGING VALIDATION STILL REQUIRED
+This environment does not contain a completed project vendor/ or node_modules/ tree and Docker runtime is unavailable here. An npm ci attempt using the package registry timed out, so the following are NOT claimed as runtime-passed:
+1. composer install + php artisan migrate on MariaDB
+2. php artisan test, including SearchDiscoveryTest
+3. npm ci + npm run build / Vite production bundle
+4. Docker Compose application + Meilisearch + queue worker runtime
+5. Super Admin Settings -> Search -> Sync Settings to Meilisearch and full re-index
+6. Browser UAT for Search Everywhere vs Current Department using multiple departments and Private assets
+7. Browser UAT for all advanced filters and date ranges
+8. Saved Search create/apply/delete across separate users
+9. Favorites and Recently Viewed behavior across separate users
+10. Production-volume relevance/performance benchmarking with representative asset counts
+
+SECURITY / DATA NOTES
+- Current Department scope does not bypass Public/Protected/Private visibility.
+- Private assets remain protected by MediaAccessService even if a saved search contains an old/unauthorized department/filter value.
+- Favorites and Recently Viewed only accept media metadata the signed-in user can see.
+- Saved Searches are user-owned and deletion is ownership-checked.
+- Search engine visibility filter remains enforced for non-Super Admin users.
+
+DEPLOYMENT GATE
+- Backup staging DB/media first.
+- Run migrations.
+- Open Settings -> Search and run Sync Settings to Meilisearch once.
+- Test Option B and Option E separately with the same representative queries.
+- Test fuzzy, aliases, transliteration, exact-field behavior and structured filters.
+- Test Current Department and Private visibility with users from at least two departments.
+- Test Saved Search, Favorites and Recently Viewed with at least two users.
+- Record response times with a representative production-sized index before production rollout.
+
+NEXT RECOMMENDED DEVELOPMENT
+Application v07.00 - Upload + Bulk Operations + Integrity Completion.
+Management should confirm the Maximum upload/file size policy; implementation can keep this configurable.

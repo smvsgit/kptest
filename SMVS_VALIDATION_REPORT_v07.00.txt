@@ -1,0 +1,48 @@
+SMVS Karyalay Portal - Validation Report
+Application Version: 07.00
+Release: Upload, Bulk Operations & Integrity Completion
+Validated: 2026-09-07
+
+SCOPE VERIFIED
+- Root VERSION and config/version.php are 07.00 / previous 06.00.
+- Super Admin Upload & Integrity settings UI/source is present.
+- Upload policy settings migration and backend controller/service are present.
+- Direct uploads enforce the Central Admin allowed-extension / max-file-size policy.
+- Upload preflight validates selected files and returns visibility-safe possible duplicate warnings.
+- Resumable upload uses user-isolated chunks, a manifest, configured chunk size/retries, chunk sequence checks and assembled-size verification.
+- Replacement-version uploads enforce the same application file policy and total-size verification.
+- Upload UI shows transferred bytes / total bytes and percentage, and uses configured chunk threshold/size/retry count.
+- Bulk Edit backend supports structured metadata, tags, category/subcategory move, access/download policy, archive/unarchive and Super Admin department transfer.
+- Bulk Edit enforces owner-department scope for non-Super Admin users; Department Operator cannot bulk archive.
+- Bulk Edit records audit entries and re-indexes changed assets after database commit.
+- Exact SHA-256 duplicate detection is UI-configurable, department-scoped and non-destructive.
+- Possible duplicate preflight warning is based on same filename + size and respects visibility rules.
+- v07 database indexes for bulk scope and possible-duplicate lookup are present.
+- v07 feature-test source is included.
+
+STATIC VALIDATION
+- PHP syntax lint: PASS (75 PHP files under app/routes/migrations/tests).
+- TypeScript/TSX parser/transpile syntax: PASS (17 TS/TSX files; 0 syntax failures).
+- package.json: valid JSON.
+- package-lock.json: valid JSON; no package dependency change was required for v07.00.
+- config/version.php: current=07.00, previous=06.00.
+- Required v07 routes are present: /files/upload-preflight, /files/bulk-edit, /settings/upload.
+
+RUNTIME / STAGING VALIDATION STILL REQUIRED
+This execution environment does not contain the project vendor/ directory, node_modules/, Composer binary, or a Docker runtime. Therefore the following are NOT falsely claimed as passed and must be run in staging/deployment:
+1. composer install / Laravel boot and route:list.
+2. php artisan migrate on a copy of production-like data.
+3. php artisan test (including UploadBulkIntegrityTest).
+4. npm ci && npm run build.
+5. Docker/Coolify container startup and queue worker health.
+6. Browser UAT for Settings -> Upload & Integrity.
+7. Direct upload below threshold and chunked upload above threshold.
+8. Interrupt/resume a chunked upload; then change upload settings mid-resume and verify safe restart behavior.
+9. Replacement-version large upload using configured chunks.
+10. Bulk metadata/tag/move/archive/access edits as Super Admin, Department Admin and Department Operator.
+11. Department ownership transfer as Super Admin and denial for lower roles.
+12. Duplicate warning and SHA-256 exact-duplicate detection.
+13. Reverse-proxy/PHP body-size and timeout limits for intended AV file sizes.
+
+DEPLOYMENT NOTE
+After deploying v07.00, run normal migrations, then review Settings -> Upload & Integrity as Super Admin. A configured value of 0 for max file size or batch count means no application-layer limit; infrastructure limits can still apply.

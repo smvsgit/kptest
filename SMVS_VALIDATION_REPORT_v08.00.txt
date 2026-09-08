@@ -1,0 +1,120 @@
+SMVS KARYALAY PORTAL - VALIDATION REPORT
+Application Version: 08.00
+Release: Notifications, Audit & Reports Completion
+Date: 2026-09-07
+
+STATIC VALIDATION COMPLETED IN THIS ENVIRONMENT
+-----------------------------------------------
+PASS - Application version markers synchronized: VERSION=08.00, config/version.php current=08.00, previous=07.00.
+PASS - PHP syntax validation across app/config/database/routes/tests: 99 PHP files syntax-clean.
+PASS - TypeScript/TSX syntax/transpile parse: 19 TS/TSX files parse-clean with 0 syntax/transpile errors.
+PASS - package.json, package-lock.json and composer.json parse as valid JSON.
+PASS - docker-compose.yml parses as valid YAML and includes the v08 scheduler service.
+PASS - v08 notification/audit/report controllers, services, jobs, models, migration and routes are present and syntax-valid.
+PASS - Notification provider secrets continue to be stored encrypted and are not returned to the browser as plaintext.
+PASS - Non-Super Admin report scopes and notification recipient visibility remain restricted by role/department/access policy in source paths reviewed.
+PASS - Audit model is append-only at application level; v08 migration adds an ordered SHA-256 hash chain plus MariaDB/MySQL UPDATE/DELETE blocking triggers.
+PASS - Notification Center, user preferences, escalation settings, provider-test controls, report UI and audit-integrity verification routes are wired in source.
+PASS - Updated BRD/Development Tracker v2.8 rendered to 44 pages and visually reviewed. After replacing ambiguous Unicode checkbox glyphs with ASCII status markers, no clipping/overlap defects were observed in the reviewed pages.
+
+V08.00 FUNCTIONAL SCOPE PRESENT IN SOURCE
+-----------------------------------------
+1. Notification delivery orchestration
+   - Portal / in-app notifications delivered synchronously.
+   - Email, WhatsApp and Text SMS deliveries queued through retryable jobs.
+   - Central Admin global channel switches + per-event routing matrix are enforced.
+   - User preferences can further disable allowed channels/categories but cannot enable a channel globally disabled by Central Admin.
+   - Delivery status/attempt/error/provider metadata is persisted in notification_deliveries.
+
+2. Provider support
+   - Email: SMTP with Central Admin host/port/encryption/username/password/from settings.
+   - WhatsApp: Meta Cloud API or generic HTTP endpoint using encrypted token.
+   - Text SMS: generic HTTP provider using encrypted API key and sender id.
+   - Test-send actions are available from Central Admin Notifications settings.
+
+3. Notification Center & preferences
+   - Full notification list with unread/read state.
+   - Mark one / mark all read.
+   - Category filtering.
+   - Per-user channel/category preferences.
+
+4. Access-request escalation
+   - Configurable enable/disable, first-after-hours, repeat interval and maximum escalation count.
+   - Scheduled command notifications:escalate-access.
+   - Docker Compose scheduler service runs Laravel schedule:work.
+   - Escalation is OFF by default until Central Admin explicitly enables it.
+
+5. Audit integrity / coverage
+   - Who / What / When plus IP, user-agent, session id and source context.
+   - Before/after context on critical configuration/content actions where implemented.
+   - Ordered SHA-256 previous_hash -> record_hash chain.
+   - Laravel model-level update/delete protection.
+   - MariaDB/MySQL database triggers prevent audit row UPDATE/DELETE.
+   - Audit-integrity verification service/report endpoint.
+   - Additional events include authentication, access workflow, media lifecycle, bulk operations, user/department/category and Central Admin settings/report exports.
+
+6. Dashboards / reports
+   - Role-scoped summary metrics for Super Admin, Department Admin and user views.
+   - Access report.
+   - Activity / admin/security report.
+   - Notification delivery report for Super Admin.
+   - CSV export.
+   - Browser Print / Save as PDF workflow.
+   - Dedicated server-side PDF/Excel export is intentionally not claimed complete and remains WIP in the tracker.
+
+RUNTIME / STAGING VALIDATION NOT AVAILABLE HERE
+-----------------------------------------------
+This execution environment does not contain Composer/vendor dependencies, project node_modules, or Docker runtime. Therefore the following are NOT claimed as runtime-passed:
+1. composer install + php artisan migrate against a real MariaDB staging database.
+2. PHPUnit execution, including NotificationAuditReportsTest.
+3. npm ci + Vite/TypeScript production build.
+4. Docker app + queue worker + scheduler startup and restart behavior.
+5. Real SMTP email delivery using production/staging credentials.
+6. Real WhatsApp provider delivery and provider-specific payload acceptance.
+7. Real Text SMS provider delivery and provider-specific payload acceptance.
+8. Access-request escalation timing via scheduler/queue under real clock/worker conditions.
+9. MariaDB/MySQL audit UPDATE/DELETE triggers and hash-chain verification after migration/backfill.
+10. Browser role/UAT for Notification Center, preferences, dashboards, reports, CSV and Print/Save PDF.
+11. Data-leakage UAT across multiple departments, Private assets and report exports.
+12. Production-volume performance/load behavior for delivery queues, audit chain verification and reports.
+
+SECURITY / GOVERNANCE NOTES
+---------------------------
+- Email passwords, WhatsApp tokens and SMS API keys are encrypted before persistence; browser props expose saved/masked state rather than plaintext credentials.
+- User notification preferences cannot override a channel disabled by Central Admin.
+- Portal reports are role/department scoped; notification-delivery report is Super Admin-only.
+- Audit logs are append-only in application code, hash chained and database-trigger protected on MariaDB/MySQL.
+- Audit retention is NOT auto-deleting records because Management has not yet approved the audit-retention policy.
+- Notification escalation defaults to OFF; Central Admin must approve/configure timing before enabling.
+- Provider credentials, sender identities, channel activation and provider compliance remain deployment/operations responsibilities.
+
+REQUIRED STAGING GATE BEFORE PRODUCTION
+---------------------------------------
+1. Backup staging database/media/configuration.
+2. Run migrations and verify notification_preferences, notification_deliveries, access escalation fields and audit hash columns/indexes/triggers.
+3. Run php artisan test and specifically NotificationAuditReportsTest.
+4. Run npm ci and the production Vite build.
+5. Start app, queue worker and scheduler services; verify healthy restarts.
+6. Configure staging SMTP and send a real Email test from Settings -> Notifications.
+7. Configure staging WhatsApp provider/token/endpoint and send a real WhatsApp test.
+8. Configure staging SMS provider/key/endpoint and send a real Text SMS test.
+9. Trigger Protected access request -> Admin decision and confirm Portal + enabled external channel deliveries and delivery status rows.
+10. Enable escalation with a short staging interval, verify reminder/escalation recipients, max count and audit records, then restore the intended production timing/OFF state.
+11. Verify Notification Center read/unread state and per-user preferences with at least two users.
+12. Verify Super Admin / Department Admin / user dashboard metrics and report scoping using at least two departments and Private assets.
+13. Export Access and Activity CSV reports; verify browser Print / Save PDF output.
+14. Attempt Eloquent audit update/delete and direct SQL UPDATE/DELETE; confirm both are rejected where intended.
+15. Run audit-integrity verification before and after new staged audit events.
+16. Record queue/report performance with representative production-sized data.
+
+MANAGEMENT / OPERATIONS DECISIONS STILL OPEN
+--------------------------------------------
+- Audit retention period.
+- Provider credentials / sender identities / provider account approvals and which notification channels are enabled in production.
+- Escalation timing policy.
+- Existing BRD decisions such as RPO/RTO, backup retention, Recycle Bin retention and other security/retention policies remain separately tracked.
+
+RESULT
+------
+Static/code validation: PASS within available environment.
+Production readiness: REQUIRES staging/runtime validation listed above.

@@ -1,0 +1,4 @@
+<?php
+namespace App\Services;
+use App\Models\MediaFile; use App\Models\SystemSetting; use Illuminate\Support\Facades\Storage;
+class RecycleRetentionService { public function run(): array { $s=SystemSetting::valueFor('recycle.retention',['retention_days'=>0,'max_per_run'=>250]); $days=(int)($s['retention_days']??0); if($days<=0)return ['enabled'=>false,'purged'=>0]; $items=MediaFile::onlyTrashed()->with('versions')->where('deleted_at','<',now()->subDays($days))->limit(max(1,(int)($s['max_per_run']??250)))->get(); $n=0; foreach($items as $m){$paths=$m->versions->pluck('file_path')->filter()->unique()->all(); if($m->thumbnail_path)$paths[]=$m->thumbnail_path; Storage::disk('media')->delete(array_values(array_filter($paths,fn($p)=>$p&&!str_starts_with((string)$p,'http')))); $m->forceDelete(); $n++;} $s['last_run_at']=now()->toIso8601String(); SystemSetting::put('recycle.retention',$s); return ['enabled'=>true,'purged'=>$n]; } }

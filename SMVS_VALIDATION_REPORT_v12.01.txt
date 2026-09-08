@@ -1,0 +1,82 @@
+SMVS Karyalay Portal - Validation Report
+Application Version: 12.01
+Release: Pre-Go-Live Stabilization
+Previous Version: 12.00
+Date: 2026-09-08
+
+RELEASE PURPOSE
+v12.01 is a scoped stabilization release for the v12.00 UAT / Go-Live readiness gate. It does not pre-pass any acceptance case and does not introduce a new business module. The release fixes readiness weaknesses found by source review before real staging execution.
+
+STATIC VALIDATION COMPLETED
+- PHP syntax: PASS (137 PHP files across app/config/database/routes/tests)
+- TypeScript/TSX syntax/transpile parse: PASS (22 files; 0 syntax/transpile error files)
+- JSON/YAML parse: PASS
+- package.json/package-lock root dependency parity: PASS
+- VERSION/config sync: PASS (12.01 / previous 12.00)
+- v12.01 migration for release-bound UAT/readiness evidence: PASS (source presence/syntax)
+- Release-bound UAT execution/sign-off controls: PASS (source inspection)
+- Verified-backup restore-test gate: PASS (source inspection)
+- Current-release restore evidence gate: PASS (source inspection)
+- Management decision note enforcement: PASS (source inspection)
+- Planned go-live date validation: PASS (source inspection)
+- Production max-upload readiness cross-check: PASS (source inspection)
+- Backup owner/retention/RPO/RTO readiness cross-checks: PASS (source inspection)
+- No active runtime Google Fonts / Unsplash / browser JSZip references: PASS
+- Updated BRD tracker v3.3: PASS (67 pages rendered; contact-sheet review plus full-size review of changed pages; low-contrast Manager Summary cells corrected and re-rendered)
+- Tracker count integrity: PASS (128 total = 88 Done + 29 WIP + 11 Pending + 0 Blocked; overall Done 68.8%)
+
+v12.01 STABILIZATION FIXES PRESENT IN SOURCE
+1. UAT execution and sign-off are now bound to the exact currently running application version through executed_app_version and approved_app_version.
+2. Changing a UAT result clears approval; a prior-release execution cannot be signed off for the current release.
+3. Readiness snapshots and go-live review records now persist app_version for traceable release evidence.
+4. The readiness version check is dynamic (VERSION must match config version) rather than hard-coded to 12.00, so a legitimate minor stabilization release can pass the version gate.
+5. Backup creation now treats failed automatic checksum verification as a failed backup run instead of silently accepting a nominally successful archive.
+6. A Passed restore-test can be recorded only against a successful, checksum-verified backup.
+7. Go-live restore evidence must come from a verified backup whose manifest app_version matches the current release.
+8. Backup readiness now cross-checks verified backup state, configured responsible owner, retention policy, RPO/RTO values and formal accepted-risk decisions where policy remains intentionally unresolved.
+9. Production upload readiness now cross-checks the actual configured maximum upload size; an unlimited application setting requires formal accepted-risk evidence to satisfy readiness.
+10. Resolved or Risk Accepted Management dependencies require a nonblank written decision/owner/approval-reference note.
+11. Planned go-live date is validated as a date rather than accepting arbitrary text.
+12. The UAT UI prevents Sign Off while local case changes are unsaved or execution evidence belongs to another release.
+13. UAT/readiness CSV export includes executed/approved release fields and a versioned filename.
+14. Tests were added/updated for release-bound sign-off, mandatory Management decision notes and prevention of Passed restore evidence on an unverified backup.
+
+RUNTIME / STAGING VALIDATION NOT AVAILABLE IN THIS BUILD ENVIRONMENT
+The current build environment has PHP 8.4.23 and Node 22.16.0, but it does not provide Composer, project vendor/, project node_modules/, Docker, MariaDB or the complete PHP extensions expected by the application (including mbstring/curl/database drivers). Therefore the following are NOT claimed as runtime-passed:
+- composer install / Laravel application boot
+- php artisan migrate against MariaDB
+- PHPUnit feature/integration tests
+- npm ci + Vite production build
+- queue worker and scheduler runtime
+- Meilisearch runtime/re-index
+- SMTP/WhatsApp/SMS live provider delivery
+- real NAS/Google Drive/YouTube connectivity
+- real backup creation/checksum/restore against staging storage/database
+- browser UAT across roles/departments
+- final php artisan readiness:check green result
+- final APPROVE GO-LIVE
+
+REQUIRED EXACT v12.01 STAGING GATE
+1. Deploy the exact v12.01 artifact to staging.
+2. Run migrations and start queue workers/scheduler.
+3. Confirm VERSION/config both show 12.01.
+4. Resolve or formally risk-accept every tracked Management dependency with written approval/reference notes.
+5. Review production max upload size and backup destination/owner/retention/RPO/RTO configuration.
+6. Create a new v12.01 backup and confirm automatic checksum verification passes.
+7. Perform a real fresh-database restore test from that verified v12.01 backup and record evidence.
+8. Execute every P0 UAT case in UAT_EXECUTION_GUIDE.md with representative roles/departments and real staging integrations.
+9. Save evidence and Sign Off each Passed case; sign-off must display v12.01.
+10. Run php artisan readiness:check. Any blocking failure must remain a go-live blocker.
+11. Follow GO_LIVE_RUNBOOK.md only after the readiness gate is green.
+
+TRACKER STATUS
+No UAT item was marked Done in this release because actual staging execution was unavailable. Counts intentionally remain:
+- Done: 88
+- WIP: 29
+- Pending: 11
+- Blocked: 0
+- Total: 128
+- Done %: 68.8%
+
+NEXT VERSION POLICY
+Do not create v12.02 automatically. If exact v12.01 staging UAT or readiness checks prove defects, create a scoped v12.02 stabilization release only for those verified defects, then re-run/sign off affected release-bound UAT evidence.

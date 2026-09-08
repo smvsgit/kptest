@@ -1,0 +1,4 @@
+<?php
+namespace App\Http\Middleware;
+use App\Models\SystemSetting;use Closure;use Illuminate\Http\Request;use Symfony\Component\HttpFoundation\Response;
+class EnsureTwoFactor { public function handle(Request $r,Closure $next): Response { $u=$r->user();if(!$u)return $next($r);$s=SystemSetting::valueFor('security.two_factor',['enabled'=>true,'required_super_admin'=>false]);$required=($s['enabled']??true)&&(($u->two_factor_confirmed_at!==null)||(($s['required_super_admin']??false)&&$u->role==='super-admin'));if(!$required)return $next($r);if(!$u->two_factor_confirmed_at)abort(403,'Two-factor authentication enrollment is required.');if((int)$r->session()->get('2fa_passed_at',0)<time()-43200 && !$r->routeIs('security.2fa.challenge')&&!$r->routeIs('logout'))abort(423,'Two-factor authentication challenge required.');return $next($r); } }

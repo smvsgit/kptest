@@ -1,0 +1,96 @@
+SMVS KARYALAY PORTAL - VALIDATION REPORT
+Application Version: 11.00
+Release: Backup, Restore & Disaster Recovery
+Date: 2026-09-07
+
+STATIC / SOURCE VALIDATION COMPLETED
+------------------------------------
+PASS - Application version markers synchronized: VERSION=11.00, config/version.php current=11.00, previous=10.00.
+PASS - PHP syntax lint: 129 PHP files across app/config/database/routes/tests are syntax-clean.
+PASS - TypeScript/TSX syntax/transpile parse: 21 TS/TSX files; 0 syntax/transpile errors.
+PASS - package.json, package-lock.json and composer.json parse as valid JSON.
+PASS - docker-compose.yml parses as valid YAML.
+PASS - package.json/package-lock root dependency parity.
+PASS - v11 backup/restore/DR migration source is present and syntax-clean.
+PASS - BackupRun and RestoreVerification models are present.
+PASS - BackupService, BackupController and Backup & DR Admin UI are present.
+PASS - Backup routes are inside the existing Super Admin-only settings route group.
+PASS - Application-native backup encryption source uses Laravel Crypt/APP_KEY and the archive manifest explicitly states APP_KEY is NOT embedded.
+PASS - Backup payload has an inner compressed-payload SHA-256 and the run records an outer encrypted-file SHA-256.
+PASS - Successful backup path performs automatic read-back/decrypt/checksum/table-count verification.
+PASS - Guarded console restore requires RESTORE-EMPTY-DATABASE confirmation; production restore also requires --force-production and Laravel maintenance mode.
+PASS - Fresh-database restore whitelists portal backup tables, verifies row counts and refuses a target with existing users/business/audit data.
+PASS - Daily/weekly/monthly scheduler scan, retention pruning and RPO monitoring source is present.
+PASS - Retention/RPO/RTO defaults remain 0 / Policy Pending; this release does not invent Management policy.
+PASS - Backup failure and RPO warning notification events are wired into the existing notification delivery matrix/category handling.
+PASS - v11 feature-test source covers Super Admin authorization, encrypted backup, fresh-DB restore, Policy Pending defaults and RPO/RTO readiness.
+PASS - Updated BRD/Development Tracker v3.1 count consistency: 128 active items = 88 Done, 19 WIP, 21 Pending, 0 Blocked.
+PASS - BRD/Development Tracker render QA: 61 pages rendered; all pages reviewed via contact sheets and v11-changed pages inspected full-size. No clipping/overlap/missing-glyph defect was observed.
+
+V11.00 FUNCTIONAL SCOPE PRESENT IN SOURCE
+-----------------------------------------
+- Super Admin Settings -> Backup & DR configuration page.
+- Backup destination: protected local storage or existing writable absolute filesystem/NAS path outside public web root.
+- Responsible backup owner field.
+- Backup scopes: portal database/metadata; system settings/configuration; audit/security records.
+- Encrypted .kpbackup archive format.
+- Archive manifest with app version, table counts, scope, config-file list and source-content responsibility notes.
+- Inner payload SHA-256, outer file SHA-256 and automatic post-backup read-back verification.
+- Manual Backup Now, Verify, encrypted Download and Retention Scan actions.
+- Daily / weekly / monthly schedule capability; scheduler checks hourly and creates at most one backup per enabled period.
+- Daily / weekly / monthly retention controls; value 0 means Policy Pending/no automatic pruning. Manual backups are never auto-pruned.
+- RPO target / RTO target controls; value 0 means Policy Pending.
+- DR Readiness status from latest successful backup age + latest passed restore-test duration.
+- RPO warning notifications with throttling.
+- Backup failure notification event.
+- Restore-test evidence records: Passed/Failed, duration, target environment, notes/evidence reference.
+- Guarded backup:restore-file console workflow into a fresh migrated target database.
+- Production restore safety: explicit confirmation, --force-production and maintenance mode.
+- Post-restore row-count verification and appended audit event.
+- Explicit responsibility boundary: NAS / Google Drive / YouTube source-content backup remains outside the portal metadata backup. Media/source bytes require their approved storage/source backup plan.
+- Matching APP_KEY is deliberately excluded from the archive and must be kept separately in secure DR custody.
+
+NOT RUNTIME-VERIFIED IN THIS ENVIRONMENT
+----------------------------------------
+The current execution environment does not contain Composer vendor dependencies, project node_modules or Docker runtime. Therefore the following are NOT claimed as passed:
+1. `php artisan migrate` against the target MariaDB database.
+2. PHPUnit execution, including BackupDisasterRecoveryTest.
+3. Vite / React production build.
+4. Scheduler execution over real hourly/daily/weekly/monthly boundaries.
+5. Real protected-local/NAS backup destination permissions in the deployed containers.
+6. Creation of a production-sized encrypted backup against representative audit/database volume.
+7. Real APP_KEY escrow/recovery procedure.
+8. Actual restore into a fresh staging MariaDB database and subsequent application smoke/UAT.
+9. Production maintenance-mode restore command behavior.
+10. Portal/Email/WhatsApp/Text SMS backup-failure and RPO-warning delivery through real providers.
+
+REQUIRED STAGING / DR GATE
+--------------------------
+1. Backup the staging environment before migration and run v11 migrations.
+2. Confirm Settings -> System -> System Information shows v11.00.
+3. Open Settings -> Backup & DR as Super Admin and select an approved destination.
+4. Keep schedules/retention/RPO/RTO at OFF/0 until Management/IT approves actual policy.
+5. Secure the matching production/staging APP_KEY outside the backup archive and outside a single point of failure.
+6. Create a manual backup and confirm Status=Success and Verified timestamp.
+7. Run manual Verify and compare recorded SHA-256/size with the downloaded encrypted archive.
+8. Prepare a fresh migrated staging DB using the same application version and APP_KEY.
+9. Run `php artisan backup:restore-file <path> --confirm=RESTORE-EMPTY-DATABASE` and confirm row-count verification passes.
+10. Smoke-test login, departments/roles, settings, media metadata, access policies, integrations and audit history.
+11. Record restore result, duration and evidence in Backup & DR.
+12. After RPO/RTO approval, configure targets and verify DR Readiness changes to Ready/Warning correctly.
+13. After retention approval, configure daily/weekly/monthly windows and test pruning in staging; confirm manual backups are retained.
+14. Validate backup failure / RPO warning notification routing on approved channels.
+15. Complete AC-12 actual backup/restore UAT and management sign-off before marking it Done.
+
+TRACKER RESULT
+--------------
+P0: 53 Done / 10 WIP / 12 Pending / 0 Blocked (70.7%).
+P1: 35 Done / 9 WIP / 9 Pending / 0 Blocked (66.0%).
+Total: 88 Done / 19 WIP / 21 Pending / 0 Blocked = 68.8% Done.
+Module K (Storage / Backup / DR): 6 Done / 2 WIP / 1 Pending = 66.7%.
+AC-12 remains WIP because actual restore UAT is not executed here.
+
+RESULT
+------
+Static/source validation: PASS within the available environment.
+Production readiness: REQUIRES staging/runtime validation and Management policy decisions listed above.

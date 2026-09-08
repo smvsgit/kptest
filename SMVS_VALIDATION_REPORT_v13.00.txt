@@ -1,0 +1,49 @@
+KARYALAY PORTAL v13.00 - STATIC VALIDATION REPORT
+Date: 2026-09-08
+Release: Remaining Feature Completion
+Previous: v12.01
+
+SCOPE
+This report validates the packaged source tree available in the build environment. Runtime UAT is intentionally deferred until the user deploys and tests the completed development artifact as requested.
+
+PASS - SOURCE / CONFIGURATION
+- PHP syntax: 161 PHP files checked, 0 syntax errors.
+- TypeScript/TSX syntax transpile: 26 files checked, 0 syntax errors.
+- package.json, package-lock.json, composer.json, composer.lock: JSON parse PASS.
+- docker-compose.yml: YAML parse PASS.
+- Version markers: VERSION=13.00; config/version.php current=13.00, previous=12.01.
+- v13 migration present: 2026_09_08_001300_add_remaining_feature_completion.php.
+- Password reset controller/routes/pages present.
+- TOTP 2FA service/controller/challenge page/policy controls present.
+- Maintenance + Network/VPN policy middleware/control endpoints present; login submission performs network policy enforcement.
+- Folder/Collection/Related Asset backend workflows present.
+- Controlled lifecycle transition + type-required metadata enforcement present.
+- Watermark policy and protected preview overlay presentation present.
+- Native XLSX service plus user/report import/export endpoints present.
+- Weekly/monthly Scheduled Reports models/controller/scheduler present.
+- Audit retention and Recycle Bin retention services/schedulers present; default retention is 0 (policy pending / no auto-delete).
+- Department storage quota service and upload enforcement present for direct/chunk upload.
+- Branding/default language/user preferred language controls present.
+- Central Admin v13 Completion panel present for configurable remaining-feature policies.
+- RemainingFeatureCompletionTest source present.
+- UAT/readiness tests remain release-bound to the current app version.
+
+DOCX QA
+- BRD v3.4 rendered successfully to 70 pages.
+- Manager Summary/status legend contrast and status-marker semantics corrected.
+- Visual review performed across all rendered pages; no clipping/overlap defects observed.
+
+NOT EXECUTED IN THIS BUILD ENVIRONMENT
+- Composer dependency installation / Laravel boot.
+- MariaDB migrations.
+- PHPUnit runtime.
+- npm ci / Vite production build.
+- Queue/scheduler runtime.
+- Real SMTP, WhatsApp, SMS provider delivery.
+- NAS/Google Drive/YouTube integration runtime.
+- Backup/restore execution.
+- Browser role/UAT flows.
+- Production-scale performance/load testing.
+
+IMPORTANT
+Development source coding is packaged for the user's requested consolidated testing cycle. UAT/Go-Live tracker rows must remain WIP/Pending until runtime evidence is captured against this exact v13.00 artifact.

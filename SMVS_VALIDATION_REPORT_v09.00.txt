@@ -1,0 +1,106 @@
+SMVS KARYALAY PORTAL - VALIDATION REPORT
+Application Version: 09.00
+Release: Organization, User Lifecycle & Access Maturity
+Date: 2026-09-07
+
+STATIC / SOURCE VALIDATION COMPLETED
+------------------------------------
+PASS - Application version markers synchronized: VERSION=09.00, config/version.php current=09.00, previous=08.00.
+PASS - PHP syntax lint: 114 PHP files across app/config/database/routes/tests are syntax-clean.
+PASS - TypeScript/TSX syntax/transpile parse: 19 TS/TSX files; 0 syntax/transpile errors.
+PASS - package.json, package-lock.json and composer.json parse as valid JSON.
+PASS - docker-compose.yml parses as valid YAML.
+PASS - package.json/package-lock root dependency parity.
+PASS - v09 organization/access migration source present and syntax-clean.
+PASS - OrganizationUnit, PermissionSet, UserStatusHistory and ApprovalDelegation models/services/controllers present.
+PASS - Active/Disabled/Inactive lifecycle service with ownership succession and access/session transition paths present.
+PASS - Department -> Sub-department -> Team management routes/UI present.
+PASS - Custom Permission Sets and route-level least-privilege permission middleware present.
+PASS - Temporary protected-access expiry service + scheduler command present.
+PASS - Short-lived signed protected-download route generation and entitlement revalidation present.
+PASS - Bulk protected access request and delegated-approval routes/UI present.
+PASS - Failed-login lockout, configurable inactivity timeout/password minimum and non-active account enforcement present.
+PASS - Profile Active Sessions + logout controls and Super Admin user-session revocation present.
+PASS - CSV import/export lifecycle source present; malformed extra/short CSV rows are normalized safely before mapping.
+PASS - Updated BRD/Development Tracker v2.9 consistency: 128 active items = 69 Done, 19 WIP, 40 Pending, 0 Blocked.
+PASS - Updated BRD/Development Tracker render QA: all 53 rendered pages visually inspected; no clipping, overlap or unreadable-text defect observed. Existing intentional pagination/white space was retained.
+
+V09.00 FUNCTIONAL SCOPE PRESENT IN SOURCE
+-----------------------------------------
+- User lifecycle: Active / Disabled / Inactive, status reason/history, session revocation and login blocking.
+- Operational asset custodian owner_user_id separate from immutable uploaded_by attribution.
+- Controlled lifecycle/department transitions requiring a same-department successor when a user owns assets.
+- Revocation of approved protected access and cancellation of pending/more-info requests during controlled transitions.
+- Department -> Sub-department -> Team hierarchy with user assignment.
+- Custom Permission Sets that can reduce, but not elevate beyond, the base role.
+- Access-review administration with status/department/unit/permission-set/last-login/last-seen context.
+- CSV user export/import; existing-user department/status changes deliberately require the controlled UI. Native XLSX remains WIP.
+- One-time temporary-password issuance with mandatory change-on-login and session revocation.
+- Configurable failed-login threshold/lockout, password minimum and inactivity session timeout.
+- Active Sessions visibility, individual logout, Logout All Other Sessions and Super Admin Logout All User Sessions.
+- Optional protected-access expiry per approval, scheduled automatic expiry/revoke/notification.
+- Default approval expiry remains 0 until Management approves a mandatory duration.
+- Short-lived signed protected-download links whose delivery still revalidates the active entitlement.
+- Bulk protected-access request by Event/Prasang, Category or Sub-category with configurable max file count.
+- Time-window delegated approvals by Department Admin to an active same-department user, with delegation attribution recorded on decisions.
+
+TRACKER STATUS THROUGH V09.00
+----------------------------
+Total active items: 128
+Done: 69
+WIP: 19
+Pending: 40
+Blocked: 0
+Overall Done: 53.9%
+
+Priority P0: 75 total / 40 Done / 9 WIP / 26 Pending = 53.3% Done
+Priority P1: 53 total / 29 Done / 10 WIP / 14 Pending = 54.7% Done
+
+Key module progress:
+- Organization, Users & Roles: 10 Done / 1 WIP / 0 Pending = 90.9%
+- Access Policies & Approvals: 10 Done / 0 WIP / 0 Pending = 100.0%
+- Search / Preview / Download: 10 Done / 2 WIP / 1 Pending = 76.9%
+- Audit & Security: 5 Done / 1 WIP / 3 Pending = 55.6%
+
+NOT RUNTIME-VERIFIED IN THIS ENVIRONMENT
+----------------------------------------
+This execution environment does not contain the project vendor/ directory or node_modules/ tree, Composer is unavailable and Docker is unavailable. Therefore the following are NOT claimed as passed:
+- Laravel migration execution against MariaDB
+- PHPUnit / feature-test runtime execution
+- Full frontend TypeScript type-check with installed React/Inertia dependency types
+- npm/Vite production build
+- Docker/Coolify application startup
+- Real database-backed session revocation behavior
+- Scheduler execution of access:expire-temporary
+- Signed protected-download browser/runtime verification
+- Multi-user delegated approval browser workflow
+- CSV import/export against a real staging database
+
+MANAGEMENT DEPENDENCIES STILL OPEN
+----------------------------------
+- Protected access default expiry duration: capability is implemented, but default remains 0 (no mandatory automatic expiry) until Management approves a duration. Reviewers may set explicit expiry hours per approval.
+- RPO/RTO, backup retention, Recycle Bin retention, audit retention, maximum upload/file size, storage quotas, External/VPN access, 2FA policy, mandatory metadata master lists, delete authority and data retention/classification remain documented Management Decisions Pending where applicable.
+
+REQUIRED STAGING GATE BEFORE PRODUCTION
+---------------------------------------
+1. Backup staging database/media and run v09 migrations.
+2. Confirm existing users backfill to Active and existing media owner_user_id is backfilled from uploaded_by.
+3. Test Active -> Disabled/Inactive -> Active including login blocking and session invalidation.
+4. Test an owner user with media: lifecycle/department transfer must require a same-department successor and preserve uploaded_by.
+5. Confirm approved access is revoked and pending/more-info access is cancelled on controlled user transitions.
+6. Test Sub-department/Team hierarchy and invalid cross-department assignment rejection.
+7. Test Permission Sets cannot elevate a user beyond the base role.
+8. Test failed-login lockout, inactivity timeout and mandatory temporary-password change.
+9. Test Profile Active Sessions, Logout All Other Sessions and Super Admin session termination.
+10. Approve protected access with a short explicit expiry; confirm access before expiry and automatic expiration after scheduler execution.
+11. Validate short-lived signed protected-download links, including entitlement revocation before the URL itself expires.
+12. Test bulk access by Event/Category/Sub-category and configured max file count.
+13. Test an active delegated approver inside and outside the configured delegation window.
+14. Test CSV export/import including malformed-length rows and verify existing-user department/status transitions are rejected from CSV.
+15. Run PHPUnit, npm ci/build and browser UAT before production rollout.
+
+RESULT
+------
+Static/source validation: PASS within available environment.
+BRD/DOCX visual QA: PASS (53/53 pages inspected).
+Production readiness: REQUIRES the staging/runtime gate above.

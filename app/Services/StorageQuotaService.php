@@ -1,0 +1,4 @@
+<?php
+namespace App\Services;
+use App\Models\MediaFile; use App\Models\SystemSetting;
+class StorageQuotaService { public function usageBytes(int $departmentId): int { $active=(int)MediaFile::withTrashed()->where('department_id',$departmentId)->sum('size'); $versions=(int)\DB::table('media_file_versions')->join('media_files','media_files.id','=','media_file_versions.media_file_id')->where('media_files.department_id',$departmentId)->sum('media_file_versions.size'); return max($active,$versions); } public function assertCanStore(int $departmentId,int $incomingBytes): void { $s=SystemSetting::valueFor('storage.quotas',[]); $gb=(float)(($s['departments'][(string)$departmentId]??$s['default_quota_gb']??0)); if($gb<=0)return; abort_if($this->usageBytes($departmentId)+$incomingBytes>(int)round($gb*1073741824),422,'Department storage quota would be exceeded.'); } }

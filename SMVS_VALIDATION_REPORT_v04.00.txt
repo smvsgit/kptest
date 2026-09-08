@@ -1,0 +1,64 @@
+SMVS KARYALAY PORTAL - VALIDATION REPORT
+Application Version: 04.00
+Release: Metadata & Master Data Foundation
+Date: 2026-09-07
+
+VALIDATION COMPLETED IN THIS ENVIRONMENT
+----------------------------------------
+PASS - Application version markers synchronized: VERSION=04.00, config/version.php=04.00, previous=03.00.
+PASS - PHP syntax lint across app/config/database/routes/tests: 73 PHP files syntax-clean.
+PASS - TypeScript/TSX syntax transpilation parse: 16 TS/TSX files parse-clean.
+PASS - package.json and package-lock.json are valid JSON.
+PASS - v04.00 migration syntax validated.
+PASS - Master data controllers/models/routes and metadata settings controllers syntax validated.
+PASS - Normal upload and resumable chunk upload contain backend metadata validation and persistence paths.
+PASS - Search document/settings code includes structured metadata fields.
+PASS - Notification provider secrets are not returned in dashboard props and are encrypted before database storage when entered.
+PASS - Super Admin routes protect Master Data, Metadata Settings and Notification Settings mutations.
+PASS - BRD/Development Tracker updated separately through application v04.00.
+
+V04.00 FEATURE SCOPE IMPLEMENTED
+-------------------------------
+- Controlled master data: Country, State, City, Mandir, Event/Prasang, Guruji/Person, Language, Media Type.
+- Hierarchy: Country -> State -> City -> Mandir.
+- Master code, aliases, active/inactive and safe-delete foundation.
+- Super Admin Metadata & Master Data settings UI.
+- UI-configurable mandatory metadata rules and year range.
+- Upload metadata fields: Year, Country, State, City, Mandir, Event, Person, Language, Media Type, Description, Internal Remarks, Source, Asset Status.
+- Same metadata enforcement for normal and chunk/resumable uploads.
+- Metadata shown in file detail/preview.
+- Search indexing/filter-ready foundation for new structured metadata.
+- Notification configuration foundation for Portal, Email, WhatsApp and Text SMS.
+- Super Admin channel master switches, provider fields and per-event routing matrix.
+- Provider passwords/tokens/API keys encrypted before persistence and masked from browser props.
+
+NOT RUNTIME-VERIFIED HERE
+-------------------------
+This execution environment does not contain Composer vendor dependencies, project node_modules, or Docker runtime.
+Therefore the following are NOT claimed as passed:
+- Laravel migration execution against MariaDB
+- PHPUnit feature tests
+- Full TypeScript type-check with installed React/Inertia dependency types
+- Vite production build
+- Docker/Coolify container startup
+- Live Meilisearch synchronization
+- Real SMTP / WhatsApp / SMS provider delivery
+
+REQUIRED STAGING CHECKS AFTER DEPLOYMENT
+----------------------------------------
+1. Run migrations against a staging copy of MariaDB and verify foreign keys/indexes.
+2. Login as Super Admin; verify Settings -> Metadata & Master Data CRUD and hierarchy.
+3. Create at least Country -> State -> City -> Mandir plus Event and Person masters.
+4. Verify required metadata rules block incomplete uploads and accept valid metadata.
+5. Verify both <50MB normal upload and >50MB resumable upload persist identical metadata.
+6. Verify metadata displays correctly in file details.
+7. Sync Settings to Meilisearch and validate Year/Event/Person/City/Language terms are indexed.
+8. Verify Settings -> Notifications is visible only to Super Admin.
+9. Save SMTP/WhatsApp/SMS credentials; reload and confirm secrets show only as saved/masked, never plaintext.
+10. Keep non-portal channels OFF until Notification Delivery workers are implemented and provider credentials are validated.
+11. Run PHPUnit, npm ci, TypeScript build, Vite production build, queue worker and Docker/Coolify smoke test.
+
+RESULT
+------
+Static/code validation: PASS within available environment.
+Production readiness: REQUIRES staging/runtime validation listed above.

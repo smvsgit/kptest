@@ -1,0 +1,94 @@
+SMVS Karyalay Portal - Validation Report
+Application Version: 12.00
+Release: UAT & Go-Live Readiness
+Date: 2026-09-07
+
+STATIC / SOURCE VALIDATION COMPLETED
+------------------------------------
+PASS - Application version synchronized: VERSION=12.00, config/version.php current=12.00, previous=11.00.
+PASS - PHP syntax lint: 136 PHP files across app/config/database/routes/tests.
+PASS - TypeScript/TSX syntax/transpile parse: 22 files, 0 syntax diagnostics.
+PASS - package.json, package-lock.json, composer.json JSON parse.
+PASS - docker-compose.yml YAML parse.
+PASS - package.json/package-lock root dependency parity.
+PASS - v12 migration adds UAT cases, readiness snapshots and go-live review records.
+PASS - 11 P0 UAT cases (AC-01 through AC-14 groupings) are seeded as Pending, not falsely pre-passed.
+PASS - Super Admin-only readiness/UAT/go-live routes are present.
+PASS - Passed UAT requires execution notes or evidence reference; changing result clears sign-off.
+PASS - Final Go-Live approval always creates a fresh server-side readiness snapshot and refuses approval while blocking checks remain.
+PASS - Automated checks cover version, APP_KEY presence, DB, migrations, private media write probe, queue failed jobs, scheduler heartbeat, audit chain, search availability, integration/source health, backup/RPO readiness, restore-test evidence, notification configuration, signed UAT matrix, Management dependencies and operational owners/change freeze.
+PASS - `readiness:heartbeat` is scheduled every minute and `readiness:check` exits non-zero on blocking failures.
+PASS - Management dependencies support Pending / Resolved / Risk Accepted and Pending is blocking.
+PASS - Go-live operational owners/change-freeze controls are present.
+PASS - UAT/readiness CSV export and browser print/save-PDF surface are present.
+PASS - UAT/readiness/go-live tables are included in encrypted application backup scope.
+PASS - UAT execution guide and Go-Live runbook are included in source.
+PASS - Feature-test source added for UAT authorization/evidence/sign-off, Management dependencies and refused early go-live approval.
+PASS - Runtime Google Fonts / Unsplash / browser JSZip source references remain absent.
+PASS - Updated BRD/Development Tracker v3.2 counts independently verified: 128 total = 88 Done + 29 WIP + 11 Pending + 0 Blocked; P0 = 53 Done / 20 WIP / 2 Pending; P1 = 35 Done / 9 WIP / 9 Pending.
+PASS - Updated tracker rendered to 67 PNG pages and all pages visually inspected, including full-size review of manager/release-log pages; no clipping/overlap/unreadable-layout defects observed.
+
+V12.00 FUNCTIONAL SCOPE PRESENT IN SOURCE
+-----------------------------------------
+- Settings -> UAT / Go-Live Super Admin control center.
+- P0 UAT execution results: Pending, WIP, Passed, Failed, Blocked.
+- Execution notes, evidence reference, executor/timestamp, explicit sign-off user/timestamp.
+- Signed case approval is invalidated when the result/evidence is changed.
+- Automated environment/readiness snapshot history.
+- Blocking vs advisory readiness checks.
+- Scheduler heartbeat and CLI deployment gate.
+- Explicit Management dependency resolution / formal risk acceptance.
+- Deployment / rollback / business sign-off / smoke-test / support ownership.
+- Planned go-live window, rollback decision window and change-freeze confirmation.
+- Fresh-snapshot final go-live Approval / Rejected review record with audit trail.
+- UAT/readiness CSV release-evidence export and browser print/save-PDF.
+- UAT/readiness/go-live records protected by v11 encrypted backup scope.
+- UAT_EXECUTION_GUIDE.md and GO_LIVE_RUNBOOK.md.
+
+NOT RUNTIME-VERIFIED IN THIS BUILD ENVIRONMENT
+----------------------------------------------
+The project Composer vendor/ tree, node_modules/ tree and Docker runtime are not available here. Therefore the following are NOT claimed as passed:
+1. Laravel boot / `php artisan migrate` against MariaDB.
+2. PHPUnit execution including UatReadinessTest.
+3. `npm ci` + Vite production build / full dependency-aware TypeScript checking.
+4. Docker/Coolify application, worker, scheduler, MariaDB and Meilisearch integration runtime.
+5. Fresh scheduler heartbeat in the deployed environment.
+6. Real production-like queue processing and failed-job behavior.
+7. Real NAS mount, Google Drive credential/network and YouTube browser behavior.
+8. Real SMTP / WhatsApp / Text SMS provider delivery used by production.
+9. Actual backup restore into a fresh staging DB with matching APP_KEY.
+10. Multi-role, multi-department browser UAT for login/access/upload/search/preview/version/audit.
+11. Non-technical user usability sign-off.
+12. Production-scale performance/load measurement.
+
+TRACKER STATUS INTERPRETATION
+-----------------------------
+Development infrastructure for UAT/go-live execution is delivered, but acceptance criteria are not pre-passed.
+- Done: 88
+- WIP: 29
+- Pending: 11
+- Blocked: 0
+- Overall Done: 68.8%
+- Module M Testing/UAT/Go-Live: 0 Done / 11 WIP / 1 Pending.
+
+The Go-Live checklist item remains Pending until all P0 UAT cases are actually Passed + signed off and blocking automated/dependency gates are cleared.
+
+REQUIRED STAGING / GO-LIVE GATE
+-------------------------------
+1. Backup staging DB/media/configuration before deployment.
+2. Deploy exact v12.00 artifact and run migrations.
+3. Run queue workers and scheduler; verify readiness heartbeat becomes fresh.
+4. Execute UAT_EXECUTION_GUIDE.md with separate roles and at least two departments.
+5. Record evidence + sign-off for every P0 UAT case in Settings -> UAT / Go-Live.
+6. Execute real NAS/Drive/YouTube/provider/browser tests.
+7. Perform and record an actual fresh-DB restore test with matching APP_KEY.
+8. Resolve or formally risk-accept every Management dependency.
+9. Record deployment, rollback, business, smoke-test and support owners; confirm change freeze.
+10. Run `php artisan readiness:check`; any non-zero result blocks go-live approval.
+11. Follow GO_LIVE_RUNBOOK.md and run final Automated Checks immediately before final approval.
+12. If defects are found, create a scoped 12.01/12.02 stabilization release; do not bypass unresolved UAT by starting a new major module.
+
+RESULT
+------
+Static/source validation: PASS within the available environment.
+UAT / production go-live: INTENTIONALLY NOT PASSED until real staging execution and sign-off complete.
