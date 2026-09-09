@@ -1,5 +1,17 @@
 # Karyalay Portal Changelog
 
+## 13.06 - 2026-09-09 - Minor
+
+**Release:** Sidebar Navigation Blank-Screen Fix
+
+- Fixed the long-standing dashboard navigation failure where selecting a sidebar module could leave the browser on a completely blank/dark React page while the URL remained unchanged; refreshing returned to Browse Files because the selected module existed only in local component state.
+- Removed lazy/dynamic imports from the six critical sidebar modules (Batch Upload, Access Requests, Notifications, Dashboards & Reports, Integrations & Health, Settings). These modules are now part of the primary dashboard bundle, so navigation no longer depends on loading a separate JavaScript chunk after the click. Heavy modals remain lazy-loaded.
+- Added URL-backed dashboard panel navigation using the `panel` query parameter (`?panel=upload`, `?panel=access`, `?panel=reports`, `?panel=integrations`, `?panel=settings`, `?panel=notifications`). Refresh and browser Back/Forward now restore the selected module instead of silently resetting to Browse Files.
+- Added a panel-level React error boundary so an unexpected client-side rendering error is contained inside the affected module and cannot unmount the entire application shell into a blank screen.
+- Browse/search/category actions intentionally return to the Browse Files panel and remove the panel query parameter.
+- Preserved all existing completed features, database/data architecture, v13.05 Coolify runtime permission fix, and persistent media bind mount for app/worker/scheduler.
+- No UAT, Management policy dependency, performance verification, or Go-Live item is marked complete by this bug-fix release.
+
 ## 13.05 - 2026-09-08 - Minor
 
 **Release:** Coolify Runtime Cache Permission Fix

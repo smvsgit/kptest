@@ -35,7 +35,7 @@ class DashboardController extends Controller
     private const FILTER_KEYS = [
         'search','scope','type','sort','department_id','category_id','subcategory_id','access_policy',
         'year','country_id','state_id','city_id','mandir_id','event_id','person_id','language_id','media_type_id',
-        'asset_status','source_type','uploaded_by','date_from','date_to','quick_view','page',
+        'asset_status','source_type','uploaded_by','date_from','date_to','quick_view','panel','page',
     ];
 
     public function index(Request $request, SearchIndexService $searchIndex, MediaAccessService $access, IntegrationHealthService $integrationHealth, BackupService $backups, ReadinessService $readiness)
