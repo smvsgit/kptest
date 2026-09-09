@@ -1,5 +1,16 @@
 # Karyalay Portal Changelog
 
+## 13.05 - 2026-09-08 - Minor
+
+**Release:** Coolify Runtime Cache Permission Fix
+
+- Fixed the post-deployment Laravel health failure where `bootstrap/cache/config.php` was created as a root-only file and Apache (`www-data`) failed with `Permission denied`, followed by `ReflectionException: Class "config" does not exist`.
+- Root cause was the v13.04 entrypoint using process-wide `umask 077` while generating the persistent runtime `APP_KEY`; that restrictive umask remained active for later `package:discover`, `config:cache`, `route:cache`, and `view:cache` commands.
+- Scoped the private-key `umask 077` to a subshell so it applies only to `.runtime-app-key`, then explicitly restores runtime cache creation to `umask 022`.
+- Added post-cache ownership/mode normalization for `bootstrap/cache` and compiled views so Apache can read generated Laravel cache files reliably.
+- Preserved the persistent media bind mount for `app`, `worker`, and `scheduler`: `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+- No business feature, database schema, or stored-media architecture change in this deployment-health release.
+
 ## 13.04 - 2026-09-08 - Minor
 
 **Release:** Full Coolify Deployment Fix Bundle
