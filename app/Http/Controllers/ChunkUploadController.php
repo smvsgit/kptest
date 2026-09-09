@@ -42,7 +42,7 @@ class ChunkUploadController extends Controller
             'language_id'=>['nullable',Rule::exists('master_data_values','id')->where('type','language')->where('is_active',true)],
             'media_type_id'=>['nullable',Rule::exists('master_data_values','id')->where('type','media_type')->where('is_active',true)],
             'description'=>'nullable|string|max:5000','internal_remarks'=>'nullable|string|max:5000',
-            'source_type'=>'nullable|in:local,nas,google-drive,youtube','asset_status'=>'nullable|in:active,draft,review,approved,published,archived,inactive,broken','folder_id'=>'nullable|exists:media_folders,id','watermark_enabled'=>'nullable|boolean',
+            'source_type'=>'nullable|in:local,nas,google-drive,youtube','asset_status'=>'nullable|in:draft,active','folder_id'=>'nullable|exists:media_folders,id','watermark_enabled'=>'nullable|boolean',
         ]);
 
         $uploadPolicy->validateFile($request->filename,(int)$request->total_size);
@@ -95,7 +95,7 @@ class ChunkUploadController extends Controller
             'name'=>$request->filename,'type'=>$type,'size'=>$assembled,'category_id'=>$request->category_id,'subcategory_id'=>$request->subcategory_id,'department_id'=>$departmentId,'folder_id'=>$request->folder_id,'watermark_enabled'=>$request->has('watermark_enabled')?$request->boolean('watermark_enabled'):null,
             'year'=>$request->integer('year')?:null,'country_id'=>$request->country_id,'state_id'=>$request->state_id,'city_id'=>$request->city_id,'mandir_id'=>$request->mandir_id,
             'event_id'=>$request->event_id,'person_id'=>$request->person_id,'language_id'=>$request->language_id,'media_type_id'=>$request->media_type_id,
-            'description'=>$request->description,'internal_remarks'=>$request->internal_remarks,'source_type'=>$request->input('source_type','local'),'asset_status'=>$request->input('asset_status','active'),
+            'description'=>$request->description,'internal_remarks'=>$request->internal_remarks,'source_type'=>$request->input('source_type','local'),'asset_status'=>$request->input('asset_status','draft'),
             'access_policy'=>$request->access_policy?:'public','download_allowed'=>$request->boolean('download_allowed',true),'tags'=>$tags,'resolution'=>$resolution,
             'file_path'=>$finalRel,'thumbnail_path'=>null,'uploaded_by'=>$request->user()?->id,'owner_user_id'=>$request->user()?->id,
         ]);

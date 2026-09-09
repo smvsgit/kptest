@@ -1,9 +1,9 @@
-# Karyalay Portal v13.01 - Go-Live Runbook
+# Karyalay Portal v14.00 - Go-Live Runbook
 
 
-## v13.01 deployment-fix precondition
+## v14.00 release precondition
 
-Before treating a staging result as release evidence, confirm the portal footer/System Information reports **13.01**, the deployed source checksum matches the approved v13.01 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
+Before treating a staging result as release evidence, confirm the portal footer/System Information reports **14.00**, the deployed source checksum matches the approved v14.00 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
 
 ## 1. Before the deployment window
 
@@ -18,17 +18,17 @@ Before treating a staging result as release evidence, confirm the portal footer/
 ## 2. Deployment
 
 1. Put the application into the approved maintenance/traffic-control state if required by the deployment plan.
-2. Deploy the exact v13.01 artifact and matching environment configuration.
+2. Deploy the exact v14.00 artifact and matching environment configuration.
 3. Run migrations: `php artisan migrate --force`.
 4. Ensure queue workers are running.
-5. Ensure the scheduler calls `php artisan schedule:run` every minute. The v13 scheduler heartbeat must become fresh within five minutes.
+5. Ensure the scheduler calls `php artisan schedule:run` every minute. The current-release scheduler heartbeat must become fresh within five minutes.
 6. Run Meilisearch settings sync/re-index if the deployment changed or rebuilt the search service.
 7. Run integration health checks against real production mounts/credentials.
 8. Run `php artisan readiness:check` again.
 
 ## 3. Production smoke test
 
-The recorded smoke-test owner verifies: login, Browse/Search, one representative preview, Protected request/decision, authorized download, notification channel expected for the environment, integration/source open, audit event creation and backup/readiness status. Never use destructive permanent delete against real business data as a smoke test.
+The recorded smoke-test owner verifies: login, Browse/Search, one representative preview, Protected request/decision, authorized download, User Guide entitlement/menu, notification channel expected for the environment, integration/source open, persistent Local Storage host/container/probe path, audit event creation and backup/readiness status. Never use destructive permanent delete against real business data as a smoke test.
 
 ## 4. Final release gate
 

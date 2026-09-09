@@ -62,6 +62,8 @@ services:
       MEILISEARCH_KEY: "${MEILISEARCH_KEY:-${SERVICE_PASSWORD_64_MEILI}}"
       MEILISEARCH_INDEX: "${MEILISEARCH_INDEX:-karyalay_media_files}"
       FILESYSTEM_DISK: media
+      MEDIA_UPLOAD_HOST_PATH: "/srv/media/projects/karyalayportal/uploads"
+      MEDIA_UPLOAD_CONTAINER_PATH: "/var/www/html/storage/app/media/uploads"
     expose:
       - "80"
     volumes:
@@ -116,6 +118,8 @@ services:
       DB_PASSWORD: "${SERVICE_PASSWORD_64_DATABASE}"
       QUEUE_CONNECTION: database
       FILESYSTEM_DISK: media
+      MEDIA_UPLOAD_HOST_PATH: "/srv/media/projects/karyalayportal/uploads"
+      MEDIA_UPLOAD_CONTAINER_PATH: "/var/www/html/storage/app/media/uploads"
       MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_KEY: "${MEILISEARCH_KEY:-${SERVICE_PASSWORD_64_MEILI}}"
       MEILISEARCH_INDEX: "${MEILISEARCH_INDEX:-karyalay_media_files}"
@@ -156,6 +160,8 @@ services:
       DB_PASSWORD: "${SERVICE_PASSWORD_64_DATABASE}"
       QUEUE_CONNECTION: database
       FILESYSTEM_DISK: media
+      MEDIA_UPLOAD_HOST_PATH: "/srv/media/projects/karyalayportal/uploads"
+      MEDIA_UPLOAD_CONTAINER_PATH: "/var/www/html/storage/app/media/uploads"
       MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_KEY: "${MEILISEARCH_KEY:-${SERVICE_PASSWORD_64_MEILI}}"
       MEILISEARCH_INDEX: "${MEILISEARCH_INDEX:-karyalay_media_files}"

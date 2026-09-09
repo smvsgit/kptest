@@ -26,6 +26,7 @@ use App\Services\SearchIndexService;
 use App\Services\IntegrationHealthService;
 use App\Services\BackupService;
 use App\Services\ReadinessService;
+use App\Services\UserGuideService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,7 +39,7 @@ class DashboardController extends Controller
         'asset_status','source_type','uploaded_by','date_from','date_to','quick_view','panel','page',
     ];
 
-    public function index(Request $request, SearchIndexService $searchIndex, MediaAccessService $access, IntegrationHealthService $integrationHealth, BackupService $backups, ReadinessService $readiness)
+    public function index(Request $request, SearchIndexService $searchIndex, MediaAccessService $access, IntegrationHealthService $integrationHealth, BackupService $backups, ReadinessService $readiness, UserGuideService $userGuide)
     {
         $user = $request->user();
         $simulatedRole = $user->role === 'super-admin' ? session('simulated_role', 'super-admin') : $user->role;
@@ -208,7 +209,9 @@ class DashboardController extends Controller
                 'watermark'=>SystemSetting::valueFor('watermark.settings',[]), 'lifecycle'=>SystemSetting::valueFor('lifecycle.settings',[]),
                 'type_required'=>SystemSetting::valueFor('metadata.type_required',[]), 'audit_retention'=>SystemSetting::valueFor('audit.retention',[]),
                 'recycle_retention'=>SystemSetting::valueFor('recycle.retention',[]), 'storage_quotas'=>SystemSetting::valueFor('storage.quotas',[]),
+                'user_guide'=>$user->role==='super-admin' ? $userGuide->settings() : [],
             ],
+            'userGuideAccess'=>$userGuide->accessSummary($user),
             'simulatedRole' => $simulatedRole,
             'appVersion' => [
                 'current' => config('version.current'), 'previous' => config('version.previous'), 'release_type' => config('version.release_type'),

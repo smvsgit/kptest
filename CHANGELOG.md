@@ -1,5 +1,19 @@
 # Karyalay Portal Changelog
 
+## 14.00 - 2026-09-09 - Major
+
+**Release:** Governed User Guide & Persistent Storage Verification
+
+- Added a deployable **User Guide Manual** module with 18 logical pages, searchable in-portal navigation, authorized Print/HTML view, and bundled Word manual.
+- Added Super Admin User Guide governance by role default, department override, and specific-user override (`0-18` pages). `0` hides the menu/direct guide content; precedence is User > Department > Role; Super Admin retains 18/18 pages for recovery.
+- Enforced guide rights server-side. Partial entitlement returns only authorized HTML/UI pages; complete DOCX download requires 18/18 entitlement. Added no-store/nosniff/CSP/referrer protections for the printable HTML response.
+- Integrated aggressive connection-audit fixes from the v13.06 stabilization baseline: real 2FA web middleware enforcement with safe mandatory-enrollment path and intended redirect after challenge; branding propagation into auth/shell/reset flows; dedicated lifecycle transition governance/status history; Scheduled Reports UI/API management and scheduler policy wiring.
+- Corrected Portal Local storage observability so health/capacity and readiness write/read/delete probes target the actual nested persistent upload bind (`/var/www/html/storage/app/media/uploads`) instead of the parent `app-storage` volume. Integrations & Health now displays the authoritative host, container, and checked/probe paths.
+- Kept the required persistent media bind on `app`, `worker`, and `scheduler`: `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`. Container-reported host path is fixed to the same literal bind so UI cannot drift from Compose if an unrelated environment value is set.
+- Added/expanded regression tests for User Guide access, 2FA enforcement, lifecycle governance, and current version binding.
+- Updated the Final BRD to v3.5 / App v14.00 and bundled the complete User Guide DOCX + deployable HTML manual in the full source.
+- Integrated UAT, production-scale performance verification, Management policy approvals, backup/restore runtime evidence, and final Go-Live remain open and are not marked Done by this release.
+
 ## 13.06 - 2026-09-09 - Minor
 
 **Release:** Sidebar Navigation Blank-Screen Fix

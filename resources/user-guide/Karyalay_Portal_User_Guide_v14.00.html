@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="gu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>કાર્યાલય પોર્ટલ - User Guide Manual v14.00</title>
+<style>
+:root{color-scheme:light;--ink:#17323a;--muted:#61777d;--line:#d9e4e7;--accent:#1f7a78;--soft:#eef7f6;--warn:#fff7e6;--danger:#fff0f0}*{box-sizing:border-box}body{margin:0;background:#f5f8f9;color:var(--ink);font-family:'Hind Vadodara','Noto Sans Gujarati','Noto Sans',sans-serif;line-height:1.65}.guide-document{max-width:1080px;margin:0 auto;padding:32px}.guide-cover{background:#fff;border:1px solid var(--line);border-radius:18px;padding:40px;margin-bottom:24px}.guide-cover h1{margin:0 0 10px;font-size:34px}.guide-cover p{margin:4px 0;color:var(--muted)}.guide-page{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;margin:0 0 22px;break-inside:avoid}.guide-page h2{font-size:26px;margin:0 0 8px;color:#155e5c}.guide-page h3{font-size:18px;margin:24px 0 8px}.guide-page p{margin:8px 0}.guide-page ul,.guide-page ol{padding-left:24px}.guide-page li{margin:6px 0}.guide-callout{padding:12px 14px;border-left:4px solid var(--accent);background:var(--soft);border-radius:8px;margin:14px 0}.guide-warning{padding:12px 14px;border-left:4px solid #d78b16;background:var(--warn);border-radius:8px;margin:14px 0}.guide-danger{padding:12px 14px;border-left:4px solid #c33;background:var(--danger);border-radius:8px;margin:14px 0}.guide-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}.guide-table th,.guide-table td{border:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}.guide-table th{background:#f0f6f6}.guide-kbd{font-family:ui-monospace,monospace;background:#edf2f3;border:1px solid #d5e0e3;border-radius:4px;padding:1px 5px}.guide-steps{counter-reset:step;list-style:none;padding-left:0}.guide-steps>li{counter-increment:step;position:relative;padding-left:42px;min-height:30px}.guide-steps>li:before{content:counter(step);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}.guide-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}.guide-meta span{padding:5px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:12px}@media print{body{background:#fff}.guide-document{max-width:none;padding:0}.guide-cover,.guide-page{border:0;border-radius:0;box-shadow:none;page-break-after:always;margin:0;padding:18mm}.guide-page:last-child{page-break-after:auto}}@media(max-width:700px){.guide-document{padding:14px}.guide-cover,.guide-page{padding:20px}.guide-page h2{font-size:22px}.guide-table{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="guide-document">
+<div class="guide-cover">
+<h1>કાર્યાલય પોર્ટલ - User Guide Manual</h1>
+<p><strong>Application Release:</strong> v14.00</p>
+<p><strong>Purpose:</strong> Portal users, Department Admin અને Super Admin માટે step-by-step operational guide.</p>
+<p>આ manual portalમાં role અને Super Admin દ્વારા નક્કી કરાયેલા page-rights મુજબ જ દેખાય છે. HTML/Word manual download પણ એ જ server-side access rules હેઠળ રહે છે.</p>
+</div>
+
+<section class="guide-page" data-page="1" data-title="Getting Started અને Portal Navigation">
+<h2>પાનું 1 - Getting Started અને Portal Navigation</h2>
+<p>કાર્યાલય પોર્ટલનું મુખ્ય કામ સંસ્થાના digital files/assets ને એક centralized, secure અને searchable interfaceમાં ઉપલબ્ધ કરવાનું છે. Sidebar, top search, notification bell, profile અને role-aware panels મુખ્ય navigation છે.</p>
+<h3>Login પછી શું દેખાશે?</h3>
+<ul><li><strong>Browse Files:</strong> Search, filters, favorites, recently viewed અને file preview.</li><li><strong>Batch Upload:</strong> Upload અધિકાર ધરાવતા users માટે.</li><li><strong>Access Requests:</strong> Protected files માટે request/review workflow.</li><li><strong>Dashboards & Reports:</strong> Role મુજબ metrics અને exports.</li><li><strong>Integrations & Health:</strong> Super Admin/Department Admin માટે source health.</li><li><strong>User Guide Manual:</strong> આ guide; menu visibility Super Admin policy મુજબ.</li><li><strong>Settings:</strong> Authorized admin configuration.</li></ul>
+<div class="guide-callout"><strong>Navigation rule:</strong> Sidebar menu click પછી URLમાં <span class="guide-kbd">?panel=...</span> બદલાય છે. Browser Refresh/Back/Forward પછી પણ selected panel જાળવાય છે.</div>
+<h3>Theme અને Profile</h3><p>Top-right Sun/Moon buttonથી theme બદલી શકાય. User name/avatar પર click કરવાથી Profile page ખુલે છે.</p>
+</section>
+
+<section class="guide-page" data-page="2" data-title="Login, Password Reset અને 2FA">
+<h2>પાનું 2 - Login, Password Reset અને Two-Factor Authentication</h2>
+<ol class="guide-steps"><li>Portal URL ખોલો અને registered email/password દાખલ કરો.</li><li>Password ભૂલાઈ ગયો હોય તો <strong>Forgot Password</strong> પસંદ કરો.</li><li>Reset link મળ્યા પછી new password set કરો. Token expiry/single-use rules લાગુ રહે છે.</li><li>જો 2FA policy તમારા role માટે mandatory હોય, તો TOTP authenticator setup અથવા challenge પૂર્ણ કરો.</li></ol>
+<h3>2FA Setup</h3><p>Profile → Two-Factor Authenticationમાંથી QR/secret setup કરો, code confirm કરો અને recovery codes સુરક્ષિત સ્થળે રાખો.</p>
+<div class="guide-warning"><strong>Recovery codes:</strong> દરેક code emergency one-time use માટે છે. Codes plain textમાં share ન કરો.</div>
+<h3>Account Lockout</h3><p>Repeated invalid loginથી temporary lockout થઈ શકે. Disabled/Inactive account login કરી શકતું નથી. Super Admin account policy management Security settingsમાં ઉપલબ્ધ છે.</p>
+</section>
+
+<section class="guide-page" data-page="3" data-title="Browse, Search, Filters, Favorites અને Recent">
+<h2>પાનું 3 - Browse, Search, Filters, Favorites અને Recently Viewed</h2>
+<p>Browse Files portalનું primary discovery area છે. Search bar filename, keywords, tags અને configured metadata પર કાર્ય કરે છે.</p>
+<h3>Recommended Search Flow</h3><ol class="guide-steps"><li>Search barમાં keyword લખો.</li><li>Scope: <strong>Everywhere</strong> અથવા <strong>Current Department</strong> પસંદ કરો.</li><li>Type, Department, Access Policy, Year, Event, Location, Owner, Source, Status અને Language filters લાગુ કરો.</li><li>જરૂરી filter combination વારંવાર વાપરવો હોય તો Saved Search તરીકે save કરો.</li></ol>
+<h3>Quick Views</h3><ul><li><strong>Favorites:</strong> Star/bookmark કરેલ assets.</li><li><strong>Recently Viewed:</strong> તમે તાજેતરમાં ખોલેલા assets.</li></ul>
+<div class="guide-callout">Search engine unavailable હોય તો application DB fallback વાપરી શકે છે; Integrations/Health અને readiness panelમાં degraded state ચેક કરો.</div>
+</section>
+
+<section class="guide-page" data-page="4" data-title="Preview, Streaming અને Download Controls">
+<h2>પાનું 4 - Preview, Streaming અને Download Controls</h2>
+<p>File card/open actionથી Preview modal ખૂલે છે. Images, supported documents/PDF, audio અને video માટે preview/streaming શક્ય છે.</p>
+<table class="guide-table"><tr><th>Action</th><th>Meaning</th></tr><tr><td>Preview/View</td><td>Content screen પર જોવાની permission.</td></tr><tr><td>Download</td><td>File bytes download કરવાની અલગ permission.</td></tr><tr><td>Watermark</td><td>Protected preview પર policy મુજબ user-identifiable/internal overlay.</td></tr><tr><td>Signed Download</td><td>Approved protected download માટે time-limited server link.</td></tr></table>
+<div class="guide-warning">View permission હોય એટલે Download permission automatic નથી. Protected file માટે approval scope ધ્યાનમાં લો.</div>
+</section>
+
+<section class="guide-page" data-page="5" data-title="Public, Protected, Private અને Access Request">
+<h2>પાનું 5 - Access Policy અને Protected Request Workflow</h2>
+<table class="guide-table"><tr><th>Policy</th><th>Portal Behaviour</th></tr><tr><td>Public</td><td>Registered internal users માટે policy મુજબ visible/accessible; public internet માટે નહીં.</td></tr><tr><td>Protected</td><td>Metadata visible થઈ શકે, content approval સુધી locked.</td></tr><tr><td>Private</td><td>Unauthorized department/users માટે record hidden.</td></tr></table>
+<h3>Request Access</h3><ol class="guide-steps"><li>Protected asset ખોલો અને Request Access પસંદ કરો.</li><li>Reason/Purpose લખો.</li><li>View Only અથવા View + Download પસંદ કરો.</li><li>Department Admin/Super Admin decisionની રાહ જુઓ.</li><li>Approve/Reject/More Information result Notification Centerમાં જુઓ.</li></ol>
+<p>Temporary approvalમાં expiry હોઈ શકે છે. Expiry પછી entitlement automatically revoke થાય છે.</p>
+</section>
+
+<section class="guide-page" data-page="6" data-title="Batch Upload અને Resumable Upload">
+<h2>પાનું 6 - Batch Upload અને Large File Handling</h2>
+<p>Upload panel Super Admin, Department Admin અને Department Operator જેવા permitted roles માટે ઉપલબ્ધ છે.</p>
+<ol class="guide-steps"><li>એક કે વધુ files પસંદ કરો.</li><li>Common metadata: Category, Event, Year, Location, Language વગેરે ભરો.</li><li>Required fields red/required marker મુજબ પૂરા કરો.</li><li>Queue શરૂ કરો. દરેક fileનું size, progress %, status અને retry controls જુઓ.</li><li>Large file threshold ઉપર resumable/chunk upload automatically વપરાઈ શકે છે.</li></ol>
+<div class="guide-callout"><strong>Persistent bytes:</strong> Actual uploaded source files <span class="guide-kbd">/var/www/html/storage/app/media/uploads</span>માં લખાય છે, જે Coolify hostના <span class="guide-kbd">/srv/media/projects/karyalayportal/uploads</span> સાથે bind-mounted છે.</div>
+<div class="guide-warning">Browser close/network interruption પછી resumable status ઉપલબ્ધ હોય તો Retry/Resume વાપરો. Duplicate warning આવે તો existing asset તપાસ્યા વગર auto-delete ન કરો.</div>
+</section>
+
+<section class="guide-page" data-page="7" data-title="Metadata, Categories અને Master Data">
+<h2>પાનું 7 - Metadata, Categories અને Master Data</h2>
+<p>Structured metadata search, governance અને lifecycle માટે મહત્વપૂર્ણ છે. Required metadata rules Admin દ્વારા configure થઈ શકે છે.</p>
+<h3>Common metadata</h3><ul><li>Owner Department, Uploader, Category/Sub-category</li><li>Year, Country, State, City, Mandir</li><li>Event/Prasang, Guruji/Person, Language, Media Type</li><li>Description, Internal Remarks, Tags</li><li>Access Policy, Download Allowed, Lifecycle Status</li></ul>
+<p>Master Data values Super Admin દ્વારા Settings → Metadata & Master Dataમાંથી manage થાય છે. Parent hierarchy (Country → State → City → Mandir) validate થાય છે.</p>
+</section>
+
+<section class="guide-page" data-page="8" data-title="Folders, Collections અને Related Assets">
+<h2>પાનું 8 - Folders, Collections અને Related Assets</h2>
+<p>Portalમાં flat files સિવાય logical organization ઉપલબ્ધ છે.</p>
+<ul><li><strong>Folder:</strong> Department-scoped operational grouping.</li><li><strong>Collection:</strong> Curated set of related assets.</li><li><strong>Event/Prasang:</strong> Event metadata દ્વારા cross-media grouping.</li><li><strong>Related Assets:</strong> Video ↔ Audio ↔ Photo ↔ Poster ↔ Document links.</li></ul>
+<div class="guide-callout">Related asset link content bytes duplicate કરતું નથી; logical relationship બનાવે છે.</div>
+</section>
+
+<section class="guide-page" data-page="9" data-title="Lifecycle, Version History, Archive અને Recycle Bin">
+<h2>પાનું 9 - Lifecycle, Versioning અને Recycle Bin</h2>
+<p>Governed lifecycle default workflow: <strong>Draft → Review → Approved → Published → Archived</strong>. Allowed transitions Admin policy મુજબ enforce થાય છે.</p>
+<h3>Versioning</h3><ul><li>Replacement version history immutable રહે છે.</li><li>Changed By, Changed Date, Change Note capture થાય છે.</li><li>Previous version restore કરવાથી નવો current version બને છે; old history destroy થતી નથી.</li></ul>
+<h3>Recycle Bin</h3><p>Normal delete soft-delete છે. Retention period દરમિયાન restore થઈ શકે છે. Permanent delete elevated authorization + audit હેઠળ છે.</p>
+<div class="guide-danger">Bulk Editથી lifecycle status bypass કરવાનો પ્રયાસ ન કરો. Lifecycle status dedicated transition actionથી જ બદલાય છે.</div>
+</section>
+
+<section class="guide-page" data-page="10" data-title="Notifications અને Escalation">
+<h2>પાનું 10 - Notifications, Preferences અને Escalation</h2>
+<p>Portal Notification Center unread/read state જાળવે છે. Configured provider મુજબ Email, WhatsApp અને Text SMS delivery પણ શક્ય છે.</p>
+<ul><li>Access request alerts</li><li>Approve/Reject/More Information result</li><li>File update/broken source/storage warning</li><li>Security/administrative alerts</li></ul>
+<p>Profile/preferencesમાં user allowed channels પસંદ કરી શકે છે; Central Admin master switch અંતિમ authority છે. Pending approvals માટે escalation scheduler configure કરી શકાય છે.</p>
+</section>
+
+<section class="guide-page" data-page="11" data-title="Dashboards, Reports અને Scheduled Reports">
+<h2>પાનું 11 - Dashboards, Reports, Exports અને Scheduled Reports</h2>
+<p>Dashboard content role-aware છે. Reportsમાં access/download, activity/security, storage, users, pending approvals અને operational data સામેલ થઈ શકે છે.</p>
+<h3>Exports</h3><p>Authorized reports CSV/XLSX અને browser Print/Save PDF દ્વારા export થઈ શકે છે.</p>
+<h3>Scheduled Reports</h3><ol class="guide-steps"><li>Super Admin Reports panelમાં Scheduled Reports section ખોલે.</li><li>Weekly/Monthly frequency, report type, output format અને recipients configure કરે.</li><li>Schedule enable/pause કરી શકાય.</li><li>Manual Run દ્વારા તરત run test કરી શકાય.</li><li>Run history, SHA-256 અને download output review કરો.</li></ol>
+</section>
+
+<section class="guide-page" data-page="12" data-title="Profile, Sessions અને User Security">
+<h2>પાનું 12 - Profile, Sessions અને User Security</h2>
+<p>Profile page પરથી basic information, password, preferred language, 2FA અને active sessions manage કરી શકાય છે.</p>
+<ul><li>Current session સિવાય અન્ય session logout</li><li>Logout All Other Sessions</li><li>Password change પછી security policy મુજબ sessions revoke થઈ શકે</li><li>Preferred language English/Gujarati</li></ul>
+<div class="guide-warning">Shared computer પર કામ પૂર્ણ થયા પછી Logout કરો. Browser બંધ કરવું session terminationનું substitute નથી.</div>
+</section>
+
+<section class="guide-page" data-page="13" data-title="Department Admin Operations">
+<h2>પાનું 13 - Department Admin Operations</h2>
+<p>Department Admin પોતાના department scopeમાં content, approvals, users/operations અને health visibility સંભાળી શકે છે.</p>
+<h3>Daily checklist</h3><ul><li>Pending Protected Access requests review</li><li>Recent uploads/metadata quality check</li><li>Broken/Missing source warnings review</li><li>Department storage usage/quota warning review</li><li>Lifecycle Review → Approved actions</li><li>Department activity report review</li></ul>
+<p>Delegated approval configured હોય તો delegate period અને reason verify કરો.</p>
+</section>
+
+<section class="guide-page" data-page="14" data-title="Integrations અને Persistent Storage Health">
+<h2>પાનું 14 - Integrations, Health અને Persistent Upload Storage</h2>
+<p>Integrations & Healthમાં Portal Local, NAS, Google Drive અને YouTube connections/source status દેખાય છે.</p>
+<h3>Portal Local Persistent Storage</h3>
+<table class="guide-table"><tr><th>Layer</th><th>Expected Path</th></tr><tr><td>Coolify host</td><td><span class="guide-kbd">/srv/media/projects/karyalayportal/uploads</span></td></tr><tr><td>Container</td><td><span class="guide-kbd">/var/www/html/storage/app/media/uploads</span></td></tr><tr><td>Laravel media disk parent</td><td><span class="guide-kbd">/var/www/html/storage/app/media</span></td></tr></table>
+<p>v14.00થી Local Storage health capacity/readiness probe ખાસ <strong>uploads bind path</strong> પર થાય છે, parent named volume પર નહીં. UI host path, container path અને actual checked path સ્પષ્ટ બતાવે છે.</p>
+<div class="guide-callout">Docker Composeમાં <span class="guide-kbd">app-storage:/var/www/html/storage</span> framework state માટે છે અને nested bind mount <span class="guide-kbd">/srv/media/.../uploads:/var/www/html/storage/app/media/uploads</span> actual uploaded source bytes માટે override કરે છે. બંને mounts એકસાથે હોવા જરૂરી છે.</div>
+<h3>Source States</h3><p>Active, Inactive, Missing, Broken status અને Last Check/Last Success review કરો. Repair/Retry/Replace actions authority મુજબ વાપરો.</p>
+</section>
+
+<section class="guide-page" data-page="15" data-title="Backup, Restore અને Disaster Recovery">
+<h2>પાનું 15 - Backup, Restore અને Disaster Recovery</h2>
+<p>Portal backup metadata/DB, configuration અને audit records માટે છે. NAS/Drive/YouTube source content backup ownership અલગ છે.</p>
+<ul><li>Manual/scheduled backup</li><li>Encrypted archive</li><li>SHA-256 verification</li><li>Fresh-DB restore support</li><li>Restore verification record</li><li>RPO/RTO readiness warnings</li></ul>
+<div class="guide-warning">APP_KEY backup archiveમાં intentionally સામેલ નથી. DR માટે matching APP_KEY secure custody અલગથી રાખવી આવશ્યક છે.</div>
+</section>
+
+<section class="guide-page" data-page="16" data-title="Super Admin Security, Network અને System Settings">
+<h2>પાનું 16 - Super Admin Security અને System Settings</h2>
+<p>Settingsમાં central operational controls ઉપલબ્ધ છે: Security, Network/VPN, 2FA, Maintenance, Branding, Upload policy, Metadata, Notifications, Backup, Retention, Quota, Search અને Lifecycle.</p>
+<h3>High-risk settings</h3><ul><li>Network allow-list/VPN changes પહેલા current Super Admin IP lockout check.</li><li>2FA mandatory policy enable કરતા enrollment readiness verify.</li><li>Audit/Recycle/Backup retention non-zero values Management approval પછી જ.</li><li>Permanent delete policy elevated અને audited રાખો.</li></ul>
+<p>Maintenance Mode enable કરવાથી non-exempt usersને configured notice મળે છે.</p>
+</section>
+
+<section class="guide-page" data-page="17" data-title="User Guide Rights, Branding અને Help Governance">
+<h2>પાનું 17 - User Guide Manual Access Rights</h2>
+<p>Super Admin Settings → User Guide Accessમાંથી manual કોને દેખાડવું અને કેટલા logical pages સુધી access આપવો તે configure કરી શકે છે.</p>
+<h3>Priority order</h3><ol><li><strong>User override</strong> - specific user માટે 0 થી 18 pages.</li><li><strong>Department override</strong> - department માટે 0 થી 18 pages.</li><li><strong>Role default</strong> - Department Admin / Operator / Viewer માટે 0 થી 18 pages.</li></ol>
+<p><strong>0 pages = manual hidden.</strong> Super Adminને management/repair માટે full 18 pages હંમેશા ઉપલબ્ધ રહે છે.</p>
+<div class="guide-callout">Default policy: Department Admin 14 pages, Department Operator 10 pages, Viewer 5 pages. Super Admin ઇચ્છે તો role/department/user override બદલી શકે છે.</div>
+<p>HTML print view અને Word manual download server-side same access countથી protected છે; URL guess કરીને extra page વાંચી શકાતું નથી.</p>
+</section>
+
+<section class="guide-page" data-page="18" data-title="Deployment, UAT અને Troubleshooting">
+<h2>પાનું 18 - Deployment, UAT અને Troubleshooting</h2>
+<h3>Coolify Deploy Checklist</h3><ol class="guide-steps"><li>Full merge-ready ZIPમાંથી source GitHub mainમાં merge/replace કરો.</li><li>Persistent media bind mapping ત્રણ services - app, worker, scheduler -માં verify કરો.</li><li>Coolify redeploy કરો; app health <span class="guide-kbd">/up</span> healthy થાય તેની રાહ જુઓ.</li><li>Migrations run થયાનું verify કરો.</li><li>Queue worker અને scheduler healthy હોવા જોઈએ.</li><li>Sidebar દરેક panel click કરો; URL <span class="guide-kbd">?panel=...</span> બદલાય અને refresh પછી same panel રહે.</li><li>Persistent storage healthમાં host/container upload paths expected values બતાવે છે.</li><li>Representative upload કરો, redeploy પછી file preview/download ફરી verify કરો.</li><li>Consolidated UAT guide મુજબ evidence record કરો.</li></ol>
+<h3>Blank Screen Troubleshooting</h3><p>Panel render error થાય તો v13.06+ Panel Error Boundary whole shellને blank થવા દેતી નથી. Browser console અને server logs બંને capture કરો.</p>
+<h3>Go-Live Rule</h3><div class="guide-danger">Development coding complete હોવું Go-Live approval નથી. All P0 UAT, backup/restore evidence, approved policy values અને readiness review પછી જ Go-Live Done mark કરવું.</div>
+<div class="guide-meta"><span>Manual v14.00</span><span>18 logical pages</span><span>Role/User/Department governed</span><span>Persistent storage verified path-aware</span></div>
+</section>
+</div>
+</body>
+</html>

@@ -1,7 +1,10 @@
 import { FormEvent } from 'react';
 import { useForm, Link } from '@inertiajs/react';
+import AuthBrand from '../../Components/AuthBrand';
+import { usePortalBranding } from '../../branding';
 
 export default function Register() {
+    usePortalBranding();
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
@@ -18,10 +21,7 @@ export default function Register() {
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <div className="auth-brand">
-                    <img src="/logo.svg" alt="SMVS" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    <span>SMVS Storage</span>
-                </div>
+                <AuthBrand />
 
                 <h1 className="auth-title">Create account</h1>
                 <p className="auth-subtitle">New accounts are assigned the <strong>Viewer</strong> role</p>

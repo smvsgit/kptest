@@ -146,8 +146,8 @@ After migrations, v12 seeds the P0 UAT matrix and Management dependency list. Su
 After migrations, confirm System Information shows **12.01**. Open `Settings -> UAT / Go-Live`: the panel should show v12.01, prior-release UAT approvals must not count toward the current release, and Sign Off must remain disabled until the current result is saved. A Passed restore-test must reference a backup with a Passed checksum verification. Resolved/Risk Accepted Management dependencies must contain a decision/approval note.
 
 
-## v13.01 first-login completion setup
+## v14.00 first-login completion setup
 
-After the fresh migration and initial Super Admin login, confirm **Settings -> System -> System Information** reports `13.01`. Then review the v13 policy areas before inviting users: Branding/default language, Maintenance Mode, login/password reset, 2FA, Network/VPN, lifecycle transitions, type-specific metadata, watermark, storage quotas, Scheduled Reports, Audit Retention and Recycle Bin Retention.
+After the fresh migration and initial Super Admin login, confirm **Settings -> System -> System Information** reports `14.00`. Then review the v14 policy areas before inviting users: Branding/default language, Maintenance Mode, login/password reset, 2FA, Network/VPN, lifecycle transitions, type-specific metadata, watermark, storage quotas, Scheduled Reports, Audit Retention, Recycle Bin Retention and User Guide Access rights. Confirm Integrations & Health shows the persistent host `/srv/media/projects/karyalayportal/uploads` and container `/var/www/html/storage/app/media/uploads` paths.
 
 Retention/RPO/RTO values intentionally remain policy-driven. A zero retention value means **Policy Pending / no automatic destructive pruning**, not a missing code feature. Configure production values only after Management/IT approval, and execute one complete staging UAT cycle before production.

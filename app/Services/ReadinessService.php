@@ -133,9 +133,10 @@ class ReadinessService
         }catch(\Throwable $e){$push('migrations','Database migrations','fail',true,'Migration state could not be verified: '.mb_substr($e->getMessage(),0,400));}
 
         try{
-            $probe='.readiness/probe-'.Str::uuid().'.txt';$disk=Storage::disk('media');$ok=$disk->put($probe,'karyalay-readiness')&&$disk->exists($probe);$disk->delete($probe);
-            $push('media_storage','Private media storage writable',$ok?'pass':'fail',true,$ok?'Write/read/delete probe passed.':'Media disk write probe failed.');
-        }catch(\Throwable $e){$push('media_storage','Private media storage writable','fail',true,'Media storage probe failed: '.mb_substr($e->getMessage(),0,400));}
+            $probe='uploads/.readiness/probe-'.Str::uuid().'.txt';$disk=Storage::disk('media');$ok=$disk->put($probe,'karyalay-readiness')&&$disk->exists($probe);$disk->delete($probe);
+            $host=(string)config('filesystems.media_upload_host_path','/srv/media/projects/karyalayportal/uploads');$container=(string)config('filesystems.media_upload_container_path',storage_path('app/media/uploads'));
+            $push('media_storage','Persistent upload storage writable',$ok?'pass':'fail',true,$ok?"Write/read/delete probe passed on uploads bind: {$host} -> {$container}.":'Persistent uploads bind write probe failed.',['host_path'=>$host,'container_path'=>$container,'probe_relative_path'=>$probe]);
+        }catch(\Throwable $e){$push('media_storage','Persistent upload storage writable','fail',true,'Media storage probe failed: '.mb_substr($e->getMessage(),0,400));}
 
         try{
             $failed=Schema::hasTable('failed_jobs')?(int)DB::table('failed_jobs')->count():0;
