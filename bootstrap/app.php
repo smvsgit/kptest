@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \App\Http\Middleware\EnforceUserSessionPolicy::class,
             \App\Http\Middleware\EnforcePortalMode::class,
+            \App\Http\Middleware\EnsureTwoFactor::class,
         ]);
         $middleware->alias([
             'role'=>\App\Http\Middleware\EnsureRole::class,

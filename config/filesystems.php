@@ -15,6 +15,12 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    // v14.00: user-upload bytes are persisted by a nested Coolify bind mount.
+    // Keep these paths explicit so health/readiness UI checks the bind mount itself,
+    // not the parent app-storage named volume.
+    'media_upload_host_path' => env('MEDIA_UPLOAD_HOST_PATH', '/srv/media/projects/karyalayportal/uploads'),
+    'media_upload_container_path' => env('MEDIA_UPLOAD_CONTAINER_PATH', storage_path('app/media/uploads')),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

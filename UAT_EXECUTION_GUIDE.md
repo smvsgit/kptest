@@ -1,7 +1,7 @@
-# Karyalay Portal v13.01 - UAT Execution Guide
+# Karyalay Portal v14.00 - UAT Execution Guide
 
 This guide is the execution companion for **Settings -> UAT / Go-Live**.
-> **v13.01 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
+> **v14.00 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
 
 A case is not complete merely because code exists. Execute it in the staging environment, record evidence, save the result, then sign off the Passed case.
 
@@ -24,7 +24,7 @@ Use separate test accounts for Super Admin, Department Admin, Department Operato
 11. **AC-14 - Non-technical usability**: representative users complete search/view/request/upload tasks without developer assistance and provide sign-off.
 
 
-## v13.00 additional regression focus
+## v14.00 consolidated regression focus
 
 During the same consolidated UAT cycle, explicitly include these feature-completion regressions inside the relevant AC cases:
 
@@ -40,6 +40,11 @@ During the same consolidated UAT cycle, explicitly include these feature-complet
 - Audit Retention / Recycle Bin Retention no-op at `0`, plus approved non-zero policy execution in isolated staging data.
 - Department quota/warning behavior using active + Recycle Bin + historical-version bytes.
 - Gujarati/English preference, branding, responsive critical flows, keyboard focus and Help/FAQ navigation.
+
+- User Guide Manual sidebar/menu visibility for 0-page vs authorized users; role default, department override and specific user override precedence; direct endpoint 403 when hidden; partial HTML contains no unauthorized logical pages; DOCX download denied unless 18/18.
+- Persistent Local Storage health reports host `/srv/media/projects/karyalayportal/uploads`, container `/var/www/html/storage/app/media/uploads`, and checks capacity/writability on that nested uploads bind rather than the parent `app-storage` volume.
+- Upload a representative asset, record its checksum/path, redeploy the same Coolify resource, then preview/download it again to prove media persistence across redeploy.
+- Sidebar User Guide/Reports/Integrations/Settings navigation updates `?panel=...`, survives refresh and Back/Forward, and an individual panel error does not blank the entire shell.
 
 ## Evidence standard
 

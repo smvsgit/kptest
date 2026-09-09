@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MediaFile;
 use App\Models\MediaFileVersion;
+use App\Models\MediaStatusHistory;
 use App\Services\AuditService;
 use App\Services\MediaAccessService;
 use App\Services\MediaVersionService;
@@ -110,6 +111,15 @@ class MediaLifecycleController extends Controller
                 'archived_at' => null,
                 'archived_by' => null,
             ])->save();
+        }
+        if ($before !== $mediaFile->asset_status) {
+            MediaStatusHistory::create([
+                'media_file_id' => $mediaFile->id,
+                'from_status' => $before,
+                'to_status' => $mediaFile->asset_status,
+                'note' => $data['archived'] ? 'Archive action.' : 'Restore from archive action.',
+                'changed_by' => $request->user()->id,
+            ]);
         }
         $search->upsert($mediaFile->fresh(['category','subcategory','department']));
         $audit->log($request, $data['archived'] ? 'media.archived' : 'media.unarchived', $mediaFile, $data['archived'] ? 'Media archived.' : 'Media restored from archive.', [

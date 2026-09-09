@@ -4,9 +4,9 @@ SMVS centralized intranet media and document portal.
 
 ## Current release
 
-- Version: `13.01`
-- Release: Remaining Feature Completion
-- Previous: `12.01`
+- Version: `14.00`
+- Release: Governed User Guide & Persistent Storage Verification
+- Previous: `13.06`
 - Version is visible in `Settings -> System -> System Information`.
 - **Development coding status:** remaining non-UAT feature backlog implemented; staging UAT/Management policy gates remain intentionally open.
 
@@ -64,6 +64,20 @@ After first deployment/redeploy, open `Settings -> Search` and use `Sync Setting
 
 
 
+
+## v14.00 Governed User Guide & Persistent Storage Verification
+
+- Adds a deployable **User Guide Manual** sidebar module with 18 logical guide pages, searchable in-portal navigation, authorized Print/HTML view and full Word manual delivery.
+- Super Admin controls User Guide visibility/page entitlement by role default, department override and specific user override. `0` pages hides the guide; precedence is User -> Department -> Role. Super Admin retains 18/18 pages for recovery/self-lockout prevention.
+- Partial-page users receive only server-filtered HTML/UI content; the complete DOCX download is available only to 18/18 entitled users.
+- Includes the aggressive connection-audit fixes for real 2FA middleware enforcement/enrollment/challenge return, branding propagation, governed lifecycle status transitions and Scheduled Reports UI/API wiring.
+- Corrects Local Storage observability so capacity/readiness health checks the actual persistent uploads bind at `/var/www/html/storage/app/media/uploads`, mapped from host `/srv/media/projects/karyalayportal/uploads`.
+- The required persistent media bind remains present on **app, worker and scheduler**. Uploaded source bytes continue to use `uploads/...` on the Laravel `media` disk.
+
+### v14.00 runtime acceptance focus
+
+After Coolify deployment, verify the User Guide rights at role/department/user levels, every URL-backed sidebar panel, the Local Storage host/container/probe paths shown under Integrations & Health, one representative upload, and that the uploaded asset survives a redeploy. Then run the full release-bound UAT/backup/restore/readiness cycle.
+
 ## v13.00 Remaining Feature Completion
 
 v13.00 completes the remaining non-testing feature implementation before the project moves to one consolidated staging/UAT cycle. Highlights:
@@ -81,7 +95,7 @@ v13.00 completes the remaining non-testing feature implementation before the pro
 
 ### Important release boundary
 
-Do not interpret “development coding complete” as “production accepted.” UAT cases remain release-bound and must be executed against the exact v13.01 artifact. Production-scale performance, real NAS/Drive/YouTube, providers, backup/restore, browser flows and Management policy values are staging/go-live gates.
+Do not interpret “development coding complete” as “production accepted.” UAT cases remain release-bound and must be executed against the exact v14.00 artifact. Production-scale performance, real NAS/Drive/YouTube, providers, backup/restore, browser flows and Management policy values are staging/go-live gates.
 
 ## v12.01 Pre-Go-Live Stabilization
 

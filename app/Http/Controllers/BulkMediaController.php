@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Department;
 use App\Models\MasterDataValue;
 use App\Models\MediaFile;
+use App\Models\MediaStatusHistory;
 use App\Models\Subcategory;
 use App\Services\AuditService;
 use App\Services\SearchIndexService;
@@ -30,7 +31,7 @@ class BulkMediaController extends Controller
             'metadata.language_id'=>['nullable',Rule::exists('master_data_values','id')->where('type','language')],
             'metadata.media_type_id'=>['nullable',Rule::exists('master_data_values','id')->where('type','media_type')],
             'metadata.description'=>'nullable|string|max:5000','metadata.internal_remarks'=>'nullable|string|max:5000',
-            'metadata.source_type'=>'nullable|in:local,nas,google-drive,youtube','metadata.asset_status'=>'nullable|in:active,draft,review,approved,published,archived,inactive,broken',
+            'metadata.source_type'=>'nullable|in:local,nas,google-drive,youtube','metadata.asset_status'=>'prohibited',
             'tags_mode'=>'nullable|in:add,remove,replace','tags'=>'nullable|array|max:100','tags.*'=>'string|max:80',
             'category_id'=>'nullable|exists:categories,id','subcategory_id'=>'nullable|exists:subcategories,id',
             'department_id'=>['nullable',Rule::exists('departments','id')->where('is_active',true)->where('is_system',false)],
@@ -83,7 +84,7 @@ class BulkMediaController extends Controller
                 }elseif(($data['archive_mode']??null)==='unarchive' && $file->asset_status==='archived'){
                     $updates['asset_status']=$file->archived_from_status ?: 'active';$updates['archived_from_status']=null;$updates['archived_at']=null;$updates['archived_by']=null;
                 }
-                if($updates){$file->fill($updates);$file->save();$fresh=$file->fresh(['category','subcategory','department','uploader','country','state','city','mandir','event','person','language','mediaType']);$audit->log($request,'media.bulk.updated',$fresh,'Media updated by bulk operation.',['before'=>$before,'after'=>$fresh->only(array_keys($updates))]);$changed[]=$file->id;}
+                if($updates){$file->fill($updates);$file->save();$fresh=$file->fresh(['category','subcategory','department','uploader','country','state','city','mandir','event','person','language','mediaType']);if(array_key_exists('asset_status',$updates) && ($before['asset_status']??null)!==$fresh->asset_status){MediaStatusHistory::create(['media_file_id'=>$file->id,'from_status'=>$before['asset_status']??null,'to_status'=>$fresh->asset_status,'note'=>'Bulk archive lifecycle action.','changed_by'=>$request->user()->id]);}$audit->log($request,'media.bulk.updated',$fresh,'Media updated by bulk operation.',['before'=>$before,'after'=>$fresh->only(array_keys($updates))]);$changed[]=$file->id;}
             }
         });
         if($changed){MediaFile::with(['category','subcategory','department','uploader','country','state','city','mandir','event','person','language','mediaType'])->whereIn('id',$changed)->get()->each(fn(MediaFile $media)=>$searchIndex->upsert($media));}

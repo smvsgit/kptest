@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Download, Trash2, Headphones, LockKeyhole, ShieldAlert, History, UploadCloud, RotateCcw, Archive, AlertTriangle, Link2, RefreshCw, Plus } from 'lucide-react';
+import { X, Download, Trash2, Headphones, LockKeyhole, ShieldAlert, History, UploadCloud, RotateCcw, AlertTriangle, Link2, RefreshCw, Plus } from 'lucide-react';
 import type { AccessLevel, AccessPolicy, MediaFile, MediaFileVersion, Category, UploadSettings, SourceConnection, MediaSourceItem } from '../../types';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
     canDelete: boolean;
     uploadSettings: UploadSettings;
     sourceConnections: SourceConnection[];
+    lifecycleSettings?: { transitions?: Record<string, string[]> };
     onClose: () => void;
     onDelete: (id: number) => void;
     onDownload: (id: number) => void;
@@ -23,7 +24,7 @@ function formatBytes(bytes: number) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export default function PreviewModal({ file, categories, canDelete, uploadSettings, sourceConnections, onClose, onDelete, onDownload, onRequestAccess, onUpdatePolicy, onLifecycleChanged }: Props) {
+export default function PreviewModal({ file, categories, canDelete, uploadSettings, sourceConnections, lifecycleSettings, onClose, onDelete, onDownload, onRequestAccess, onUpdatePolicy, onLifecycleChanged }: Props) {
     const cat = categories.find(c => c.id === file.category_id);
     const sub = cat?.subcategories.find(s => s.id === file.subcategory_id);
     const [reason, setReason] = useState('');
@@ -39,9 +40,14 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
     const [lifecycleBusy, setLifecycleBusy] = useState(false);
     const [versionProgress, setVersionProgress] = useState('');
     const [lifecycleMessage, setLifecycleMessage] = useState('');
+    const [targetStatus, setTargetStatus] = useState('');
+    const [statusNote, setStatusNote] = useState('');
     const [sources,setSources]=useState<MediaSourceItem[]>(file.source_items||[]);
     const [sourceBusy,setSourceBusy]=useState(false);
     const [sourceForm,setSourceForm]=useState({type:'youtube',label:'',locator:'',external_id:'',integration_connection_id:'',is_primary:false,is_enabled:true,repair_note:''});
+    const fallbackTransitions:Record<string,string[]>={active:['draft','review','archived'],draft:['review','archived'],review:['draft','approved','archived'],approved:['review','published','archived'],published:['archived'],archived:['draft','published'],inactive:['draft'],broken:['draft']};
+    const currentStatus=(file.asset_status||'draft').toLowerCase();
+    const allowedTransitions=(lifecycleSettings?.transitions?.[currentStatus]||fallbackTransitions[currentStatus]||[]).filter(x=>['draft','review','approved','published','archived'].includes(x));
     const csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     const loadVersions = async () => {
@@ -86,16 +92,15 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         finally { setLifecycleBusy(false); }
     };
 
-    const toggleArchive = async () => {
-        const archive = file.asset_status !== 'archived';
-        if (!confirm(archive ? 'Archive this asset? It will remain searchable with Archived status.' : 'Restore this asset from Archive?')) return;
-        setLifecycleBusy(true);
+    const transitionLifecycle = async () => {
+        if (!targetStatus) return;
+        setLifecycleBusy(true); setLifecycleMessage('');
         try {
-            const r=await fetch(`/files/${file.id}/archive`,{method:'PATCH',headers:{'X-CSRF-TOKEN':csrf(),'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({archived:archive})});
-            const data=await r.json(); if(!r.ok) throw new Error(data.message || 'Archive action failed.');
-            onLifecycleChanged();
-        } catch(e){ setLifecycleMessage(e instanceof Error?e.message:'Archive action failed.'); }
-        finally { setLifecycleBusy(false); }
+            const r=await fetch(`/files/${file.id}/lifecycle`,{method:'PATCH',headers:{'X-CSRF-TOKEN':csrf(),'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({status:targetStatus,note:statusNote.trim()||null})});
+            const data=await r.json();
+            if(!r.ok)throw new Error(data.message||Object.values(data.errors||{}).flat().join('; ')||'Lifecycle transition failed.');
+            setLifecycleMessage(data.message||'Lifecycle status updated.'); setTargetStatus(''); setStatusNote(''); onLifecycleChanged();
+        } catch(e){setLifecycleMessage(e instanceof Error?e.message:'Lifecycle transition failed.')} finally{setLifecycleBusy(false)}
     };
 
     const checkSource = async (source:MediaSourceItem) => { setSourceBusy(true); try { const r=await fetch(`/files/${file.id}/sources/${source.id}/check`,{method:'POST',headers:{'X-CSRF-TOKEN':csrf(),'Accept':'application/json'}}); const d=await r.json(); if(!r.ok)throw new Error(d.message||'Source check failed.'); setLifecycleMessage(`Source ${d.status}: ${d.message}`); onLifecycleChanged(); } catch(e){setLifecycleMessage(e instanceof Error?e.message:'Source check failed.')} finally{setSourceBusy(false)} };
@@ -148,7 +153,9 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
 
         {file.duplicate_of_id && <div style={{border:'1px solid var(--color-warning)',borderRadius:'var(--radius-md)',padding:12,marginBottom:16,background:'rgba(234,179,8,.08)'}}><div style={{display:'flex',gap:8,alignItems:'center',fontWeight:600,fontSize:12}}><AlertTriangle size={16}/> Potential duplicate detected</div><div style={{fontSize:11,color:'var(--text-secondary)',marginTop:4}}>SHA-256 matches asset #{file.duplicate_of_id}. Review before keeping both logical assets.</div></div>}
 
-        {file.can_manage_lifecycle && <div style={{border:'1px solid var(--border-color)',borderRadius:'var(--radius-md)',padding:14,marginBottom:18}}><h3 style={{fontSize:13,display:'flex',gap:7,alignItems:'center',marginBottom:10}}><History size={16}/> Version History · Current v{file.current_version || 1}</h3>{lifecycleMessage&&<div className="admin-guide" style={{marginBottom:10}}>{lifecycleMessage}</div>}{versionLoading?<div style={{fontSize:12,color:'var(--text-secondary)'}}>Loading versions…</div>:<div style={{display:'grid',gap:7,maxHeight:180,overflowY:'auto'}}>{versions.map(v=><div key={v.id} style={{display:'grid',gridTemplateColumns:'52px 1fr auto',gap:8,alignItems:'center',padding:'8px 9px',border:'1px solid var(--border-color)',borderRadius:8}}><div style={{fontWeight:700,fontSize:12}}>v{v.version_number}{v.is_current&&<div style={{fontSize:9,color:'var(--color-primary)'}}>CURRENT</div>}</div><div><div style={{fontSize:11,fontWeight:600}}>{v.original_name}</div><div style={{fontSize:10,color:'var(--text-secondary)'}}>{formatBytes(v.size)} · {v.changed_by||'System'} · {v.created_at?new Date(v.created_at).toLocaleString():''}</div><div style={{fontSize:10,color:'var(--text-secondary)'}}>{v.change_note||'No change note'}</div></div><div style={{display:'flex',gap:5}}><a className="btn btn-secondary" href={v.download_url} style={{padding:'5px 7px',fontSize:10}}>Download</a>{!v.is_current&&file.can_archive&&<button className="btn btn-secondary" disabled={lifecycleBusy} onClick={()=>restoreVersion(v)} style={{padding:'5px 7px',fontSize:10}}><RotateCcw size={12}/> Restore</button>}</div></div>)}</div>}<div style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--border-color)'}}><label className="form-label">Upload New Version</label><input className="form-input" type="file" onChange={e=>setNewVersionFile(e.target.files?.[0]||null)}/><textarea className="form-input" rows={2} placeholder="Change note (required) — e.g. Corrected final poster text" value={changeNote} onChange={e=>setChangeNote(e.target.value)} style={{marginTop:7,resize:'vertical'}}/>{versionProgress&&<div className="setting-help" style={{marginTop:7,fontWeight:600}}>{versionProgress}</div>}<button className="btn btn-secondary" disabled={lifecycleBusy||!newVersionFile||changeNote.trim().length<3} onClick={uploadVersion} style={{width:'100%',marginTop:7}}><UploadCloud size={14}/> {lifecycleBusy?'Uploading version…':'Upload as New Version'}</button></div>{file.can_archive&&<button className="btn btn-secondary" disabled={lifecycleBusy} onClick={toggleArchive} style={{width:'100%',marginTop:9}}><Archive size={14}/> {file.asset_status==='archived'?'Restore from Archive':'Archive Asset'}</button>}</div>}
+        {file.can_manage_lifecycle && <div style={{border:'1px solid var(--border-color)',borderRadius:'var(--radius-md)',padding:14,marginBottom:18}}><h3 style={{fontSize:13,display:'flex',gap:7,alignItems:'center',marginBottom:10}}><ShieldAlert size={16}/> Controlled Lifecycle</h3><div className="setting-help" style={{marginBottom:8}}>Current status: <b>{currentStatus}</b>. Only administrator-configured next states are available.</div>{allowedTransitions.length?<><select className="form-select" value={targetStatus} onChange={e=>setTargetStatus(e.target.value)}><option value="">Select next status…</option>{allowedTransitions.map(status=><option key={status} value={status}>{status}</option>)}</select><textarea className="form-input" rows={2} placeholder="Transition note (optional)" value={statusNote} onChange={e=>setStatusNote(e.target.value)} style={{marginTop:8,resize:'vertical'}}/><button className="btn btn-primary" style={{width:'100%',marginTop:8}} disabled={lifecycleBusy||!targetStatus} onClick={transitionLifecycle}>{lifecycleBusy?'Applying…':'Apply Lifecycle Transition'}</button></>:<div className="admin-guide">No lifecycle transition is currently allowed from <b>{currentStatus}</b>. Review Lifecycle Settings if this is unexpected.</div>}</div>}
+
+        {file.can_manage_lifecycle && <div style={{border:'1px solid var(--border-color)',borderRadius:'var(--radius-md)',padding:14,marginBottom:18}}><h3 style={{fontSize:13,display:'flex',gap:7,alignItems:'center',marginBottom:10}}><History size={16}/> Version History · Current v{file.current_version || 1}</h3>{lifecycleMessage&&<div className="admin-guide" style={{marginBottom:10}}>{lifecycleMessage}</div>}{versionLoading?<div style={{fontSize:12,color:'var(--text-secondary)'}}>Loading versions…</div>:<div style={{display:'grid',gap:7,maxHeight:180,overflowY:'auto'}}>{versions.map(v=><div key={v.id} style={{display:'grid',gridTemplateColumns:'52px 1fr auto',gap:8,alignItems:'center',padding:'8px 9px',border:'1px solid var(--border-color)',borderRadius:8}}><div style={{fontWeight:700,fontSize:12}}>v{v.version_number}{v.is_current&&<div style={{fontSize:9,color:'var(--color-primary)'}}>CURRENT</div>}</div><div><div style={{fontSize:11,fontWeight:600}}>{v.original_name}</div><div style={{fontSize:10,color:'var(--text-secondary)'}}>{formatBytes(v.size)} · {v.changed_by||'System'} · {v.created_at?new Date(v.created_at).toLocaleString():''}</div><div style={{fontSize:10,color:'var(--text-secondary)'}}>{v.change_note||'No change note'}</div></div><div style={{display:'flex',gap:5}}><a className="btn btn-secondary" href={v.download_url} style={{padding:'5px 7px',fontSize:10}}>Download</a>{!v.is_current&&file.can_archive&&<button className="btn btn-secondary" disabled={lifecycleBusy} onClick={()=>restoreVersion(v)} style={{padding:'5px 7px',fontSize:10}}><RotateCcw size={12}/> Restore</button>}</div></div>)}</div>}<div style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--border-color)'}}><label className="form-label">Upload New Version</label><input className="form-input" type="file" onChange={e=>setNewVersionFile(e.target.files?.[0]||null)}/><textarea className="form-input" rows={2} placeholder="Change note (required) — e.g. Corrected final poster text" value={changeNote} onChange={e=>setChangeNote(e.target.value)} style={{marginTop:7,resize:'vertical'}}/>{versionProgress&&<div className="setting-help" style={{marginTop:7,fontWeight:600}}>{versionProgress}</div>}<button className="btn btn-secondary" disabled={lifecycleBusy||!newVersionFile||changeNote.trim().length<3} onClick={uploadVersion} style={{width:'100%',marginTop:7}}><UploadCloud size={14}/> {lifecycleBusy?'Uploading version…':'Upload as New Version'}</button></div></div>}
 
         {file.access_policy==='protected'&&file.can_preview&&file.access_expires_at&&<div className="admin-guide" style={{marginBottom:12}}><b>Temporary access active.</b> Expires {new Date(file.access_expires_at).toLocaleString()}. Protected downloads use a short-lived signed link and are revalidated at delivery time.</div>}
         {file.access_policy === 'protected' && file.access_request_status === 'pending' && <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: 14, marginBottom: 18, background: 'var(--bg-input)' }}><h3 style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}><ShieldAlert size={16} /> Access Request Pending</h3><p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Your request is waiting for owner-department approval.</p></div>}

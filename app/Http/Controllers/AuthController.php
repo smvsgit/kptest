@@ -31,7 +31,8 @@ class AuthController extends Controller
         }
         $request->session()->regenerate();$request->session()->put('policy_last_activity',time());$user=$request->user();$user->forceFill(['failed_login_count'=>0,'locked_until'=>null,'last_login_at'=>now(),'last_seen_at'=>now()])->save();$audit->log($request,'auth.login',$user,'User login successful.');
         if($user->must_change_password)return redirect()->route('profile')->with('warning','Administrator-issued temporary password must be changed before continuing.');
-        if($user->two_factor_confirmed_at){$request->session()->forget('2fa_passed_at');return redirect()->route('security.2fa.challenge-page');}
+        $twoFactor=SystemSetting::valueFor('security.two_factor',['enabled'=>true]);
+        if(($twoFactor['enabled']??true) && $user->two_factor_confirmed_at){$request->session()->forget('2fa_passed_at');return redirect()->route('security.2fa.challenge-page');}
         return redirect()->intended(route('dashboard'));
     }
 

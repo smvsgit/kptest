@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Schema;
 
 class MediaFile extends Model
 {
@@ -49,6 +50,14 @@ class MediaFile extends Model
     protected static function booted(): void
     {
         static::created(function (MediaFile $media) {
+            if (Schema::hasTable('media_status_histories') && !$media->statusHistory()->exists()) {
+                $media->statusHistory()->create([
+                    'from_status' => null,
+                    'to_status' => $media->asset_status ?: 'draft',
+                    'note' => 'Initial asset status.',
+                    'changed_by' => $media->uploaded_by,
+                ]);
+            }
             if (!$media->file_path) return;
             if (!$media->versions()->exists()) $media->versions()->create([
                 'version_number' => (int) ($media->current_version ?: 1), 'original_name' => $media->name,

@@ -80,6 +80,10 @@ Artisan::command('readiness:check {--json}', function () {
 })->purpose('Run the v12.x automated go-live readiness checks; exits non-zero when blocking failures remain.');
 
 Artisan::command('reports:scheduled', function () {
+    if (!(\App\Models\SystemSetting::valueFor('reports.scheduler',['enabled'=>true])['enabled']??true)) {
+        $this->info('Scheduled reports are disabled by policy.');
+        return;
+    }
     $count=0;
     foreach (\App\Models\ScheduledReport::query()->where('is_active',true)->where(function($q){$q->whereNull('next_run_at')->orWhere('next_run_at','<=',now());})->get() as $report) {
         app(\App\Http\Controllers\ScheduledReportController::class)->execute($report); $count++;

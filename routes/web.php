@@ -40,6 +40,7 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\LifecycleWorkflowController;
 use App\Http\Controllers\ImportExportController;
 use App\Http\Controllers\ScheduledReportController;
+use App\Http\Controllers\UserGuideController;
 use Illuminate\Support\Facades\Route;
 
 // Guest-only auth routes
@@ -62,6 +63,9 @@ Route::get('/fonts/files/{fontFile}', [FontController::class, 'asset'])->name('f
 // Authenticated routes
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/user-guide', [UserGuideController::class, 'index'])->name('user-guide.index');
+    Route::get('/user-guide/html', [UserGuideController::class, 'html'])->name('user-guide.html');
+    Route::get('/user-guide/document', [UserGuideController::class, 'document'])->name('user-guide.document');
     Route::get('/two-factor-challenge', fn () => \Inertia\Inertia::render('Auth/TwoFactorChallenge'))->name('security.2fa.challenge-page');
     Route::post('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('security.2fa.challenge');
     Route::post('/profile/two-factor/setup', [TwoFactorController::class, 'setup'])->name('security.2fa.setup');
@@ -264,6 +268,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/settings/branding/logo', [FeatureCompletionSettingsController::class, 'resetLogo'])->name('settings.branding.logo.reset');
         Route::get('/users/export.xlsx', [ImportExportController::class, 'usersExport'])->name('users.export.xlsx');
         Route::post('/users/import.xlsx', [ImportExportController::class, 'usersImport'])->name('users.import.xlsx');
+        Route::get('/scheduled-reports', [ScheduledReportController::class, 'index'])->name('scheduled-reports.index');
         Route::post('/scheduled-reports', [ScheduledReportController::class, 'store'])->name('scheduled-reports.store');
         Route::patch('/scheduled-reports/{scheduledReport}', [ScheduledReportController::class, 'update'])->name('scheduled-reports.update');
         Route::delete('/scheduled-reports/{scheduledReport}', [ScheduledReportController::class, 'destroy'])->name('scheduled-reports.destroy');

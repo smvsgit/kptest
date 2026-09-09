@@ -347,17 +347,17 @@ After deploying v05.00:
 7. Record a parseable planned go-live date/time, owners, rollback window and change freeze; run `php artisan readiness:check` immediately before final approval.
 
 
-## v13.01 deployment checks
+## v14.00 deployment checks
 
-1. Confirm the exact deployed artifact reports **13.01** and `VERSION` matches `config/version.php`.
-2. Run `php artisan migrate --force`; verify the v13 content organization, lifecycle, scheduled report and retention schema migrations complete successfully.
-3. Run queue workers and `php artisan schedule:run` every minute. Confirm scheduled reports, audit retention and Recycle Bin retention commands are registered.
+1. Confirm the exact deployed artifact reports **14.00** and `VERSION` matches `config/version.php` (previous `13.06`).
+2. Run `php artisan migrate --force`; verify the v13 completion/stabilization migrations plus the v14 governed User Guide policy migration complete successfully.
+3. Run queue workers and `php artisan schedule:run` every minute. Confirm scheduled reports, audit retention and Recycle Bin retention commands are registered. Confirm the app/worker/scheduler all retain `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
 4. Review Super Admin settings for Maintenance, Network/VPN, 2FA, Branding, Lifecycle, Type Required Metadata, Watermark, Storage Quotas, Audit Retention and Recycle Bin Retention.
 5. Keep destructive retention at `0 / OFF` until approved policy values are entered. Test non-zero retention only against isolated staging data before production.
 6. Validate Forgot Password SMTP delivery, TOTP 2FA and network/VPN login behavior with a tested emergency Super Admin recovery path.
 7. Validate Folder/Collection/Related Assets and governed lifecycle transitions with representative departmental data.
 8. Validate XLSX import/export limits and Scheduled Report recipient-scope revalidation.
-9. Run the full `UAT_EXECUTION_GUIDE.md` against exact v13.01, including the v13 regression focus.
+9. Verify User Guide rights/menu/HTML/DOCX controls and the Local Storage host/container/probe path, then run the full `UAT_EXECUTION_GUIDE.md` against exact v14.00, including the consolidated regression focus.
 10. Run `php artisan readiness:check` only after current-release UAT evidence, current verified backup/restore evidence and Management dependencies are complete.
 
 Do not mark UAT/Go-Live rows Done merely because v13 source coding exists.

@@ -16,11 +16,16 @@ class IntegrationHealthService
 
     public function publicConnection(IntegrationConnection $c, bool $includeConfig = true): array
     {
+        $metadata = $c->metadata ?? [];
+        if ($c->type === 'local') {
+            $metadata = array_merge($metadata, $this->localMountMetadata());
+        }
+
         return [
             'id'=>$c->id,'name'=>$c->name,'type'=>$c->type,'is_active'=>$c->is_active,'root_path'=>$includeConfig?$c->root_path:null,'base_url'=>$includeConfig?$c->base_url:null,
             'credential_set'=>!blank($c->credentials_encrypted),'sync_frequency_minutes'=>$c->sync_frequency_minutes,'storage_warning_percent'=>$c->storage_warning_percent,
             'status'=>$c->status,'last_checked_at'=>$c->last_checked_at?->toIso8601String(),'last_success_at'=>$c->last_success_at?->toIso8601String(),
-            'last_error'=>$c->last_error,'capacity_bytes'=>$c->capacity_bytes,'used_bytes'=>$c->used_bytes,'free_bytes'=>$c->free_bytes,'metadata'=>$c->metadata,
+            'last_error'=>$c->last_error,'capacity_bytes'=>$c->capacity_bytes,'used_bytes'=>$c->used_bytes,'free_bytes'=>$c->free_bytes,'metadata'=>$metadata,
             'source_count'=>$c->sources_count ?? $c->sources()->count(),
         ];
     }
@@ -42,8 +47,9 @@ class IntegrationHealthService
         if(!$c->is_active){$status='inactive';$message='Connection is disabled by Central Admin.';}
         else try {
             if($c->type==='local') {
-                $path=Storage::disk('media')->path(''); if(!is_dir($path)||!is_readable($path))throw new \RuntimeException('Local media storage path is unavailable.');
+                $path=Storage::disk('media')->path('uploads'); if(!is_dir($path)||!is_readable($path)||!is_writable($path))throw new \RuntimeException('Persistent local upload bind path is unavailable or not writable.');
                 [$capacity,$used,$free]=$this->diskUsage($path);
+                $meta=$this->localMountMetadata()+['checked_path'=>$path];
             } elseif($c->type==='nas') {
                 $path=trim((string)$c->root_path); if($path===''||!is_dir($path)||!is_readable($path))throw new \RuntimeException('NAS root path is missing or not readable.');
                 [$capacity,$used,$free]=$this->diskUsage($path);
@@ -106,6 +112,18 @@ class IntegrationHealthService
     }
 
     private function credentials(?IntegrationConnection $c): array { if(!$c||blank($c->credentials_encrypted))return []; try{return json_decode(Crypt::decryptString($c->credentials_encrypted),true)?:[];}catch(\Throwable){return [];} }
+    private function localMountMetadata(): array
+    {
+        $containerPath = (string) config('filesystems.media_upload_container_path', storage_path('app/media/uploads'));
+        return [
+            'persistent_upload_bind' => true,
+            'host_upload_path' => (string) config('filesystems.media_upload_host_path', '/srv/media/projects/karyalayportal/uploads'),
+            'container_upload_path' => $containerPath,
+            'health_probe_path' => Storage::disk('media')->path('uploads'),
+            'mount_note' => 'Uploaded source bytes use the nested /uploads bind mount; parent /storage remains the app-storage named volume.',
+        ];
+    }
+
     private function diskUsage(string $path): array { $cap=@disk_total_space($path);$free=@disk_free_space($path);return [$cap!==false?(int)$cap:null,$cap!==false&&$free!==false?(int)($cap-$free):null,$free!==false?(int)$free:null]; }
     private function safePath(string $root,string $locator): string { $rootReal=realpath($root); if($rootReal===false)throw new \RuntimeException('NAS root path is unavailable.'); $rootReal=rtrim($rootReal,DIRECTORY_SEPARATOR); $rel=ltrim(str_replace(chr(0),'',$locator),'/\\'); if(str_contains($rel,'../')||str_contains($rel,'..\\'))throw new \RuntimeException('Unsafe NAS source path.'); $candidate=$rootReal.DIRECTORY_SEPARATOR.$rel; $resolved=realpath($candidate); if($resolved!==false && $resolved!==$rootReal && !str_starts_with($resolved,$rootReal.DIRECTORY_SEPARATOR))throw new \RuntimeException('NAS source resolves outside configured root.'); return $resolved!==false?$resolved:$candidate; }
     private function alertAdmins(string $event,string $title,string $message,array $data=[]): void { User::query()->where('role','super-admin')->where('status','active')->get()->each(fn($u)=>$this->notifications->sendEvent($u,$event,$title,$message,$data)); }

@@ -1,4 +1,4 @@
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import '@fontsource/hind-vadodara/400.css';
@@ -15,7 +15,9 @@ import '@fontsource/inter/400.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/600.css';
-import type { SharedAppearance } from './types';
+import type { BrandingSettings, SharedAppearance } from './types';
+
+let portalName = 'Karyalay Portal';
 
 function applyAppearance(appearance?: SharedAppearance) {
     if (!appearance) return;
@@ -41,11 +43,21 @@ function applyAppearance(appearance?: SharedAppearance) {
     }
 }
 
+function applySharedUi(props: Record<string, unknown>) {
+    const branding = props.branding as BrandingSettings | undefined;
+    const locale = typeof props.locale === 'string' ? props.locale : branding?.default_language || 'en';
+    portalName = branding?.portal_name?.trim() || 'Karyalay Portal';
+    document.documentElement.lang = locale;
+    document.title = portalName;
+    applyAppearance(props.appearance as SharedAppearance | undefined);
+}
+
 createInertiaApp({
-    title: (title) => title ? `${title} - SMVS Storage` : 'SMVS Storage',
-    resolve: (name) => resolvePageComponent(`./Pages/${name}.tsx`, import.meta.glob('./Pages/**/*.tsx')),
+    title: title => title ? `${title} - ${portalName}` : portalName,
+    resolve: name => resolvePageComponent(`./Pages/${name}.tsx`, import.meta.glob('./Pages/**/*.tsx')),
     setup({ el, App, props }) {
-        applyAppearance((props.initialPage.props as unknown as { appearance?: SharedAppearance }).appearance);
+        applySharedUi(props.initialPage.props as Record<string, unknown>);
+        router.on('navigate', event => applySharedUi(event.detail.page.props as Record<string, unknown>));
         createRoot(el).render(<App {...props} />);
     },
     progress: { color: '#2a9d8f' },

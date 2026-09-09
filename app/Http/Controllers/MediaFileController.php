@@ -38,7 +38,7 @@ class MediaFileController extends Controller
             'description' => 'nullable|string|max:5000',
             'internal_remarks' => 'nullable|string|max:5000',
             'source_type' => 'nullable|in:local,nas,google-drive,youtube',
-            'asset_status' => 'nullable|in:active,draft,review,approved,published,archived,inactive,broken',
+            'asset_status' => 'nullable|in:draft,active',
             'folder_id' => 'nullable|exists:media_folders,id',
             'watermark_enabled' => 'nullable|boolean',
         ]);
@@ -79,7 +79,7 @@ class MediaFileController extends Controller
             'country_id' => $request->country_id, 'state_id' => $request->state_id, 'city_id' => $request->city_id, 'mandir_id' => $request->mandir_id,
             'event_id' => $request->event_id, 'person_id' => $request->person_id, 'language_id' => $request->language_id, 'media_type_id' => $request->media_type_id,
             'description' => $request->description, 'internal_remarks' => $request->internal_remarks,
-            'source_type' => $request->input('source_type','local'), 'asset_status' => $request->input('asset_status','active'),
+            'source_type' => $request->input('source_type','local'), 'asset_status' => $request->input('asset_status','draft'),
             'access_policy'  => $request->access_policy,
             'download_allowed' => $request->boolean('download_allowed', true),
             'tags'           => $tags,

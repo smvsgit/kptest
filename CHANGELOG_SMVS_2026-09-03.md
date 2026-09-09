@@ -1,5 +1,16 @@
 # SMVS Karyalay Portal - Project Change Notes
 
+## 2026-09-09 - Application v14.00 Governed User Guide & Persistent Storage Verification
+
+- Added a deployable 18-section User Guide Manual with a sidebar **User Guide Manual** entry, server-side page filtering, printable HTML and full-document delivery for fully entitled users.
+- Added Super Admin **User Guide Access** controls with 0-18 page entitlements by role, department and individual user; precedence is User override > Department override > Role default, while Super Admin retains all 18 pages for recovery safety.
+- Added updated BRD v3.5 and User Guide v14.00 DOCX deliverables and bound the HTML manual into the deployed application UI.
+- Corrected storage observability so Local Storage health/capacity/readiness probes the real nested persistent upload bind at `/var/www/html/storage/app/media/uploads`, corresponding to host `/srv/media/projects/karyalayportal/uploads`, rather than the parent application storage volume.
+- Kept the required persistent upload bind unchanged for `app`, `worker` and `scheduler`; added explicit host/container path visibility to Integrations & Health.
+- Integrated aggressive connection-audit fixes for 2FA route enforcement/enrollment, branding propagation, governed lifecycle transitions/status history and Scheduled Reports UI/API/scheduler wiring.
+- UAT, production-volume performance verification, Management policy decisions and final Go-Live remain open until runtime evidence is recorded.
+
+
 ## 2026-09-08 - Application v13.01 Coolify npm-ci Deployment Fix
 
 - Fixed Coolify build failure caused by npm 10.9.x strict peer-resolution validation against cross-platform optional WASM lock metadata.
