@@ -4,9 +4,9 @@ SMVS centralized intranet media and document portal.
 
 ## Current release
 
-- Version: `14.00`
-- Release: Governed User Guide & Persistent Storage Verification
-- Previous: `13.06`
+- Version: `15.00`
+- Release: Identity, Role & External Internet Access Management
+- Previous: `14.00`
 - Version is visible in `Settings -> System -> System Information`.
 - **Development coding status:** remaining non-UAT feature backlog implemented; staging UAT/Management policy gates remain intentionally open.
 
@@ -65,6 +65,17 @@ After first deployment/redeploy, open `Settings -> Search` and use `Sync Setting
 
 
 
+
+## v15.00 Identity, Role & External Internet Access Management
+
+v15.00 adds administrator-friendly settings UI, user creation/status/password-reset administration, built-in/custom role management, editable page rights, user groups with groupwise role assignment, per-user External Internet Access with start/expiry/reason/approver, scoped Department Admin delegation, access-source audit logging and persisted user appearance themes. The default enforcement posture is **Internal/VPN Only** when the Network Policy is enabled; explicitly approved users can authenticate from External Internet using the same portal URL.
+
+The governed User Guide is expanded to 22 logical pages. The persistent media bind remains `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads` for app, worker and scheduler.
+
+### v15.00 runtime acceptance focus
+
+After deployment, configure real office/VPN CIDRs before enabling Network Policy. Verify Internal login, VPN login, blocked External Internet login, allowed External Internet login, entitlement start/expiry/revoke, Department Admin delegation boundaries, role/page rights, custom roles, group assignment, password-reset email delivery, user enable/disable, Profile Change Password and theme persistence. Execute the complete release-bound UAT before Go-Live.
+
 ## v14.00 Governed User Guide & Persistent Storage Verification
 
 - Adds a deployable **User Guide Manual** sidebar module with 18 logical guide pages, searchable in-portal navigation, authorized Print/HTML view and full Word manual delivery.
@@ -95,7 +106,7 @@ v13.00 completes the remaining non-testing feature implementation before the pro
 
 ### Important release boundary
 
-Do not interpret “development coding complete” as “production accepted.” UAT cases remain release-bound and must be executed against the exact v14.00 artifact. Production-scale performance, real NAS/Drive/YouTube, providers, backup/restore, browser flows and Management policy values are staging/go-live gates.
+Do not interpret “development coding complete” as “production accepted.” UAT cases remain release-bound and must be executed against the exact v15.00 artifact. Production-scale performance, real NAS/Drive/YouTube, providers, backup/restore, browser flows and Management policy values are staging/go-live gates.
 
 ## v12.01 Pre-Go-Live Stabilization
 

@@ -41,6 +41,8 @@ use App\Http\Controllers\LifecycleWorkflowController;
 use App\Http\Controllers\ImportExportController;
 use App\Http\Controllers\ScheduledReportController;
 use App\Http\Controllers\UserGuideController;
+use App\Http\Controllers\RoleManagementController;
+use App\Http\Controllers\UserGroupController;
 use Illuminate\Support\Facades\Route;
 
 // Guest-only auth routes
@@ -63,9 +65,9 @@ Route::get('/fonts/files/{fontFile}', [FontController::class, 'asset'])->name('f
 // Authenticated routes
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/user-guide', [UserGuideController::class, 'index'])->name('user-guide.index');
-    Route::get('/user-guide/html', [UserGuideController::class, 'html'])->name('user-guide.html');
-    Route::get('/user-guide/document', [UserGuideController::class, 'document'])->name('user-guide.document');
+    Route::get('/user-guide', [UserGuideController::class, 'index'])->name('user-guide.index')->middleware('page:guide');
+    Route::get('/user-guide/html', [UserGuideController::class, 'html'])->name('user-guide.html')->middleware('page:guide');
+    Route::get('/user-guide/document', [UserGuideController::class, 'document'])->name('user-guide.document')->middleware('page:guide');
     Route::get('/two-factor-challenge', fn () => \Inertia\Inertia::render('Auth/TwoFactorChallenge'))->name('security.2fa.challenge-page');
     Route::post('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('security.2fa.challenge');
     Route::post('/profile/two-factor/setup', [TwoFactorController::class, 'setup'])->name('security.2fa.setup');
@@ -81,15 +83,15 @@ Route::middleware('auth')->group(function () {
 
     // Upload permissions: Super Admin, Department Admin, Department Operator.
     Route::post('/files/chunk', [ChunkUploadController::class, 'store'])
-        ->name('files.chunk')->middleware(['role:super-admin,department-admin,department-operator','permission:upload']);
+        ->name('files.chunk')->middleware(['role:super-admin,department-admin,department-operator','permission:upload','page:upload']);
     Route::get('/files/chunk/{uploadId}/status', [ChunkUploadController::class, 'status'])
-        ->name('files.chunk-status')->middleware(['role:super-admin,department-admin,department-operator','permission:upload']);
+        ->name('files.chunk-status')->middleware(['role:super-admin,department-admin,department-operator','permission:upload','page:upload']);
     Route::delete('/files/chunk/{uploadId}', [ChunkUploadController::class, 'cancel'])
-        ->name('files.chunk-cancel')->middleware(['role:super-admin,department-admin,department-operator','permission:upload']);
+        ->name('files.chunk-cancel')->middleware(['role:super-admin,department-admin,department-operator','permission:upload','page:upload']);
     Route::post('/files', [MediaFileController::class, 'store'])
-        ->name('files.store')->middleware(['role:super-admin,department-admin,department-operator','permission:upload']);
+        ->name('files.store')->middleware(['role:super-admin,department-admin,department-operator','permission:upload','page:upload']);
     Route::post('/files/upload-preflight', [UploadSettingsController::class, 'preflight'])
-        ->name('files.upload-preflight')->middleware(['role:super-admin,department-admin,department-operator','permission:upload']);
+        ->name('files.upload-preflight')->middleware(['role:super-admin,department-admin,department-operator','permission:upload','page:upload']);
     Route::patch('/files/bulk-edit', [BulkMediaController::class, 'update'])
         ->name('files.bulk-edit')->middleware(['role:super-admin,department-admin,department-operator','permission:manage_lifecycle']);
 
@@ -134,9 +136,9 @@ Route::middleware('auth')->group(function () {
         ->name('files.recycle-bin.force-delete')->middleware('role:super-admin');
 
     // v10.00 integrations, source health and repair workflow.
-    Route::get('/integrations/health', [IntegrationHealthController::class, 'index'])->name('integrations.health')->middleware('role:super-admin,department-admin');
-    Route::post('/integrations/health/run', [IntegrationHealthController::class, 'run'])->name('integrations.health.run')->middleware('role:super-admin');
-    Route::post('/reference-assets', [MediaSourceController::class, 'createReference'])->name('reference-assets.store')->middleware(['role:super-admin,department-admin,department-operator','permission:upload']);
+    Route::get('/integrations/health', [IntegrationHealthController::class, 'index'])->name('integrations.health')->middleware(['role:super-admin,department-admin','page:integrations']);
+    Route::post('/integrations/health/run', [IntegrationHealthController::class, 'run'])->name('integrations.health.run')->middleware(['role:super-admin','page:integrations']);
+    Route::post('/reference-assets', [MediaSourceController::class, 'createReference'])->name('reference-assets.store')->middleware(['role:super-admin,department-admin,department-operator','permission:upload','page:upload']);
     Route::post('/files/{mediaFile}/sources', [MediaSourceController::class, 'store'])->name('files.sources.store')->middleware(['role:super-admin,department-admin,department-operator','permission:manage_lifecycle']);
     Route::patch('/files/{mediaFile}/sources/{source}', [MediaSourceController::class, 'update'])->name('files.sources.update')->middleware(['role:super-admin,department-admin,department-operator','permission:manage_lifecycle']);
     Route::delete('/files/{mediaFile}/sources/{source}', [MediaSourceController::class, 'destroy'])->name('files.sources.destroy')->middleware(['role:super-admin,department-admin,department-operator','permission:manage_lifecycle']);
@@ -154,19 +156,32 @@ Route::middleware('auth')->group(function () {
     Route::delete('/sessions/others', [SessionController::class, 'destroyOthers'])->name('sessions.others.destroy');
     Route::delete('/sessions/{sessionId}', [SessionController::class, 'destroy'])->name('sessions.destroy');
     Route::delete('/users/{user}/sessions', [SessionController::class, 'destroyUser'])->name('users.sessions.destroy')->middleware('role:super-admin');
-    Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status')->middleware('role:super-admin');
-    Route::patch('/users/{user}/permission-set', [UserController::class, 'updatePermissionSet'])->name('users.permission-set')->middleware('role:super-admin');
-    Route::post('/users/{user}/temporary-password', [UserController::class, 'temporaryPassword'])->name('users.temporary-password')->middleware('role:super-admin');
-    Route::get('/users/export/csv', [UserController::class, 'exportCsv'])->name('users.export')->middleware('role:super-admin');
-    Route::post('/users/import/csv', [UserController::class, 'importCsv'])->name('users.import')->middleware('role:super-admin');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status')->middleware(['role:super-admin','page:settings']);
+    Route::patch('/users/{user}/permission-set', [UserController::class, 'updatePermissionSet'])->name('users.permission-set')->middleware(['role:super-admin','page:settings']);
+    Route::post('/users/{user}/temporary-password', [UserController::class, 'temporaryPassword'])->name('users.temporary-password')->middleware(['role:super-admin','page:settings']);
+    Route::post('/users/{user}/password-reset', [UserController::class, 'sendPasswordReset'])->name('users.password-reset')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::post('/users/password-reset-all', [UserController::class, 'sendPasswordResetAll'])->name('users.password-reset-all')->middleware(['role:super-admin','page:settings']);
+    Route::patch('/users/{user}/external-access', [UserController::class, 'updateExternalAccess'])->name('users.external-access')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::get('/users/export/csv', [UserController::class, 'exportCsv'])->name('users.export')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::post('/users/import/csv', [UserController::class, 'importCsv'])->name('users.import')->middleware(['role:super-admin','page:settings']);
+
+    // v15.00 governed role and group management.
+    Route::patch('/users/{user}/portal-role', [RoleManagementController::class, 'assign'])->name('users.portal-role')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::post('/user-groups', [UserGroupController::class, 'store'])->name('user-groups.store')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::patch('/user-groups/{userGroup}', [UserGroupController::class, 'update'])->name('user-groups.update')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::post('/user-groups/{userGroup}/members', [UserGroupController::class, 'addMember'])->name('user-groups.members.store')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::delete('/user-groups/{userGroup}/members/{user}', [UserGroupController::class, 'removeMember'])->name('user-groups.members.destroy')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::post('/user-groups/{userGroup}/apply-role', [UserGroupController::class, 'applyRole'])->name('user-groups.apply-role')->middleware(['role:super-admin,department-admin','page:settings']);
+    Route::delete('/user-groups/{userGroup}', [UserGroupController::class, 'destroy'])->name('user-groups.destroy')->middleware(['role:super-admin,department-admin','page:settings']);
 
     // v08.00 role-scoped dashboards/reports and auditable exports.
-    Route::get('/reports/summary', [ReportController::class, 'summary'])->name('reports.summary');
-    Route::get('/reports/access', [ReportController::class, 'access'])->name('reports.access');
-    Route::get('/reports/activity', [ReportController::class, 'activity'])->name('reports.activity');
-    Route::get('/reports/notifications', [ReportController::class, 'notifications'])->name('reports.notifications')->middleware('role:super-admin');
-    Route::get('/reports/export/{report}', [ReportController::class, 'export'])->name('reports.export');
-    Route::post('/reports/audit/verify', [ReportController::class, 'verifyAudit'])->name('reports.audit.verify')->middleware('role:super-admin');
+    Route::get('/reports/summary', [ReportController::class, 'summary'])->name('reports.summary')->middleware('page:reports');
+    Route::get('/reports/access', [ReportController::class, 'access'])->name('reports.access')->middleware('page:reports');
+    Route::get('/reports/activity', [ReportController::class, 'activity'])->name('reports.activity')->middleware('page:reports');
+    Route::get('/reports/notifications', [ReportController::class, 'notifications'])->name('reports.notifications')->middleware(['role:super-admin','page:reports']);
+    Route::get('/reports/export/{report}', [ReportController::class, 'export'])->name('reports.export')->middleware('page:reports');
+    Route::post('/reports/audit/verify', [ReportController::class, 'verifyAudit'])->name('reports.audit.verify')->middleware(['role:super-admin','page:reports']);
 
 
     // v06.00 Search & Discovery: user-owned saved searches, favorites and recent views.
@@ -200,8 +215,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/subcategories/{subcategory}', [CategoryController::class, 'destroySubcategory'])
         ->name('subcategories.destroy')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
 
-    Route::get('/reports/export/{report}.xlsx', [ImportExportController::class, 'reportXlsx'])->name('reports.export.xlsx')->middleware('role:super-admin,department-admin');
-    Route::get('/scheduled-report-runs/{run}/download', [ScheduledReportController::class, 'download'])->name('scheduled-report-runs.download');
+    Route::get('/reports/export/{report}.xlsx', [ImportExportController::class, 'reportXlsx'])->name('reports.export.xlsx')->middleware(['role:super-admin,department-admin','page:reports']);
+    Route::get('/scheduled-report-runs/{run}/download', [ScheduledReportController::class, 'download'])->name('scheduled-report-runs.download')->middleware('page:reports');
 
     // Profile
     Route::post('/organization-units', [OrganizationController::class, 'store'])->name('organization-units.store')->middleware('role:super-admin');
@@ -223,6 +238,9 @@ Route::middleware('auth')->group(function () {
             ->name('users.update-role');
         Route::patch('/users/{user}/department', [UserController::class, 'updateDepartment'])
             ->name('users.update-department');
+        Route::post('/portal-roles', [RoleManagementController::class, 'store'])->name('portal-roles.store');
+        Route::patch('/portal-roles/{portalRole}', [RoleManagementController::class, 'update'])->name('portal-roles.update');
+        Route::delete('/portal-roles/{portalRole}', [RoleManagementController::class, 'destroy'])->name('portal-roles.destroy');
 
         Route::post('/departments', [DepartmentController::class, 'store'])
             ->name('departments.store');

@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'current' => '14.00',
-    'previous' => '13.06',
+    'current' => '15.00',
+    'previous' => '14.00',
     'release_type' => 'Major',
-    'release_date' => '2026-09-09',
-    'release_name' => 'Governed User Guide & Persistent Storage Verification',
+    'release_date' => '2026-09-10',
+    'release_name' => 'Identity, Role & External Internet Access Management',
 ];

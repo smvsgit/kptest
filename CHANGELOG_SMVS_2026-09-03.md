@@ -1,5 +1,17 @@
 # SMVS Karyalay Portal - Project Change Notes
 
+## 2026-09-10 - Application v15.00 Identity, Role & External Internet Access Management
+
+- Replaced raw JSON-style completion settings with administrator-friendly forms, switches and guided controls.
+- Added complete Users & Roles administration: scoped user creation, built-in/custom roles, editable governed page rights, status enable/disable, User Groups and groupwise role application.
+- Added individual admin password-reset email, Super Admin bulk reset-email action, and user self-service Change Password while preserving Forgot Password.
+- Added per-user External Internet Access entitlement with optional start/expiry/reason/approver, request-time expiry, Super Admin grant/revoke and policy-controlled Department Admin delegation.
+- Added Internal/VPN/External/Blocked access-source audit context and external self-registration restriction while Network Policy is enforced.
+- Added Profile appearance persistence with SMVS, Slack-inspired and Google-inspired color themes.
+- Expanded the governed User Guide to 22 logical pages and updated the BRD to v3.6.
+- Preserved the persistent media bind on app/worker/scheduler: `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+- Integrated runtime UAT, real provider/network evidence, Management policy approvals, production-scale performance, backup/restore evidence and final Go-Live remain open.
+
 ## 2026-09-09 - Application v14.00 Governed User Guide & Persistent Storage Verification
 
 - Added a deployable 18-section User Guide Manual with a sidebar **User Guide Manual** entry, server-side page filtering, printable HTML and full-document delivery for fully entitled users.

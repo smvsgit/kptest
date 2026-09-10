@@ -347,17 +347,19 @@ After deploying v05.00:
 7. Record a parseable planned go-live date/time, owners, rollback window and change freeze; run `php artisan readiness:check` immediately before final approval.
 
 
-## v14.00 deployment checks
+## v15.00 deployment checks
 
-1. Confirm the exact deployed artifact reports **14.00** and `VERSION` matches `config/version.php` (previous `13.06`).
-2. Run `php artisan migrate --force`; verify the v13 completion/stabilization migrations plus the v14 governed User Guide policy migration complete successfully.
-3. Run queue workers and `php artisan schedule:run` every minute. Confirm scheduled reports, audit retention and Recycle Bin retention commands are registered. Confirm the app/worker/scheduler all retain `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
-4. Review Super Admin settings for Maintenance, Network/VPN, 2FA, Branding, Lifecycle, Type Required Metadata, Watermark, Storage Quotas, Audit Retention and Recycle Bin Retention.
-5. Keep destructive retention at `0 / OFF` until approved policy values are entered. Test non-zero retention only against isolated staging data before production.
-6. Validate Forgot Password SMTP delivery, TOTP 2FA and network/VPN login behavior with a tested emergency Super Admin recovery path.
-7. Validate Folder/Collection/Related Assets and governed lifecycle transitions with representative departmental data.
-8. Validate XLSX import/export limits and Scheduled Report recipient-scope revalidation.
-9. Verify User Guide rights/menu/HTML/DOCX controls and the Local Storage host/container/probe path, then run the full `UAT_EXECUTION_GUIDE.md` against exact v14.00, including the consolidated regression focus.
-10. Run `php artisan readiness:check` only after current-release UAT evidence, current verified backup/restore evidence and Management dependencies are complete.
+1. Confirm the exact deployed artifact reports **15.00** and `VERSION` matches `config/version.php` (previous `14.00`).
+2. Run `php artisan migrate --force`; verify the v15 identity/role/network/theme migration completes and existing users are mapped to built-in Portal Roles without losing legacy role/department/permission data.
+3. Run queue workers and `php artisan schedule:run` every minute. Confirm the app/worker/scheduler all retain `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+4. Before enabling Network Policy, configure and test real office CIDRs and approved VPN ranges. Keep enforcement OFF during first migration if the production ranges are not yet verified, to prevent administrative lockout.
+5. In **Settings -> Users & Roles**, verify Super Admin user creation, role/page-right management, User Groups, enable/disable and individual/bulk password-reset email. Verify Department Admin actions stay inside its department and cannot assign admin-level roles.
+6. Configure/test per-user External Internet Access: allowed/blocked, optional start/expiry, reason, approver, revoke, Department Admin delegation boundary and audit events. Test one Internal, one VPN, one blocked External and one explicitly allowed External login before production acceptance.
+7. Verify Profile Change Password and user-persisted SMVS/Slack/Google-inspired color theme.
+8. Review friendly Super Admin forms for Maintenance, Branding, Network/VPN, 2FA, Lifecycle, Type Required Metadata, Watermark, Storage Quotas, Audit Retention, Recycle Bin Retention and User Guide Access. Keep destructive retention at `0 / OFF` until Management-approved values are entered.
+9. Validate Forgot Password/admin reset SMTP delivery, TOTP 2FA, Folder/Collection/Related Assets, governed lifecycle transitions, XLSX import/export limits and Scheduled Report scope revalidation.
+10. Verify User Guide 0/partial/full 22-page rights, HTML/DOCX controls and Local Storage host/container/probe path. Upload a representative file, redeploy, and confirm preview/download still works from the persistent `/srv/media` bind.
+11. Run the full `UAT_EXECUTION_GUIDE.md` against exact v15.00 and record release-bound evidence.
+12. Run `php artisan readiness:check` only after current-release UAT evidence, current verified backup/restore evidence and Management dependencies are complete.
 
-Do not mark UAT/Go-Live rows Done merely because v13 source coding exists.
+Do not mark UAT/Go-Live rows Done merely because v15 source coding/static validation exists.

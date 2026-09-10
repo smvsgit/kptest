@@ -1,5 +1,24 @@
 # Karyalay Portal Changelog
 
+## 15.00 - 2026-09-10 - Major
+
+**Release:** Identity, Role & External Internet Access Management
+
+- Replaced raw JSON configuration blocks in the completion/settings area with administrator-friendly switches, fields, lists and guided controls for maintenance, branding/language, Network/VPN, 2FA, watermark, lifecycle, retention, storage quotas and User Guide governance.
+- Added full **Users & Roles** administration: user creation, Department Admin scoped creation, built-in role page-right editing, safe custom roles based on least-privilege base roles, role assignment, status enable/disable, user groups and groupwise role application.
+- Added administrator-triggered password-reset email for scoped users plus Super Admin all-user reset-email action; preserved public Forgot Password and user self-service Change Password.
+- Added per-user **External Internet Access** entitlement with Allowed/Blocked state, optional start/expiry, reason, approver and request-time expiry enforcement. Default posture remains Internal/VPN Only when Network Policy is enabled.
+- Added Super Admin policy switch controlling whether Department Admins may grant/revoke external Internet access for users in their own department. All external-access changes are audited.
+- Login/network auditing now records Internal, VPN, External Internet or blocked access source. User-specific external exceptions are checked only after successful credential authentication.
+- Added public-registration network restriction when Network Policy is enabled so account creation is limited to approved Internal/VPN sources.
+- Added server-side page authorization middleware for governed sidebar modules so hidden/disabled role pages cannot be bypassed by direct protected endpoints.
+- Hardened the shared dashboard payload so disabling a governed page also suppresses that page's supporting server-side data (access-request/delegation data, integration-health details, user/role/group administration data, network-policy summary, guide entitlement URLs and settings-only security values). Shared data that is legitimately required by Browse/Upload remains available.
+- Tightened Department Admin group management so administrator accounts cannot be added/removed through department groups or accidentally demoted by group-role application; group roles remain limited to Operator/Viewer bases for Department Admin scope.
+- Refined Profile UI with personal details, Change Password, network/external-access summary, 2FA/session controls and per-user SMVS/Slack/Google-inspired appearance selection persisted to the user profile.
+- Expanded the governed User Guide to 22 logical pages covering Users & Roles, password administration, groups, profile themes and External Internet Access. Full DOCX remains restricted to users entitled to all guide pages.
+- Preserved v14.00 persistent upload storage mapping on app/worker/scheduler: `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+- UAT, real SMTP/provider delivery, real office/VPN/public-IP evidence, production-scale performance, Management policy approvals, backup/restore evidence and final Go-Live remain open gates.
+
 ## 14.00 - 2026-09-09 - Major
 
 **Release:** Governed User Guide & Persistent Storage Verification

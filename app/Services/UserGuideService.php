@@ -9,7 +9,7 @@ use RuntimeException;
 
 class UserGuideService
 {
-    public const TOTAL_PAGES = 18;
+    public const TOTAL_PAGES = 22;
 
     public function settings(): array
     {
@@ -159,12 +159,12 @@ class UserGuideService
 
     public function sourcePath(): string
     {
-        return resource_path('user-guide/Karyalay_Portal_User_Guide_v14.00.html');
+        return resource_path('user-guide/Karyalay_Portal_User_Guide_v15.00.html');
     }
 
     public function documentPath(): string
     {
-        return base_path('docs/Karyalay_Portal_User_Guide_v14.00.docx');
+        return base_path('docs/Karyalay_Portal_User_Guide_v15.00.docx');
     }
 
     private function sourceHtml(): string
