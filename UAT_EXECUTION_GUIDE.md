@@ -1,7 +1,7 @@
-# Karyalay Portal v14.00 - UAT Execution Guide
+# Karyalay Portal v15.00 - UAT Execution Guide
 
 This guide is the execution companion for **Settings -> UAT / Go-Live**.
-> **v14.00 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
+> **v15.00 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
 
 A case is not complete merely because code exists. Execute it in the staging environment, record evidence, save the result, then sign off the Passed case.
 
@@ -24,7 +24,7 @@ Use separate test accounts for Super Admin, Department Admin, Department Operato
 11. **AC-14 - Non-technical usability**: representative users complete search/view/request/upload tasks without developer assistance and provide sign-off.
 
 
-## v14.00 consolidated regression focus
+## v15.00 consolidated regression focus
 
 During the same consolidated UAT cycle, explicitly include these feature-completion regressions inside the relevant AC cases:
 
@@ -41,10 +41,18 @@ During the same consolidated UAT cycle, explicitly include these feature-complet
 - Department quota/warning behavior using active + Recycle Bin + historical-version bytes.
 - Gujarati/English preference, branding, responsive critical flows, keyboard focus and Help/FAQ navigation.
 
-- User Guide Manual sidebar/menu visibility for 0-page vs authorized users; role default, department override and specific user override precedence; direct endpoint 403 when hidden; partial HTML contains no unauthorized logical pages; DOCX download denied unless 18/18.
+- User Guide Manual sidebar/menu visibility for 0-page vs authorized users; role default, department override and specific user override precedence; direct endpoint 403 when hidden; partial HTML contains no unauthorized logical pages; DOCX download denied unless 22/22.
 - Persistent Local Storage health reports host `/srv/media/projects/karyalayportal/uploads`, container `/var/www/html/storage/app/media/uploads`, and checks capacity/writability on that nested uploads bind rather than the parent `app-storage` volume.
 - Upload a representative asset, record its checksum/path, redeploy the same Coolify resource, then preview/download it again to prove media persistence across redeploy.
 - Sidebar User Guide/Reports/Integrations/Settings navigation updates `?panel=...`, survives refresh and Back/Forward, and an individual panel error does not blank the entire shell.
+- Users & Roles: Super Admin create/edit/status/role/reset actions; Department Admin only own-department permitted actions; privilege-escalation attempts are rejected server-side.
+- Built-in/custom role page rights: hide a governed page, verify its sidebar item disappears and direct protected endpoints are denied; restore the page right and verify access returns.
+- User Groups: membership and groupwise role assignment respect department scope and cannot elevate beyond the acting admin's authority.
+- Password administration: individual admin reset and Super Admin bulk reset issue reset-email flow without exposing/storing plaintext permanent passwords; Disabled/Inactive accounts stay blocked.
+- Profile: Change Password invalidates old credentials as expected; SMVS/Slack/Google-inspired color theme persists for that user across login/browser refresh.
+- External Internet Access: Internal CIDR = Internal source, approved VPN range = VPN source, external without entitlement = blocked, active per-user exception = External, future start = blocked until start, expired/revoked = blocked; all changes/expiry/login source events appear in audit.
+- Department Admin external-access management is available only when the Super Admin delegation switch is enabled and only for eligible non-admin users in that Department.
+- With Network Policy ON, public self-registration from an external source is blocked; approved Internal/VPN registration remains subject to the configured registration policy.
 
 ## Evidence standard
 

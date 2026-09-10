@@ -6,6 +6,8 @@ use App\Models\Category;
 use App\Models\Department;
 use App\Models\OrganizationUnit;
 use App\Models\PermissionSet;
+use App\Models\PortalRole;
+use App\Models\UserGroup;
 use App\Models\ApprovalDelegation;
 use App\Models\BackupRun;
 use App\Models\RestoreVerification;
@@ -43,6 +45,18 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $simulatedRole = $user->role === 'super-admin' ? session('simulated_role', 'super-admin') : $user->role;
+
+        // Page access must reduce both UI visibility and the data preloaded into the dashboard payload.
+        // Browse is intentionally always available (User::canAccessPage), while the remaining panels
+        // are governed by the user's active portal role. A hidden page must not receive its sensitive
+        // supporting data merely because the base role would normally be allowed to use that feature.
+        $canAccessPage = $user->canAccessPage('access');
+        $canIntegrationsPage = $user->canAccessPage('integrations');
+        $canGuidePage = $user->canAccessPage('guide');
+        $canSettingsPage = $user->canAccessPage('settings');
+        $canAdminData = in_array($user->role, ['super-admin','department-admin'], true);
+        $canAccessOrSettingsData = $canAdminData && ($canAccessPage || $canSettingsPage);
+
         $query = MediaFile::with([
             'uploader.department', 'department', 'category', 'subcategory',
             'country','state','city','mandir','event','person','language','mediaType','sources.connection',
@@ -140,14 +154,18 @@ class DashboardController extends Controller
             ->with(['subcategories' => fn ($q) => $q->withCount(['files' => fn ($files) => $access->applyVisibility($files, $user)])])
             ->orderBy('name')->get();
 
-        $requests = MediaAccessRequest::query()->with(['mediaFile.department','user.department','decider']);
-        $delegatedDepartmentIds=ApprovalDelegation::activeNow()->where('delegate_user_id',$user->id)->pluck('department_id')->all();
-        if ($user->role === 'department-admin') {
-            $requests->whereHas('mediaFile', fn ($q) => $q->where('department_id', $user->department_id));
-        } elseif ($user->role !== 'super-admin' && $delegatedDepartmentIds) {
-            $requests->where(function($q)use($user,$delegatedDepartmentIds){$q->where('user_id',$user->id)->orWhereHas('mediaFile',fn($m)=>$m->whereIn('department_id',$delegatedDepartmentIds));});
-        } elseif ($user->role !== 'super-admin') {
-            $requests->where('user_id', $user->id);
+        $requests = null;
+        $delegatedDepartmentIds = [];
+        if ($canAccessPage) {
+            $requests = MediaAccessRequest::query()->with(['mediaFile.department','user.department','decider']);
+            $delegatedDepartmentIds=ApprovalDelegation::activeNow()->where('delegate_user_id',$user->id)->pluck('department_id')->all();
+            if ($user->role === 'department-admin') {
+                $requests->whereHas('mediaFile', fn ($q) => $q->where('department_id', $user->department_id));
+            } elseif ($user->role !== 'super-admin' && $delegatedDepartmentIds) {
+                $requests->where(function($q)use($user,$delegatedDepartmentIds){$q->where('user_id',$user->id)->orWhereHas('mediaFile',fn($m)=>$m->whereIn('department_id',$delegatedDepartmentIds));});
+            } elseif ($user->role !== 'super-admin') {
+                $requests->where('user_id', $user->id);
+            }
         }
 
         $ownerBase = MediaFile::query()->select('uploaded_by')->whereNotNull('uploaded_by');
@@ -165,20 +183,22 @@ class DashboardController extends Controller
         $recentCountQuery = MediaFile::query()->whereHas('recentViews', fn ($q) => $q->where('user_id', $user->id));
         $access->applyVisibility($recentCountQuery, $user);
 
-        $userList = $user->role==='super-admin'
-            ? User::with(['department','organizationUnit','permissionSet'])->orderBy('name')->get()
-            : ($user->role==='department-admin' ? User::with(['department','organizationUnit','permissionSet'])->where('department_id',$user->department_id)->orderBy('name')->get() : collect());
-        $requestRows=$requests->latest('id')->limit(150)->get();
+        $userList = !$canAccessOrSettingsData ? collect() : ($user->role==='super-admin'
+            ? User::with(['department','organizationUnit','permissionSet','portalRole','groups:id,name,department_id,portal_role_id','externalAccessApprover:id,name'])->orderBy('name')->get()
+            : User::with(['department','organizationUnit','permissionSet','portalRole','groups:id,name,department_id,portal_role_id','externalAccessApprover:id,name'])->where('department_id',$user->department_id)->orderBy('name')->get());
+        $requestRows = $requests ? $requests->latest('id')->limit(150)->get() : collect();
         $requestRows->each(fn($row)=>$row->setAttribute('can_review',$access->canReviewRequest($row,$user)));
-        $delegations=ApprovalDelegation::with(['department','delegator:id,name','delegate:id,name'])
-            ->when($user->role!=='super-admin',fn($q)=>$q->where('department_id',$user->department_id))->latest('id')->limit(100)->get();
+        $delegations = $canAccessPage
+            ? ApprovalDelegation::with(['department','delegator:id,name','delegate:id,name'])
+                ->when($user->role!=='super-admin',fn($q)=>$q->where('department_id',$user->department_id))->latest('id')->limit(100)->get()
+            : collect();
 
         return Inertia::render('Dashboard', [
             'categories' => $categories,
             'departments' => Department::orderBy('is_system')->orderBy('name')->get(),
             'users'=>$userList,
-            'organizationUnits'=>OrganizationUnit::with('parent:id,name')->when($user->role!=='super-admin',fn($q)=>$q->where('department_id',$user->department_id))->orderBy('department_id')->orderBy('type')->orderBy('name')->get(),
-            'permissionSets'=>$user->role==='super-admin'?PermissionSet::orderBy('name')->get():[],
+            'organizationUnits'=>$canAccessOrSettingsData ? OrganizationUnit::with('parent:id,name')->when($user->role!=='super-admin',fn($q)=>$q->where('department_id',$user->department_id))->orderBy('department_id')->orderBy('type')->orderBy('name')->get() : [],
+            'permissionSets'=>($canAccessPage && $user->role==='super-admin') ? PermissionSet::orderBy('name')->get() : [],
             'approvalDelegations'=>$delegations,
             'filterOwners' => $filterOwners,
             'savedSearches' => SavedSearch::where('user_id', $user->id)->latest('updated_at')->get(),
@@ -192,26 +212,36 @@ class DashboardController extends Controller
             'notificationPreferences' => ($pref = NotificationPreference::where('user_id',$user->id)->first()) ? $pref->only(['portal_enabled','email_enabled','whatsapp_enabled','sms_enabled','access_enabled','file_enabled','storage_enabled','security_enabled']) : ['portal_enabled'=>true,'email_enabled'=>true,'whatsapp_enabled'=>true,'sms_enabled'=>true,'access_enabled'=>true,'file_enabled'=>true,'storage_enabled'=>true,'security_enabled'=>true],
             'notificationEscalation' => $user->role === 'super-admin' ? SystemSetting::valueFor('notification.escalation', ['enabled'=>false,'first_after_hours'=>24,'repeat_every_hours'=>24,'max_escalations'=>3]) : ['enabled'=>false,'first_after_hours'=>24,'repeat_every_hours'=>24,'max_escalations'=>3],
             'uploadSettings' => SystemSetting::valueFor('upload.settings', ['allowed_extensions'=>\App\Services\UploadPolicyService::DEFAULT_EXTENSIONS,'max_file_size_mb'=>0,'max_batch_count'=>0,'chunk_threshold_mb'=>50,'chunk_size_mb'=>10,'retry_count'=>3,'exact_duplicate_detection'=>true,'possible_duplicate_warning'=>true]),
-            'integrationConnections' => $user->role === 'super-admin' ? IntegrationConnection::withCount('sources')->orderBy('type')->orderBy('name')->get()->map(fn($c)=>$integrationHealth->publicConnection($c))->values() : [],
+            'integrationConnections' => ($canIntegrationsPage && $user->role === 'super-admin') ? IntegrationConnection::withCount('sources')->orderBy('type')->orderBy('name')->get()->map(fn($c)=>$integrationHealth->publicConnection($c))->values() : [],
             'sourceConnections' => $user->canUpload() ? IntegrationConnection::where('is_active',true)->orderBy('name')->get(['id','name','type','status'])->values() : [],
-            'integrationHealthSummary' => in_array($user->role,['super-admin','department-admin'],true) ? ['healthy'=>IntegrationConnection::where('status','healthy')->count(),'degraded'=>IntegrationConnection::where('status','degraded')->count(),'unavailable'=>IntegrationConnection::where('status','unavailable')->count(),'broken_sources'=>MediaSource::whereIn('status',['missing','broken'])->when($user->role==='department-admin',fn($q)=>$q->whereHas('mediaFile',fn($m)=>$m->where('department_id',$user->department_id)))->count()] : ['healthy'=>0,'degraded'=>0,'unavailable'=>0,'broken_sources'=>0],
+            'integrationHealthSummary' => ($canIntegrationsPage && $canAdminData) ? ['healthy'=>IntegrationConnection::where('status','healthy')->count(),'degraded'=>IntegrationConnection::where('status','degraded')->count(),'unavailable'=>IntegrationConnection::where('status','unavailable')->count(),'broken_sources'=>MediaSource::whereIn('status',['missing','broken'])->when($user->role==='department-admin',fn($q)=>$q->whereHas('mediaFile',fn($m)=>$m->where('department_id',$user->department_id)))->count()] : ['healthy'=>0,'degraded'=>0,'unavailable'=>0,'broken_sources'=>0],
             'backupSettings' => $user->role==='super-admin' ? $backups->settings() : [],
             'backupRuns' => $user->role==='super-admin' ? BackupRun::with('triggeredBy:id,name')->latest('id')->limit(50)->get()->map(fn($r)=>$backups->publicRun($r))->values() : [],
             'restoreVerifications' => $user->role==='super-admin' ? RestoreVerification::with('verifiedBy:id,name')->latest('id')->limit(50)->get()->map(fn($v)=>$backups->publicVerification($v))->values() : [],
             'backupStatus' => $user->role==='super-admin' ? $backups->statusSummary() : ['readiness'=>'unavailable','latest_backup_at'=>null,'latest_backup_id'=>null,'latest_backup_age_minutes'=>null,'last_restore_test_at'=>null,'last_restore_duration_minutes'=>null,'rpo_target_minutes'=>0,'rto_target_minutes'=>0,'rpo_met'=>null,'rto_met'=>null,'retention_policy_pending'=>true,'schedule_enabled'=>false,'app_key_custody_required'=>true],
             'readinessData' => $user->role==='super-admin' ? $readiness->dashboardData() : ['app_version'=>config('version.current'),'uat_cases'=>[],'go_live_settings'=>[],'management_dependencies'=>[],'latest_snapshot'=>null,'latest_review'=>null],
-            'currentUser'=>$user->loadMissing(['department','organizationUnit','permissionSet']),
-            'securityAuthSettings'=>SystemSetting::valueFor('security.auth',['failed_login_limit'=>5,'lockout_minutes'=>15,'session_timeout_minutes'=>120,'password_min_length'=>12]),
-            'accessMaturitySettings'=>SystemSetting::valueFor('access.maturity',['default_expiry_hours'=>0,'signed_download_minutes'=>15,'max_bulk_request_files'=>100]),
-            'featureCompletionSettings'=>[
+            'currentUser'=>$user->loadMissing(['department','organizationUnit','permissionSet','portalRole','groups:id,name,department_id,portal_role_id','externalAccessApprover:id,name']),
+            'portalRoles'=>($canSettingsPage && $canAdminData) ? PortalRole::orderByDesc('is_builtin')->orderBy('name')->get() : [],
+            'userGroups'=>($canSettingsPage && $canAdminData) ? UserGroup::with(['department:id,name','portalRole:id,name,slug,base_role,is_builtin,is_active','members:id,name,email,department_id,role,portal_role_id'])->when($user->role==='department-admin',fn($q)=>$q->where('department_id',$user->department_id))->orderBy('name')->get() : [],
+            'pageAccess'=>collect(['browse','upload','access','reports','integrations','guide','settings'])->mapWithKeys(fn($page)=>[$page=>$user->canAccessPage($page)])->all(),
+            'networkPolicySummary'=>$canSettingsPage ? [
+                'enabled'=>(bool)(SystemSetting::valueFor('security.network',[])['enabled']??false),
+                'department_admin_can_manage_external_access'=>(bool)(SystemSetting::valueFor('security.network',[])['department_admin_can_manage_external_access']??false),
+            ] : ['enabled'=>false,'department_admin_can_manage_external_access'=>false],
+            'securityAuthSettings'=>$canSettingsPage ? SystemSetting::valueFor('security.auth',['failed_login_limit'=>5,'lockout_minutes'=>15,'session_timeout_minutes'=>120,'password_min_length'=>12]) : ['failed_login_limit'=>5,'lockout_minutes'=>15,'session_timeout_minutes'=>120,'password_min_length'=>12],
+            'accessMaturitySettings'=>($canAccessPage || $canSettingsPage) ? SystemSetting::valueFor('access.maturity',['default_expiry_hours'=>0,'signed_download_minutes'=>15,'max_bulk_request_files'=>100]) : ['default_expiry_hours'=>0,'signed_download_minutes'=>15,'max_bulk_request_files'=>100],
+            'featureCompletionSettings'=>($canSettingsPage && $user->role==='super-admin') ? [
                 'maintenance'=>SystemSetting::valueFor('maintenance.settings',[]), 'branding'=>SystemSetting::valueFor('branding.settings',[]),
                 'network'=>SystemSetting::valueFor('security.network',[]), 'two_factor'=>SystemSetting::valueFor('security.two_factor',[]),
                 'watermark'=>SystemSetting::valueFor('watermark.settings',[]), 'lifecycle'=>SystemSetting::valueFor('lifecycle.settings',[]),
                 'type_required'=>SystemSetting::valueFor('metadata.type_required',[]), 'audit_retention'=>SystemSetting::valueFor('audit.retention',[]),
                 'recycle_retention'=>SystemSetting::valueFor('recycle.retention',[]), 'storage_quotas'=>SystemSetting::valueFor('storage.quotas',[]),
-                'user_guide'=>$user->role==='super-admin' ? $userGuide->settings() : [],
+                'user_guide'=>$userGuide->settings(),
+            ] : [
+                'lifecycle'=>SystemSetting::valueFor('lifecycle.settings',[]),
+                'watermark'=>SystemSetting::valueFor('watermark.settings',[]),
             ],
-            'userGuideAccess'=>$userGuide->accessSummary($user),
+            'userGuideAccess'=>$canGuidePage ? $userGuide->accessSummary($user) : ['can_view'=>false,'allowed_pages'=>0,'total_pages'=>UserGuideService::TOTAL_PAGES,'document_url'=>null,'html_url'=>null],
             'simulatedRole' => $simulatedRole,
             'appVersion' => [
                 'current' => config('version.current'), 'previous' => config('version.previous'), 'release_type' => config('version.release_type'),

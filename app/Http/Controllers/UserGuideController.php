@@ -52,7 +52,7 @@ class UserGuideController extends Controller
         abort_unless(is_file($path) && is_readable($path), 404, 'User Guide Word document is not available in this release.');
         $audit->log($request, 'user-guide.document.downloaded', null, 'Full User Guide Word document downloaded.', ['allowed_pages' => $allowed]);
 
-        return response()->download($path, 'Karyalay_Portal_User_Guide_v14.00.docx', [
+        return response()->download($path, 'Karyalay_Portal_User_Guide_v15.00.docx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'X-Content-Type-Options' => 'nosniff',
         ]);

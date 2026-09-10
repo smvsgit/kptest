@@ -1,9 +1,9 @@
-# Karyalay Portal v14.00 - Go-Live Runbook
+# Karyalay Portal v15.00 - Go-Live Runbook
 
 
-## v14.00 release precondition
+## v15.00 release precondition
 
-Before treating a staging result as release evidence, confirm the portal footer/System Information reports **14.00**, the deployed source checksum matches the approved v14.00 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
+Before treating a staging result as release evidence, confirm the portal footer/System Information reports **15.00**, the deployed source checksum matches the approved v15.00 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
 
 ## 1. Before the deployment window
 
@@ -18,7 +18,7 @@ Before treating a staging result as release evidence, confirm the portal footer/
 ## 2. Deployment
 
 1. Put the application into the approved maintenance/traffic-control state if required by the deployment plan.
-2. Deploy the exact v14.00 artifact and matching environment configuration.
+2. Deploy the exact v15.00 artifact and matching environment configuration.
 3. Run migrations: `php artisan migrate --force`.
 4. Ensure queue workers are running.
 5. Ensure the scheduler calls `php artisan schedule:run` every minute. The current-release scheduler heartbeat must become fresh within five minutes.
@@ -28,7 +28,7 @@ Before treating a staging result as release evidence, confirm the portal footer/
 
 ## 3. Production smoke test
 
-The recorded smoke-test owner verifies: login, Browse/Search, one representative preview, Protected request/decision, authorized download, User Guide entitlement/menu, notification channel expected for the environment, integration/source open, persistent Local Storage host/container/probe path, audit event creation and backup/readiness status. Never use destructive permanent delete against real business data as a smoke test.
+The recorded smoke-test owner verifies: Internal/VPN login, one blocked External Internet login and one explicitly entitled External Internet login; Users & Roles/page-right behavior; user enable/disable and password-reset email; Profile Change Password/theme persistence; Browse/Search; one representative preview; Protected request/decision; authorized download; User Guide entitlement/menu; notification channel expected for the environment; integration/source open; persistent Local Storage host/container/probe path; audit event creation and backup/readiness status. Never use destructive permanent delete against real business data as a smoke test.
 
 ## 4. Final release gate
 

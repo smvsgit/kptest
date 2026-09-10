@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'=>\App\Http\Middleware\EnsureRole::class,
             'permission'=>\App\Http\Middleware\EnsurePermission::class,
             '2fa'=>\App\Http\Middleware\EnsureTwoFactor::class,
+            'page'=>\App\Http\Middleware\EnsurePageAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

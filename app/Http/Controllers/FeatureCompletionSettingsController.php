@@ -47,6 +47,66 @@ class FeatureCompletionSettingsController extends Controller
             unset($incoming['logo_path'], $incoming['logo_url']);
         }
 
+        if ($data['section'] === 'maintenance') {
+            $validated = $request->validate([
+                'settings.enabled'=>'required|boolean',
+                'settings.message'=>'required|string|max:500',
+                'settings.allow_super_admin_bypass'=>'required|boolean',
+            ]);
+            $incoming=$validated['settings'];
+        }
+
+        if ($data['section'] === 'network') {
+            $validated = $request->validate([
+                'settings.enabled'=>'required|boolean',
+                'settings.allowed_cidrs'=>'present|array|max:100',
+                'settings.allowed_cidrs.*'=>'string|max:100',
+                'settings.trusted_vpn_proxies'=>'present|array|max:100',
+                'settings.trusted_vpn_proxies.*'=>'string|max:100',
+                'settings.emergency_super_admin_email'=>'nullable|email|max:255',
+                'settings.department_admin_can_manage_external_access'=>'required|boolean',
+            ]);
+            $incoming=$validated['settings'];
+            foreach (array_merge($incoming['allowed_cidrs']??[],$incoming['trusted_vpn_proxies']??[]) as $cidr) {
+                if (! $this->validIpOrCidr((string) $cidr)) abort(422, 'Invalid IP/CIDR value: '.$cidr);
+            }
+            if (!empty($incoming['emergency_super_admin_email']) && !User::whereRaw('LOWER(email)=?', [strtolower($incoming['emergency_super_admin_email'])])->where('role','super-admin')->exists()) {
+                abort(422, 'Emergency bypass email must belong to an existing Super Admin.');
+            }
+        }
+
+        if ($data['section'] === 'two_factor') {
+            $validated=$request->validate([
+                'settings.enabled'=>'required|boolean',
+                'settings.required_super_admin'=>'required|boolean',
+                'settings.issuer'=>'required|string|max:120',
+            ]);$incoming=$validated['settings'];
+        }
+
+        if ($data['section'] === 'watermark') {
+            $validated=$request->validate([
+                'settings.enabled'=>'required|boolean',
+                'settings.text'=>'required|string|max:120',
+                'settings.opacity'=>'required|integer|min:5|max:80',
+                'settings.protected_only'=>'required|boolean',
+            ]);$incoming=$validated['settings'];
+        }
+
+        if ($data['section'] === 'audit_retention') {
+            $validated=$request->validate([
+                'settings.retention_days'=>'required|integer|min:0|max:36500',
+                'settings.archive_before_prune'=>'required|boolean',
+                'settings.max_per_run'=>'required|integer|min:1|max:100000',
+            ]);$incoming=array_replace($before,$validated['settings']);
+        }
+
+        if ($data['section'] === 'recycle_retention') {
+            $validated=$request->validate([
+                'settings.retention_days'=>'required|integer|min:0|max:36500',
+                'settings.max_per_run'=>'required|integer|min:1|max:100000',
+            ]);$incoming=array_replace($before,$validated['settings']);
+        }
+
         if ($data['section'] === 'user_guide') {
             $request->validate([
                 'settings.enabled' => 'required|boolean',
@@ -117,4 +177,15 @@ class FeatureCompletionSettingsController extends Controller
         $audit->log($request, 'branding.logo.reset', null, 'Portal logo reset.');
         return back()->with('success', 'Logo reset.');
     }
+    private function validIpOrCidr(string $value): bool
+    {
+        $value=trim($value);
+        if ($value==='') return false;
+        if (!str_contains($value,'/')) return filter_var($value, FILTER_VALIDATE_IP)!==false;
+        [$ip,$bits]=array_pad(explode('/',$value,2),2,null);
+        if (filter_var($ip,FILTER_VALIDATE_IP)===false || !ctype_digit((string)$bits)) return false;
+        $max=str_contains($ip,':')?128:32;
+        return (int)$bits>=0 && (int)$bits<=$max;
+    }
+
 }

@@ -13,7 +13,7 @@ class UserGuideAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_manual_source_contains_exactly_eighteen_pages(): void
+    public function test_manual_source_contains_exactly_twenty_two_pages(): void
     {
         $pages = app(UserGuideService::class)->allPages();
         $this->assertCount(UserGuideService::TOTAL_PAGES, $pages);
