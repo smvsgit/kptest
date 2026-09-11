@@ -79,5 +79,11 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
 
+# Container-native healthcheck. Coolify Docker Compose deployments can read the
+# Compose healthcheck, while Dockerfile/Application deployments detect this
+# HEALTHCHECK directly. Using 127.0.0.1 avoids hostname/IPv6 ambiguity.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+  CMD curl -fsS --max-time 4 http://127.0.0.1/up >/dev/null || exit 1
+
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["apache2-foreground"]

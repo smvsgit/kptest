@@ -50,7 +50,7 @@ class UserController extends Controller
             'name'=>$data['name'], 'email'=>strtolower(trim($data['email'])), 'phone'=>$data['phone']??null,
             'department_id'=>$data['department_id']??null, 'organization_unit_id'=>$data['organization_unit_id']??null,
             'role'=>$role->base_role, 'portal_role_id'=>$role->id, 'status'=>'active',
-            'password'=>Hash::make(Str::random(48)), 'must_change_password'=>false, 'preferred_language'=>'en', 'ui_theme'=>'smvs',
+            'password'=>Hash::make(Str::random(48)), 'must_change_password'=>false, 'preferred_language'=>'en', 'ui_theme'=>'smvs-dark',
         ]);
         $mailSent=false;
         if($data['send_reset_email']??true) $mailSent=$this->sendResetLink($user);

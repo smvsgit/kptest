@@ -4,9 +4,9 @@ SMVS centralized intranet media and document portal.
 
 ## Current release
 
-- Version: `15.00`
-- Release: Identity, Role & External Internet Access Management
-- Previous: `14.00`
+- Version: `16.00`
+- Release: Expanded Account Theme Gallery
+- Previous: `15.01`
 - Version is visible in `Settings -> System -> System Information`.
 - **Development coding status:** remaining non-UAT feature backlog implemented; staging UAT/Management policy gates remain intentionally open.
 
@@ -65,6 +65,15 @@ After first deployment/redeploy, open `Settings -> Search` and use `Sync Setting
 
 
 
+
+
+## v16.00 Expanded Account Theme Gallery
+
+v16.00 expands Profile theme selection to 16 saved account combinations across eight palettes: SMVS Teal, Slack Aubergine, Google Blue, Ocean Cyan, Royal Indigo, Forest Green, Rose Coral and Amber Sand. Every palette has Light and Dark variants. The selected combined preset is stored on the user profile and follows the account across devices. Existing `smvs`, `slack` and `google` values remain backward compatible. The header Sun/Moon button remains a temporary viewing-mode override and does not silently change the saved account default.
+
+## v15.01 Coolify Healthcheck Detection Hardening
+
+v15.01 is a deployment-stabilization release. The Laravel readiness endpoint remains `/up`, but the health probe is now declared both in Docker Compose and in the final Docker image so Coolify can detect it through either deployment interpretation. Worker/scheduler disable the inherited web-image healthcheck and, together with Meilisearch, are excluded from Coolify aggregate health; MariaDB retains its native healthcheck. All v15.00 application features and persistent media mounts are unchanged.
 
 ## v15.00 Identity, Role & External Internet Access Management
 
@@ -266,3 +275,8 @@ Bulk ZIP is created server-side instead of in browser memory.
 ## Deployment
 
 See `DEPLOY.md` and `FRESH_INSTALL.md`.
+
+
+## v16.00 Theme Gallery
+
+Profile now provides 16 saved Light/Dark account theme combinations across 8 color families. The saved preset follows the user account; the header Sun/Moon button remains a temporary viewing-mode override.

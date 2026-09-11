@@ -1,0 +1,64 @@
+KARYALAY PORTAL v15.01 - FINAL STATIC VALIDATION REPORT
+Generated: 2026-09-10
+Release: Coolify Healthcheck Detection Hardening
+Previous: v15.00
+
+ROOT CAUSE / OBSERVED DEPLOYMENT SYMPTOM
+- Coolify UI showed: Running (no healthcheck) / Healthcheck Not configured.
+- v15.00 already contained an app-level Docker Compose healthcheck for Laravel /up, but the active Coolify resource did not expose it as an effective configured healthcheck in the UI/status path shown by the deployment screenshot.
+- v15.01 makes healthcheck metadata explicit in BOTH supported deployment layers so the app container carries a native Docker HEALTHCHECK even if the Dockerfile detection path is used.
+
+FIXES INCLUDED
+- Dockerfile now contains a native HEALTHCHECK for http://127.0.0.1/up.
+- docker-compose.yml retains app.healthcheck and hardens it to curl -fsS --max-time 4 http://127.0.0.1/up.
+- Laravel bootstrap/app.php already declares health: '/up'; this remains unchanged.
+- Final PHP/Apache image already installs curl; the probe therefore has an in-container HTTP client.
+- worker and scheduler use the same Dockerfile image but do not run Apache; their inherited image healthcheck is explicitly disabled in Compose.
+- worker, scheduler and Meilisearch are marked exclude_from_hc: true for Coolify aggregate-health evaluation. MariaDB retains its native healthcheck.
+- Persistent media bind is unchanged on app/worker/scheduler:
+  /srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads
+- No application feature/database-schema/frontend behavior was changed by this minor deployment fix.
+
+AUTOMATED / STATIC CHECKS
+[PASS] PHP syntax: 178/178 files passed
+[PASS] TypeScript/TSX parse: tsc -p tsconfig.json --noEmit --noCheck passed
+[PASS] JSON parse: composer.json, package.json, package-lock.json, tsconfig.json
+[PASS] Docker Compose YAML parse: services=app,db,meilisearch,scheduler,worker
+[PASS] Shell syntax: docker/entrypoint.sh
+[PASS] Version consistency: VERSION=15.01; config.current=15.01; previous=15.00; release_type=Minor
+[PASS] package/package-lock root dependency consistency
+[PASS] Laravel health route declaration: bootstrap/app.php health='/up'
+[PASS] Dockerfile native HEALTHCHECK declaration found and targets 127.0.0.1/up
+[PASS] Final image curl dependency declaration found
+[PASS] Compose app healthcheck targets 127.0.0.1/up with max-time=4, interval=30s, timeout=5s, retries=5, start_period=60s
+[PASS] worker image healthcheck disabled + Coolify aggregate exclusion enabled
+[PASS] scheduler image healthcheck disabled + Coolify aggregate exclusion enabled
+[PASS] Meilisearch Coolify aggregate exclusion enabled; portal can retain its existing degraded/search-fallback behavior
+[PASS] MariaDB native healthcheck retained
+[PASS] Persistent media mount app/worker/scheduler: 3/3 exact authoritative bind
+[PASS] PHP App import connectivity: 412 imports checked; missing=0
+[PASS] Laravel route -> controller connectivity: 165 actions checked; missing=0
+[PASS] Laravel named-route connectivity: 35 references checked; missing=0
+[PASS] TS/TSX relative import connectivity: 57 imports checked; missing=0
+[PASS] v15.00 -> v15.01 application-source regression boundary: app/, resources/, routes/, database/, tests/ and configuration logic other than config/version.php are unchanged; deployment/docs/version files are the only intended differences
+[PASS] Bundled DOCX package integrity retained for existing v15 documentation
+
+BUILD / RUNTIME LIMITATIONS IN THIS ENVIRONMENT
+- Docker CLI/daemon is unavailable, so Docker image build, Docker HEALTHCHECK runtime state and Coolify status cannot be executed locally.
+- Composer CLI/vendor is unavailable, so Laravel/PHPUnit runtime execution was not performed here.
+- Closest Coolify frontend dependency install was attempted in an isolated copy with:
+  npm install --no-audit --no-fund --ignore-scripts --legacy-peer-deps
+  It exceeded the intended 180-second validation window without producing a source/package diagnostic and was terminated. The healthcheck fix does not change frontend/package sources; TypeScript parsing and package-lock consistency both pass.
+
+POST-DEPLOY ACCEPTANCE REQUIRED
+1. Deploy exact v15.01.
+2. Confirm Coolify no longer reports "Running (no healthcheck)" for the app resource/container.
+3. In the APP container terminal, run: curl -fsS http://127.0.0.1/up
+4. Confirm exit code 0 / HTTP success.
+5. Confirm app becomes Healthy and worker/scheduler start normally after app health is green.
+6. Do not mark UAT or Go-Live complete solely from this deployment-health result.
+
+STATUS BOUNDARY
+- v15.01 healthcheck code/config packaging: complete.
+- Actual Coolify health-state confirmation: pending redeploy runtime evidence.
+- Integrated UAT / Management policy approvals / final Go-Live: still pending and not marked Done.

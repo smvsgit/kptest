@@ -57,7 +57,7 @@ return new class extends Migration
             $table->timestamp('external_access_expires_at')->nullable()->after('external_access_starts_at');
             $table->text('external_access_reason')->nullable()->after('external_access_expires_at');
             $table->foreignId('external_access_approved_by')->nullable()->after('external_access_reason')->constrained('users')->nullOnDelete();
-            $table->string('ui_theme', 30)->default('smvs')->after('preferred_language');
+            $table->string('ui_theme', 30)->default('smvs-dark')->after('preferred_language');
             $table->index(['external_access_allowed','external_access_expires_at'], 'users_external_access_idx');
         });
 

@@ -1,7 +1,7 @@
-# Karyalay Portal v15.00 - UAT Execution Guide
+# Karyalay Portal v16.00 - UAT Execution Guide
 
 This guide is the execution companion for **Settings -> UAT / Go-Live**.
-> **v15.00 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
+> **v16.00 release-binding rule:** every saved execution records the application release. Sign-off is accepted only when the execution and approval are both for the currently running release. If another stabilization build is deployed, re-run/save the relevant P0 cases before signing off that release.
 
 A case is not complete merely because code exists. Execute it in the staging environment, record evidence, save the result, then sign off the Passed case.
 
@@ -24,7 +24,16 @@ Use separate test accounts for Super Admin, Department Admin, Department Operato
 11. **AC-14 - Non-technical usability**: representative users complete search/view/request/upload tasks without developer assistance and provide sign-off.
 
 
-## v15.00 consolidated regression focus
+
+## v16.00 theme gallery regression
+
+- Open Profile -> Color Theme and confirm all 16 presets are visible: eight color families with Light and Dark variants.
+- Preview at least one Light and one Dark preset from every family; verify text contrast, cards, sidebar, buttons, status badges and form controls remain readable.
+- Save a preset, reload the portal and sign in from another browser/device profile if available; confirm the saved account default is restored.
+- Use the header Sun/Moon button and confirm it changes the current viewing mode without overwriting the saved Profile preset.
+- Verify existing legacy users with `smvs`, `slack` or `google` values still render and can save a current combined preset.
+
+## v15.01 consolidated regression focus
 
 During the same consolidated UAT cycle, explicitly include these feature-completion regressions inside the relevant AC cases:
 
