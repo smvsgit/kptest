@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SystemSetting;
+use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -33,7 +34,7 @@ class ProfileController extends Controller
             'email'=>'required|email|unique:users,email,'.$user->id,
             'phone'=>'nullable|string|max:20',
             'preferred_language'=>'nullable|in:en,gu',
-            'ui_theme'=>['nullable',Rule::in(['smvs','slack','google'])],
+            'ui_theme'=>['nullable',Rule::in(User::UI_THEMES)],
         ]);
         $before=$user->only(['name','email','phone','preferred_language','ui_theme']);
         $user->update($data);

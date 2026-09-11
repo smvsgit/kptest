@@ -65,7 +65,7 @@ class AuthController extends Controller
         $data=$request->validate(['name'=>'required|string|max:255','email'=>'required|email|unique:users','phone'=>'nullable|string|max:20','password'=>['required','confirmed',Password::min($min)]]);
         $defaultDepartmentId=Department::where('is_system',true)->value('id');
         $viewerRole=PortalRole::where('slug','viewer')->where('is_builtin',true)->first();
-        $user=User::create(['name'=>$data['name'],'email'=>strtolower(trim($data['email'])),'phone'=>$data['phone']??null,'department_id'=>$defaultDepartmentId,'password'=>Hash::make($data['password']),'role'=>'viewer','portal_role_id'=>$viewerRole?->id,'status'=>'active','ui_theme'=>'smvs']);
+        $user=User::create(['name'=>$data['name'],'email'=>strtolower(trim($data['email'])),'phone'=>$data['phone']??null,'department_id'=>$defaultDepartmentId,'password'=>Hash::make($data['password']),'role'=>'viewer','portal_role_id'=>$viewerRole?->id,'status'=>'active','ui_theme'=>'smvs-dark']);
         Auth::login($user);
         $request->session()->regenerate();
         $source=$network->accessSource($request,$user);

@@ -1,4 +1,24 @@
-# Karyalay Portal Changelog
+# Karyalay Portal - Changelog
+
+## v16.00 - Expanded Account Theme Gallery (2026-09-10)
+
+- Expanded personal theme selection from 3 color families to 16 selectable Light/Dark combinations across 8 palettes.
+- Added SMVS Teal, Slack Aubergine, Google Blue, Ocean Cyan, Royal Indigo, Forest Green, Rose Coral and Amber Sand; every family has Light and Dark variants.
+- Theme selection now previews immediately and saves the complete color+mode preset to the user profile so the same default follows the account on other devices.
+- Preserved the top-bar Sun/Moon control as a temporary session/device viewing override without changing the user's saved default.
+- Added backward compatibility for existing `smvs`, `slack` and `google` profile values.
+- Updated the governed in-portal User Guide to document the expanded theme gallery.
+- Preserved v15.01 Coolify healthcheck hardening and the required persistent media bind for app, worker and scheduler.
+
+## 15.01 - 2026-09-10 - Minor
+
+**Release:** Coolify Healthcheck Detection Hardening
+
+- Fixed the Coolify status symptom **Running (no healthcheck) / Healthcheck Not configured** by defining the Laravel `/up` readiness probe both in `docker-compose.yml` and as a Dockerfile `HEALTHCHECK`, covering both Compose-owned and Dockerfile-detected Coolify deployment paths.
+- Switched the probe target to `http://127.0.0.1/up` with an explicit four-second curl max-time to avoid hostname/IPv6 ambiguity and hanging checks.
+- Added Coolify `exclude_from_hc: true` to worker, scheduler and Meilisearch companion services so the public application health is not made ambiguous by services that do not expose the Laravel web endpoint. MariaDB retains its own healthcheck.
+- Preserved all v15.00 identity/role/external-access functionality and the persistent media bind on app/worker/scheduler: `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+- Runtime Coolify health-state confirmation remains deployment evidence; UAT and Go-Live are not marked complete.
 
 ## 15.00 - 2026-09-10 - Major
 

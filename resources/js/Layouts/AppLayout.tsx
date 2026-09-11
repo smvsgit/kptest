@@ -3,15 +3,16 @@ import { router, Link } from '@inertiajs/react';
 import { Folders, UploadCloud, ShieldCheck, SlidersHorizontal, Sun, Moon, Search, Menu, PlusCircle, LogOut, ChevronRight, Database, Bell, BarChart3, Activity, BookOpen } from 'lucide-react';
 import type { Category, PortalNotification, SearchSettings, User, UserRole } from '../types';
 import { usePortalBranding } from '../branding';
+import { applyUserTheme, splitThemeSelection } from '../theme';
 type ActiveTab='browse-panel'|'upload-panel'|'access-panel'|'settings-panel'|'notifications-panel'|'reports-panel'|'integrations-panel'|'guide-panel';
 interface Props { activeTab:ActiveTab;onTabSwitch:(t:ActiveTab)=>void;categories:Category[];simulatedRole:UserRole;currentUser:User;onRoleChange:(r:UserRole)=>void;onSearch:(q:string)=>void;onCategorySelect:(c:number|null,s:number|null)=>void;onAddCategory:(p?:number|null)=>void;canUpload:boolean;canManageRoles:boolean;canViewAccess:boolean;canViewReports:boolean;canConfigCategories:boolean;canViewSettings:boolean;canViewIntegrations:boolean;canViewUserGuide:boolean;selectedCategoryId:number|null;selectedSubcategoryId:number|null;searchSettings:SearchSettings;initialSearch?:string;notifications:PortalNotification[];unreadNotifications:number;children:React.ReactNode; }
 export default function AppLayout(p:Props){
  const {branding}=usePortalBranding();
- const [theme,setTheme]=useState<'dark'|'light'>(()=>{const t=(localStorage.getItem('smvs_theme') as 'dark'|'light')||'dark';document.documentElement.setAttribute('data-theme',t);return t});
+ const [theme,setTheme]=useState<'dark'|'light'>(()=>{const legacyMode=(localStorage.getItem('smvs_theme') as 'dark'|'light')||'dark';const resolved=splitThemeSelection(p.currentUser.ui_theme,legacyMode);applyUserTheme(resolved.preset,legacyMode);return resolved.mode});
  const [sidebarOpen,setSidebarOpen]=useState(false),[expanded,setExpanded]=useState<Set<number>>(new Set()),[searchValue,setSearchValue]=useState(p.initialSearch||''),[notificationOpen,setNotificationOpen]=useState(false); const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
  useEffect(()=>{setSearchValue(p.initialSearch||'')},[p.initialSearch]);
- useEffect(()=>{document.documentElement.setAttribute('data-color-theme',p.currentUser.ui_theme||'smvs')},[p.currentUser.ui_theme]);
- const toggleTheme=()=>{const t=theme==='dark'?'light':'dark';setTheme(t);document.documentElement.setAttribute('data-theme',t);localStorage.setItem('smvs_theme',t)};
+ useEffect(()=>{const legacyMode=(localStorage.getItem('smvs_theme') as 'dark'|'light')||'dark';const resolved=splitThemeSelection(p.currentUser.ui_theme,legacyMode);applyUserTheme(resolved.preset,legacyMode);setTheme(resolved.mode)},[p.currentUser.ui_theme]);
+ const toggleTheme=()=>{const t=theme==='dark'?'light':'dark';setTheme(t);document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;localStorage.setItem('smvs_theme',t)};
  const onInput=(e:React.ChangeEvent<HTMLInputElement>)=>{const v=e.target.value;setSearchValue(v);if(!p.searchSettings.search_as_you_type)return;if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>p.onSearch(v),300)};
  const toggleExpand=(id:number)=>setExpanded(x=>{const n=new Set(x);n.has(id)?n.delete(id):n.add(id);return n});
  const initials=p.currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,3), totalFiles=p.categories.reduce((a,c)=>a+c.files_count,0);

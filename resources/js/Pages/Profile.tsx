@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useForm, Link, router } from '@inertiajs/react';
 import { ArrowLeft, User, Lock, LogOut, CheckCircle, Monitor, ShieldAlert, ShieldCheck, KeyRound, Languages, Palette, Globe2, Building2, Users } from 'lucide-react';
-import type { BrandingSettings, UiTheme, User as UserType } from '../types';
+import type { BrandingSettings, UiThemePreset, User as UserType } from '../types';
+import { applyUserTheme, resolveThemeSelection, themeChoices } from '../theme';
 import { usePortalBranding } from '../branding';
 
 interface Props {
@@ -12,12 +13,6 @@ interface Props {
 }
 interface BrowserSession { id:string; current:boolean; ip_address?:string|null; last_activity?:string|null; user_agent?:string|null; }
 interface TwoFactorSetup { secret:string; otpauth_uri:string; }
-const themeChoices:{key:UiTheme;label:string;help:string;colors:string[]}[]=[
-    {key:'smvs',label:'SMVS Teal',help:'Portal default balanced teal theme.',colors:['#2a9d8f','#264653','#e9c46a']},
-    {key:'slack',label:'Slack Inspired',help:'Purple with aqua/green communication accents.',colors:['#611f69','#36c5f0','#2eb67d']},
-    {key:'google',label:'Google Inspired',help:'Blue with familiar red/yellow/green accents.',colors:['#1a73e8','#ea4335','#34a853']},
-];
-
 export default function Profile({ user, flash, networkPolicy={enabled:false,current_access_source:'unknown'} }: Props) {
     const { branding } = usePortalBranding();
     const [sessions,setSessions]=useState<BrowserSession[]>([]),[sessionMsg,setSessionMsg]=useState('');
@@ -27,15 +22,15 @@ export default function Profile({ user, flash, networkPolicy={enabled:false,curr
     const jsonError=async(response:Response,fallback:string)=>{let data:any={};try{data=await response.json()}catch{return fallback}if(response.status===423&&data.redirect){router.visit(data.redirect);return data.message||fallback}return data.message||Object.values(data.errors||{}).flat().join('; ')||fallback};
     const loadSessions=async()=>{try{const r=await fetch('/sessions',{headers:{Accept:'application/json'}});const d=await r.json();if(r.ok)setSessions(d.sessions||[])}catch{setSessionMsg('Could not load active sessions.')}};
     useEffect(()=>{void loadSessions()},[]);
-    useEffect(()=>{document.documentElement.setAttribute('data-color-theme',user.ui_theme||'smvs')},[user.ui_theme]);
+    useEffect(()=>{applyUserTheme(user.ui_theme, (localStorage.getItem('smvs_theme') as 'light'|'dark')||'dark')},[user.ui_theme]);
 
     const logoutSession=async(id:string)=>{const r=await fetch(`/sessions/${id}`,{method:'DELETE',headers:{'X-CSRF-TOKEN':csrf(),Accept:'application/json'}});const d=await r.json();setSessionMsg(d.message||'Session updated.');void loadSessions()};
     const logoutOthers=async()=>{const r=await fetch('/sessions/others',{method:'DELETE',headers:{'X-CSRF-TOKEN':csrf(),Accept:'application/json'}});const d=await r.json();setSessionMsg(d.message||'Other sessions logged out.');void loadSessions()};
 
-    const infoForm=useForm({name:user.name,email:user.email,phone:user.phone??'',preferred_language:user.preferred_language??branding.default_language??'en',ui_theme:(user.ui_theme??'smvs') as UiTheme});
+    const infoForm=useForm({name:user.name,email:user.email,phone:user.phone??'',preferred_language:user.preferred_language??branding.default_language??'en',ui_theme:resolveThemeSelection(user.ui_theme,(localStorage.getItem('smvs_theme') as 'light'|'dark')||'dark') as UiThemePreset});
     const passwordForm=useForm({current_password:'',password:'',password_confirmation:''});
-    const submitInfo=(e:FormEvent)=>{e.preventDefault();infoForm.patch('/profile',{preserveScroll:true,onSuccess:()=>document.documentElement.setAttribute('data-color-theme',infoForm.data.ui_theme)})};
-    const chooseTheme=(theme:UiTheme)=>{infoForm.setData('ui_theme',theme);document.documentElement.setAttribute('data-color-theme',theme)};
+    const submitInfo=(e:FormEvent)=>{e.preventDefault();infoForm.patch('/profile',{preserveScroll:true,onSuccess:()=>applyUserTheme(infoForm.data.ui_theme)})};
+    const chooseTheme=(theme:UiThemePreset)=>{infoForm.setData('ui_theme',theme);applyUserTheme(theme)};
     const submitPassword=(e:FormEvent)=>{e.preventDefault();passwordForm.patch('/profile/password',{preserveScroll:true,onSuccess:()=>passwordForm.reset()})};
 
     const startTwoFactor=async()=>{setTwoFactorBusy(true);setTwoFactorMessage('');setRecoveryCodes([]);try{const r=await fetch('/profile/two-factor/setup',{method:'POST',headers:{'X-CSRF-TOKEN':csrf(),Accept:'application/json'}});if(!r.ok)throw new Error(await jsonError(r,'Could not start two-factor setup.'));setTwoFactorSetup(await r.json());setTwoFactorMessage('Add this account to your authenticator app, then enter the current 6-digit code.')}catch(e){setTwoFactorMessage(e instanceof Error?e.message:'Could not start two-factor setup.')}finally{setTwoFactorBusy(false)}};
@@ -63,7 +58,7 @@ export default function Profile({ user, flash, networkPolicy={enabled:false,curr
 
           <div className="profile-card"><h2 className="profile-card-title"><Globe2 size={18}/>Network Access</h2><div className="profile-security-summary"><div><span>Network policy</span><b>{networkPolicy.enabled?'Internal / VPN Only':'Restriction not enabled'}</b></div><div><span>Current sign-in source</span><b style={{textTransform:'capitalize'}}>{networkPolicy.current_access_source.replaceAll('_',' ')}</b></div><div><span>External Internet exception</span><b>{externalActive?'Allowed now':user.external_access_allowed?'Scheduled / expired':'Blocked'}</b></div>{user.external_access_starts_at&&<div><span>External start</span><b>{new Date(user.external_access_starts_at).toLocaleString()}</b></div>}{user.external_access_expires_at&&<div><span>External expiry</span><b>{new Date(user.external_access_expires_at).toLocaleString()}</b></div>}{user.external_access_reason&&<div><span>Reason</span><b>{user.external_access_reason}</b></div>}{user.external_access_approver?.name&&<div><span>Approved by</span><b>{user.external_access_approver.name}</b></div>}</div><div className="admin-guide" style={{marginTop:12}}>External Internet permission is managed by authorized administrators. The same portal URL is used internally, over VPN and externally; the server decides access after secure sign-in.</div></div>
 
-          <div className="profile-card" style={{gridColumn:'1 / -1'}}><h2 className="profile-card-title"><Palette size={18}/>Color Theme</h2><p className="setting-help">Choose a color combination for your own account. The selection is saved to your profile and follows you when you sign in on another device.</p><div className="theme-choice-grid" style={{marginTop:12}}>{themeChoices.map(t=><button type="button" className={`theme-choice${infoForm.data.ui_theme===t.key?' active':''}`} onClick={()=>chooseTheme(t.key)} key={t.key}><b>{t.label}</b><div className="setting-help">{t.help}</div><div className="theme-swatch">{t.colors.map(c=><i key={c} style={{background:c}}/>)}</div></button>)}</div><button className="btn btn-primary" style={{marginTop:12}} onClick={()=>infoForm.patch('/profile',{preserveScroll:true,onSuccess:()=>document.documentElement.setAttribute('data-color-theme',infoForm.data.ui_theme)})}>Save Theme as My Default</button></div>
+          <div className="profile-card" style={{gridColumn:'1 / -1'}}><h2 className="profile-card-title"><Palette size={18}/>Color Theme</h2><p className="setting-help">Choose from 16 account themes covering light and dark combinations. Preview a theme instantly, then save it as your personal default. Your saved theme follows your account on other devices.</p><div className="theme-choice-grid" style={{marginTop:12}}>{themeChoices.map(t=><button type="button" aria-pressed={infoForm.data.ui_theme===t.key} className={`theme-choice${infoForm.data.ui_theme===t.key?' active':''}`} onClick={()=>chooseTheme(t.key)} key={t.key}><div className="theme-choice-head"><b>{t.label}</b><span className={`theme-mode-pill ${t.mode}`}>{t.mode}</span></div><div className="setting-help">{t.help}</div><div className="theme-swatch">{t.colors.map((c,i)=><i key={`${c}-${i}`} style={{background:c}}/>)}</div></button>)}</div><button className="btn btn-primary" style={{marginTop:12}} onClick={()=>infoForm.patch('/profile',{preserveScroll:true,onSuccess:()=>applyUserTheme(infoForm.data.ui_theme)})}>Save Theme as My Default</button></div>
 
           <div className="profile-card"><h2 className="profile-card-title"><Lock size={18}/>Change Password</h2><form onSubmit={submitPassword} className="profile-form"><div className="profile-field"><label>Current password</label><input type="password" value={passwordForm.data.current_password} onChange={e=>passwordForm.setData('current_password',e.target.value)} autoComplete="current-password"/>{passwordForm.errors.current_password&&<span className="profile-field-error">{passwordForm.errors.current_password}</span>}</div><div className="profile-field"><label>New password</label><input type="password" value={passwordForm.data.password} onChange={e=>passwordForm.setData('password',e.target.value)} autoComplete="new-password"/>{passwordForm.errors.password&&<span className="profile-field-error">{passwordForm.errors.password}</span>}</div><div className="profile-field"><label>Confirm new password</label><input type="password" value={passwordForm.data.password_confirmation} onChange={e=>passwordForm.setData('password_confirmation',e.target.value)} autoComplete="new-password"/></div><button type="submit" className="profile-save-btn" disabled={passwordForm.processing}>{passwordForm.processing?'Updating…':'Change Password'}</button></form></div>
 

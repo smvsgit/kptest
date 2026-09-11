@@ -1,4 +1,20 @@
-# SMVS Karyalay Portal - Project Change Notes
+# Karyalay Portal - Project Changelog
+
+## 2026-09-10 - Application v16.00 Expanded Account Theme Gallery
+
+- Added 16 saved user theme combinations across 8 color families, each with Light and Dark variants.
+- Theme selection previews instantly and persists the complete preset to the user profile.
+- Existing v15 legacy theme values remain backward compatible.
+- Updated User Guide HTML/DOCX and release/UAT/deployment documentation.
+- Preserved v15.01 healthcheck hardening and persistent `/srv/media/projects/karyalayportal/uploads` binds.
+
+## 2026-09-10 - Application v15.01 Coolify Healthcheck Detection Hardening
+
+- Added Dockerfile-native `HEALTHCHECK` for Laravel `/up` while retaining the Compose app healthcheck, covering both Coolify Compose-owned and Dockerfile-detection paths.
+- Hardened the probe to `127.0.0.1` with a four-second curl max-time.
+- Disabled the inherited web-image healthcheck for queue worker and scheduler, and excluded worker/scheduler/Meilisearch from Coolify aggregate health; MariaDB retains its native healthcheck.
+- Preserved all v15.00 functionality and the `/srv/media/projects/karyalayportal/uploads` persistent bind on app/worker/scheduler.
+- Runtime Coolify health-state evidence and full UAT/Go-Live remain open.
 
 ## 2026-09-10 - Application v15.00 Identity, Role & External Internet Access Management
 

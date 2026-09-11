@@ -12,6 +12,14 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const UI_THEMES = [
+        'smvs-light','smvs-dark','slack-light','slack-dark','google-light','google-dark',
+        'ocean-light','ocean-dark','royal-light','royal-dark','forest-light','forest-dark',
+        'rose-light','rose-dark','amber-light','amber-dark',
+        // Legacy values remain accepted for backward compatibility and are normalized by the UI.
+        'smvs','slack','google',
+    ];
+
     protected $fillable = [
         'name','email','password','phone','department_id','organization_unit_id','role','portal_role_id','permission_set_id',
         'status','status_reason','status_changed_at','status_changed_by','failed_login_count','locked_until','last_login_at','last_seen_at',

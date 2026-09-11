@@ -1,5 +1,6 @@
 export type UserRole = 'super-admin' | 'department-admin' | 'department-operator' | 'viewer';
-export type UiTheme = 'smvs' | 'slack' | 'google';
+export type UiThemePreset = 'smvs-light' | 'smvs-dark' | 'slack-light' | 'slack-dark' | 'google-light' | 'google-dark' | 'ocean-light' | 'ocean-dark' | 'royal-light' | 'royal-dark' | 'forest-light' | 'forest-dark' | 'rose-light' | 'rose-dark' | 'amber-light' | 'amber-dark';
+export type UiTheme = UiThemePreset | 'smvs' | 'slack' | 'google';
 export type PageAccessKey = 'browse'|'upload'|'access'|'reports'|'integrations'|'guide'|'settings';
 
 export interface Department { id:number; name:string; is_active:boolean; is_system:boolean; }

@@ -1,9 +1,9 @@
-# Karyalay Portal v15.00 - Go-Live Runbook
+# Karyalay Portal v16.00 - Go-Live Runbook
 
 
-## v15.00 release precondition
+## v16.00 release precondition
 
-Before treating a staging result as release evidence, confirm the portal footer/System Information reports **15.00**, the deployed source checksum matches the approved v15.00 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
+Before treating a staging result as release evidence, confirm the portal footer/System Information reports **16.00**, the deployed source checksum matches the approved v16.00 artifact, and no earlier-release UAT approval is being reused. Feature coding is complete, but Management retention/RPO/RTO/network/2FA/quota policy values must be approved or formally risk-accepted through the readiness workflow before final Go-Live approval.
 
 ## 1. Before the deployment window
 
@@ -18,7 +18,7 @@ Before treating a staging result as release evidence, confirm the portal footer/
 ## 2. Deployment
 
 1. Put the application into the approved maintenance/traffic-control state if required by the deployment plan.
-2. Deploy the exact v15.00 artifact and matching environment configuration.
+2. Deploy the exact v16.00 artifact and matching environment configuration.
 3. Run migrations: `php artisan migrate --force`.
 4. Ensure queue workers are running.
 5. Ensure the scheduler calls `php artisan schedule:run` every minute. The current-release scheduler heartbeat must become fresh within five minutes.
@@ -50,3 +50,8 @@ Use the Management-approved rollback window. Examples of rollback triggers: auth
 ## 7. Post go-live
 
 Monitor failed jobs, notification failures, integration health, broken sources, backup/RPO readiness, audit integrity and user-reported issues. Keep the v12 UAT/readiness export with the release evidence package.
+
+
+## v16.00 personalization smoke test
+
+Before Go-Live approval, verify all 16 Light/Dark Profile themes render correctly for a representative user and that the saved account preset survives reload/sign-in. This is runtime evidence and does not replace the broader UAT gate.

@@ -347,9 +347,21 @@ After deploying v05.00:
 7. Record a parseable planned go-live date/time, owners, rollback window and change freeze; run `php artisan readiness:check` immediately before final approval.
 
 
-## v15.00 deployment checks
 
-1. Confirm the exact deployed artifact reports **15.00** and `VERSION` matches `config/version.php` (previous `14.00`).
+## v16.00 deployment checks
+
+1. Confirm the exact deployed artifact reports **16.00** and `VERSION` matches `config/version.php` (previous `15.01`).
+2. Run migrations and confirm existing users retain their stored theme values without database errors.
+3. Sign in with an existing user and open Profile -> Color Theme. Confirm all 16 presets are available.
+4. Preview/save both Light and Dark presets and verify the saved account default survives reload.
+5. Confirm the header Sun/Moon button remains a temporary viewing-mode override.
+6. Verify app, worker and scheduler still mount `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
+7. Confirm the app healthcheck remains configured and `/up` is healthy.
+8. Execute the v16.00 UAT regression focus before production Go-Live approval.
+
+## v15.01 deployment checks
+
+1. Confirm the exact deployed artifact reports **15.01** and `VERSION` matches `config/version.php` (previous `15.00`).
 2. Run `php artisan migrate --force`; verify the v15 identity/role/network/theme migration completes and existing users are mapped to built-in Portal Roles without losing legacy role/department/permission data.
 3. Run queue workers and `php artisan schedule:run` every minute. Confirm the app/worker/scheduler all retain `/srv/media/projects/karyalayportal/uploads:/var/www/html/storage/app/media/uploads`.
 4. Before enabling Network Policy, configure and test real office CIDRs and approved VPN ranges. Keep enforcement OFF during first migration if the production ranges are not yet verified, to prevent administrative lockout.
@@ -359,7 +371,11 @@ After deploying v05.00:
 8. Review friendly Super Admin forms for Maintenance, Branding, Network/VPN, 2FA, Lifecycle, Type Required Metadata, Watermark, Storage Quotas, Audit Retention, Recycle Bin Retention and User Guide Access. Keep destructive retention at `0 / OFF` until Management-approved values are entered.
 9. Validate Forgot Password/admin reset SMTP delivery, TOTP 2FA, Folder/Collection/Related Assets, governed lifecycle transitions, XLSX import/export limits and Scheduled Report scope revalidation.
 10. Verify User Guide 0/partial/full 22-page rights, HTML/DOCX controls and Local Storage host/container/probe path. Upload a representative file, redeploy, and confirm preview/download still works from the persistent `/srv/media` bind.
-11. Run the full `UAT_EXECUTION_GUIDE.md` against exact v15.00 and record release-bound evidence.
+11. Run the full `UAT_EXECUTION_GUIDE.md` against exact v15.01 and record release-bound evidence.
 12. Run `php artisan readiness:check` only after current-release UAT evidence, current verified backup/restore evidence and Management dependencies are complete.
 
 Do not mark UAT/Go-Live rows Done merely because v15 source coding/static validation exists.
+
+## v15.01 Coolify healthcheck verification
+
+v15.01 carries the same Laravel health endpoint at `/up`, now declared both in Docker Compose and in the final Docker image. After redeploy, verify the app container reports a configured healthcheck. From the Coolify app-container terminal, `curl -fsS http://127.0.0.1/up` must exit successfully. Do not enable traffic-blocking health routing until this probe is green. Worker, scheduler and Meilisearch are explicitly excluded from Coolify aggregate health because they do not expose the app HTTP readiness endpoint; MariaDB retains its own healthcheck.

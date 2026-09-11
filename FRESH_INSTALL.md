@@ -146,9 +146,9 @@ After migrations, v12 seeds the P0 UAT matrix and Management dependency list. Su
 After migrations, confirm System Information shows **12.01**. Open `Settings -> UAT / Go-Live`: the panel should show v12.01, prior-release UAT approvals must not count toward the current release, and Sign Off must remain disabled until the current result is saved. A Passed restore-test must reference a backup with a Passed checksum verification. Resolved/Risk Accepted Management dependencies must contain a decision/approval note.
 
 
-## v15.00 first-login identity/network setup
+## v16.00 first-login identity/network/theme setup
 
-After the fresh migration and initial Super Admin login, confirm **Settings -> System -> System Information** reports `15.00`. Then:
+After the fresh migration and initial Super Admin login, confirm **Settings -> System -> System Information** reports `16.00`. Then:
 
 1. Open **Settings -> Users & Roles**. Verify built-in roles, create a staging user, test enable/disable, role assignment, User Group membership and password-reset email.
 2. Configure real office CIDRs and approved VPN ranges before turning Network Policy ON. Default production posture after verified configuration is **Internal/VPN Only**; specific users may receive time-bounded External Internet exceptions.
@@ -157,4 +157,9 @@ After the fresh migration and initial Super Admin login, confirm **Settings -> S
 5. Review Branding/default language, Maintenance Mode, 2FA, lifecycle transitions, type-specific metadata, watermark, storage quotas, Scheduled Reports, Audit Retention, Recycle Bin Retention and 22-page User Guide Access rights.
 6. Confirm Integrations & Health shows persistent host `/srv/media/projects/karyalayportal/uploads` and container/probe `/var/www/html/storage/app/media/uploads`. Upload a staging asset and prove it survives a redeploy before production acceptance.
 
-Retention/RPO/RTO values intentionally remain policy-driven. A zero retention value means **Policy Pending / no automatic destructive pruning**, not a missing code feature. Configure production values only after Management/IT approval, and execute one complete v15.00 staging UAT cycle before production.
+Retention/RPO/RTO values intentionally remain policy-driven. A zero retention value means **Policy Pending / no automatic destructive pruning**, not a missing code feature. Configure production values only after Management/IT approval, and execute one complete v16.00 staging UAT cycle before production.
+
+
+## v16.00 default theme check
+
+New accounts default to **SMVS Teal - Dark**. Users can choose any of 16 Light/Dark combinations in Profile -> Color Theme and save the selection as their account default.
