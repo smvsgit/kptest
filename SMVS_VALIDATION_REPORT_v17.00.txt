@@ -43,10 +43,19 @@ AUTOMATED CHECKS
 [PASS] Version contract: config/version.php (17.00) matches root VERSION
 [PASS] Seven suites failing at v16.00 are fixed (see CHANGELOG)
 
+DEPLOYED-HOST VERIFICATION (2026-10-22, https://kptest.divyajivan.com)
+[PASS] UAT-002 healthcheck: /up returned HTTP 200 on 5 consecutive probes,
+       worst case 17 ms against the healthcheck's 4 s timeout, so the container
+       command `curl -fsS --max-time 4 http://127.0.0.1/up` succeeds.
+[PASS] Built front-end assets served from /build/assets (app CSS and JS), theme
+       applied, Inertia root mounted - the deploy ran `npm run build`.
+[PASS] v17.00 behaviour confirmed live: a JSON request that fails validation now
+       returns 422 with a structured error body. v16.00 returned a 302 HTML
+       redirect at the same endpoint.
+
 UAT REGISTER STATUS (from Karyalay_Portal_UAT_GoLive_Test_Report_v16.00)
   20  fixed in this release
-  12  executed and verified in this release
-   1  partly verified (UAT-002 - /up verified; container Healthy needs the deployed host)
+  13  executed and verified in this release
   27  previously recorded as working
    1  gap confirmed (C11 - Gujarati interface translation not implemented)
   36  open, awaiting environment, provider configuration or a management decision
