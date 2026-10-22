@@ -62,6 +62,7 @@ export default function UserRoleManagementPanel(p:Props){
   const addGroupMember=async(g:UserGroup)=>{const id=groupMember[g.id];if(!id)return p.onError('Choose a user.');try{const d=await api(`/user-groups/${g.id}/members`,'POST',{user_id:Number(id),apply_group_role:true});p.onSuccess(d.message);setGroupMember(x=>({...x,[g.id]:''}));refresh();}catch(e){p.onError(e instanceof Error?e.message:'Could not add user to group.')}};
   const removeGroupMember=async(g:UserGroup,u:User)=>{try{const d=await api(`/user-groups/${g.id}/members/${u.id}`,'DELETE');p.onSuccess(d.message);refresh();}catch(e){p.onError(e instanceof Error?e.message:'Could not remove group member.')}};
   const applyGroupRole=async(g:UserGroup)=>{if(!confirm(`Apply ${g.portal_role?.name||'group role'} to all active members of ${g.name}?`))return;try{const d=await api(`/user-groups/${g.id}/apply-role`,'POST');p.onSuccess(d.message);refresh();}catch(e){p.onError(e instanceof Error?e.message:'Could not apply group role.')}};
+  const saveGroup=async(g:UserGroup,patch:{name:string;description:string|null;portal_role_id:number|null;is_active:boolean})=>{if(!patch.name.trim())return p.onError('Group name is required.');try{const d=await api(`/user-groups/${g.id}`,'PATCH',{name:patch.name.trim(),description:patch.description,portal_role_id:patch.portal_role_id,is_active:patch.is_active});p.onSuccess(d.message);refresh();}catch(e){p.onError(e instanceof Error?e.message:'Could not update group.')}};
   const deleteGroup=async(g:UserGroup)=>{if(!confirm(`Delete group “${g.name}”? Users will not be deleted.`))return;try{const d=await api(`/user-groups/${g.id}`,'DELETE');p.onSuccess(d.message);refresh();}catch(e){p.onError(e instanceof Error?e.message:'Could not delete group.')}};
 
   const canManageExternal=isSuper||p.networkPolicy.department_admin_can_manage_external_access;
@@ -91,7 +92,7 @@ export default function UserRoleManagementPanel(p:Props){
     </div>}
 
     <div className="settings-card"><h2 className="settings-card-title"><Users size={18}/> User Groups</h2><div className="setting-help">Create a department group, assign a role to it, then add users. Adding a member can immediately apply the group role; you can also re-apply the group role to all active members later.</div><div className="settings-grid" style={{marginTop:12}}><input className="form-input" placeholder="Group name" value={groupName} onChange={e=>setGroupName(e.target.value)}/><input className="form-input" placeholder="Description" value={groupDescription} onChange={e=>setGroupDescription(e.target.value)}/><select className="form-select" disabled={!isSuper} value={groupDept} onChange={e=>setGroupDept(e.target.value)}><option value="">Cross-department / global group</option>{activeDepartments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select><select className="form-select" value={groupRole} onChange={e=>setGroupRole(e.target.value)}><option value="">No role assignment</option>{manageableRoles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></div><button className="btn btn-primary" style={{marginTop:10}} onClick={createGroup}>Create Group</button>
-      <div className="group-admin-grid">{p.userGroups.map(g=>{const candidates=p.users.filter(u=>(!g.department_id||u.department_id===g.department_id)&&!(g.members||[]).some(m=>m.id===u.id));return <div className="group-admin-card" key={g.id}><div className="setting-row"><div><b>{g.name}</b><div className="setting-help">{g.department?.name||'Global'} · Role: {g.portal_role?.name||'None'} · {(g.members||[]).length} member(s)</div></div><button className="icon-btn danger" onClick={()=>deleteGroup(g)}><Trash2 size={15}/></button></div><div className="group-members">{(g.members||[]).map(m=><span className="group-member-chip" key={m.id}>{m.name}<button onClick={()=>removeGroupMember(g,m)}>×</button></span>)}</div><div style={{display:'flex',gap:7,marginTop:8}}><select className="form-select" value={groupMember[g.id]||''} onChange={e=>setGroupMember(x=>({...x,[g.id]:e.target.value}))}><option value="">Add user…</option>{candidates.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select><button className="btn btn-secondary" onClick={()=>addGroupMember(g)}>Add</button></div>{g.portal_role_id&&<button className="btn btn-secondary" style={{marginTop:8}} onClick={()=>applyGroupRole(g)}><RefreshCcw size={13}/> Apply Group Role to Members</button>}</div>})}</div>
+      <div className="group-admin-grid">{p.userGroups.map(g=><GroupCard key={g.id} group={g} users={p.users} roles={manageableRoles} memberDraft={groupMember[g.id]||''} onMemberDraft={v=>setGroupMember(x=>({...x,[g.id]:v}))} onAddMember={()=>addGroupMember(g)} onRemoveMember={m=>removeGroupMember(g,m)} onApplyRole={()=>applyGroupRole(g)} onSave={patch=>saveGroup(g,patch)} onDelete={()=>deleteGroup(g)}/>)}</div>
     </div>
   </div>
 }
@@ -99,4 +100,75 @@ export default function UserRoleManagementPanel(p:Props){
 function RoleCard({role,onSave,onDelete}:{role:PortalRole;onSave:(r:PortalRole,p:Partial<PortalRole>)=>void;onDelete:(r:PortalRole)=>void}){
   const [name,setName]=useState(role.name),[pages,setPages]=useState({...role.page_access}),[permissions,setPermissions]=useState({...role.permissions}),[active,setActive]=useState(role.is_active);
   return <div className="role-admin-card"><div className="setting-row"><div><b>{role.name}</b><div className="setting-help">{role.is_builtin?'Built-in':'Custom'} · Base: {baseRoleLabels[role.base_role]}</div></div>{!role.is_builtin&&<button className="icon-btn danger" onClick={()=>onDelete(role)}><Trash2 size={15}/></button>}</div>{!role.is_builtin&&<input className="form-input" value={name} onChange={e=>setName(e.target.value)}/>}<div className="role-check-grid"><div><span className="mini-heading">Pages</span>{(Object.keys(pageLabels) as PageAccessKey[]).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(pages[k])} disabled={k==='browse'||(role.base_role==='super-admin'&&k==='settings')} onChange={e=>setPages(x=>({...x,[k]:e.target.checked}))}/>{pageLabels[k]}</label>)}</div><div><span className="mini-heading">Permissions</span>{Object.keys(permissionLabels).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(permissions[k])} onChange={e=>setPermissions(x=>({...x,[k]:e.target.checked}))}/>{permissionLabels[k]}</label>)}</div></div>{!role.is_builtin&&<label className="check-row"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>Role active</label>}<button className="btn btn-secondary" onClick={()=>onSave(role,{name,page_access:pages,permissions,is_active:role.is_builtin?true:active})}>Save Role</button></div>
+}
+
+/**
+ * A group row that can be renamed and re-roled in place (UAT C07) and whose
+ * member picker filters as you type (UAT C08), so large user lists stay usable.
+ */
+function GroupCard({group,users,roles,memberDraft,onMemberDraft,onAddMember,onRemoveMember,onApplyRole,onSave,onDelete}:{
+  group:UserGroup; users:User[]; roles:PortalRole[]; memberDraft:string;
+  onMemberDraft:(v:string)=>void; onAddMember:()=>void; onRemoveMember:(u:User)=>void;
+  onApplyRole:()=>void; onDelete:()=>void;
+  onSave:(patch:{name:string;description:string|null;portal_role_id:number|null;is_active:boolean})=>void;
+}){
+  const [editing,setEditing]=useState(false);
+  const [name,setName]=useState(group.name);
+  const [description,setDescription]=useState(group.description||'');
+  const [roleId,setRoleId]=useState(group.portal_role_id?String(group.portal_role_id):'');
+  const [active,setActive]=useState(group.is_active??true);
+  const [memberQuery,setMemberQuery]=useState('');
+
+  const members=group.members||[];
+  const candidates=useMemo(()=>{
+    const q=memberQuery.trim().toLowerCase();
+    return users.filter(u=>
+      (!group.department_id||u.department_id===group.department_id)
+      && !members.some(m=>m.id===u.id)
+      && (!q||u.name.toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q))
+    );
+  },[users,members,group.department_id,memberQuery]);
+
+  const cancel=()=>{setName(group.name);setDescription(group.description||'');setRoleId(group.portal_role_id?String(group.portal_role_id):'');setActive(group.is_active??true);setEditing(false)};
+
+  return <div className="group-admin-card">
+    <div className="setting-row">
+      <div><b>{group.name}</b><div className="setting-help">{group.department?.name||'Global'} · Role: {group.portal_role?.name||'None'} · {members.length} member(s){group.is_active===false?' · Inactive':''}</div></div>
+      <div style={{display:'flex',gap:6,alignItems:'center'}}>
+        <button className="icon-btn" title={`Edit ${group.name}`} onClick={()=>setEditing(x=>!x)}><UserCog size={15}/></button>
+        <button className="icon-btn danger" title={`Delete ${group.name}`} onClick={onDelete}><Trash2 size={15}/></button>
+      </div>
+    </div>
+
+    {editing&&<div className="group-edit-box">
+      <div className="settings-grid">
+        <input className="form-input" placeholder="Group name" value={name} onChange={e=>setName(e.target.value)}/>
+        <input className="form-input" placeholder="Description" value={description} onChange={e=>setDescription(e.target.value)}/>
+        <select className="form-select" value={roleId} onChange={e=>setRoleId(e.target.value)}>
+          <option value="">No role assignment</option>
+          {roles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+        </select>
+      </div>
+      <label className="check-row"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>Group active</label>
+      <div style={{display:'flex',gap:8,marginTop:8}}>
+        <button className="btn btn-primary" onClick={()=>{onSave({name,description:description.trim()||null,portal_role_id:roleId?Number(roleId):null,is_active:active});setEditing(false)}}>Save Group</button>
+        <button className="btn btn-secondary" onClick={cancel}>Cancel</button>
+      </div>
+    </div>}
+
+    <div className="group-members">{members.map(m=><span className="group-member-chip" key={m.id}>{m.name}<button onClick={()=>onRemoveMember(m)}>×</button></span>)}</div>
+
+    <div className="group-member-picker">
+      <input className="form-input" placeholder="Search user by name or email…" value={memberQuery} onChange={e=>setMemberQuery(e.target.value)} aria-label="Search users to add"/>
+      <div style={{display:'flex',gap:7,marginTop:6}}>
+        <select className="form-select" value={memberDraft} onChange={e=>onMemberDraft(e.target.value)}>
+          <option value="">{candidates.length?`Add user… (${candidates.length})`:'No matching user'}</option>
+          {candidates.map(u=><option key={u.id} value={u.id}>{u.name}{u.email?` — ${u.email}`:''}</option>)}
+        </select>
+        <button className="btn btn-secondary" disabled={!memberDraft} onClick={onAddMember}>Add</button>
+      </div>
+    </div>
+
+    {group.portal_role_id&&<button className="btn btn-secondary" style={{marginTop:8}} onClick={onApplyRole}><RefreshCcw size={13}/> Apply Group Role to Members</button>}
+  </div>;
 }

@@ -18,7 +18,7 @@ class MediaFile extends Model
         'technical_metadata','processing_status','uploaded_by','owner_user_id','folder_id','watermark_enabled',
     ];
     protected $casts = ['tags' => 'array', 'technical_metadata' => 'array', 'download_allowed' => 'boolean', 'watermark_enabled'=>'boolean', 'archived_at' => 'datetime'];
-    protected $appends = ['thumbnail_url', 'video_url', 'audio_url', 'document_url', 'download_url'];
+    protected $appends = ['thumbnail_url', 'image_url', 'video_url', 'audio_url', 'document_url', 'download_url'];
 
     public function category() { return $this->belongsTo(Category::class); }
     public function subcategory() { return $this->belongsTo(Subcategory::class); }
@@ -78,6 +78,12 @@ class MediaFile extends Model
         if (str_starts_with($this->thumbnail_path, 'http')) return $this->thumbnail_path;
         return route('files.thumbnail', $this);
     }
+    /**
+     * Images must stay viewable even when the thumbnail job has not run yet
+     * (queue stopped, retry pending). The thumbnail is an optimisation, not the
+     * only way to see the picture, so the original is always offered too.
+     */
+    public function getImageUrlAttribute(): ?string { return $this->type === 'image' && $this->file_path ? route('files.preview', $this) : null; }
     public function getVideoUrlAttribute(): ?string { return $this->type === 'video' && $this->file_path ? route('files.preview', $this) : null; }
     public function getAudioUrlAttribute(): ?string { return $this->type === 'audio' && $this->file_path ? route('files.preview', $this) : null; }
     public function getDocumentUrlAttribute(): ?string { return $this->type === 'document' && $this->file_path ? route('files.preview', $this) : null; }

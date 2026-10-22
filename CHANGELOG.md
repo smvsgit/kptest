@@ -1,5 +1,38 @@
 # Karyalay Portal - Changelog
 
+## v17.00 - UAT Remediation and Governance Hardening (2026-10-22)
+
+Closes 20 findings from the v16.00 UAT/Go-Live register and executes the 14 rows that had never been run.
+
+### Application defects fixed
+- JSON error rendering was limited to `api/*`, so every in-portal `fetch` caller received an HTML redirect instead of a 422/403 body. Failed actions could therefore report success while nothing had been saved - this was the root cause of the "user created but missing from the list" and "2FA not working" reports.
+- Bulk department transfer always failed: the exists rule serialised a boolean `false` to an empty string and matched no row.
+- User XLSX import read back shared-string indices instead of column text, so every imported row was skipped.
+- Protected content was readable by any member of the owning department. Per BR-02 it is now locked until an access request is approved; Super Admin, the owning department's admin and the asset owner keep direct access.
+- Images whose thumbnail job had not run showed a broken placeholder; the original file is now served instead.
+- The header Sun/Moon control is a real session-level mode override, so opening Profile no longer reverts the theme.
+
+### Category and sub-category management
+- Left drawer carries both "Add Main Category" and "Add Sub-Category", plus per-row add and rename actions.
+- Sub-category creation asks for the parent main category first and only then enables the name field, so a sub-category cannot exist without a parent.
+- Rename for main categories, rename and re-parent for sub-categories, and live search over both. Duplicate names are rejected per parent.
+
+### Administration
+- Master Data Management now has a dedicated form per type with parent selection only where the hierarchy requires it, per-type search, inline edit, and parents shown by name.
+- Storage quotas are managed per department with live usage, a meter and Within/Near/Reached state; blank follows the default and 0 GB means unlimited.
+- A master value missing from a Batch Upload dropdown can be added inline by Super Admin or Department Admin and is selected immediately.
+- User groups can be renamed, re-roled and deactivated inline; the member picker filters by name or email.
+- Department rows show user and asset counts and block deletion while anything depends on them.
+- Batch Upload clears uploaded items and resets shared metadata after a successful batch, keeping failed items for retry.
+
+### Validation and packaging
+- Test suite expanded from 98 to 188 tests, all passing; the seven suites that were failing before this release are fixed.
+- Added the Laravel per-directory `storage/framework` ignore files that were missing, so a fresh clone no longer fails with "Please provide a valid cache path".
+- Network access, user scoping, group roles, mandatory metadata, quotas, the container healthcheck and the two-factor journey now have executable coverage.
+
+### Known gap
+- Gujarati interface translation is not implemented. The locale preference, branding default, locale resolution and font loading all work, but there is no translation catalogue, so the UI text remains English.
+
 ## v16.00 - Expanded Account Theme Gallery (2026-09-10)
 
 - Expanded personal theme selection from 3 color families to 16 selectable Light/Dark combinations across 8 palettes.

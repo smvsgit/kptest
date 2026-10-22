@@ -31,28 +31,48 @@ class MediaAccessService
         return $this->sameDepartment($media, $user);
     }
 
+    /**
+     * Who already holds authority over an asset and therefore never has to go
+     * through the Request Access workflow: Super Admin, the owning department's
+     * admin (they are the approver for it) and the asset's own uploader/owner.
+     *
+     * BR-02 requires everyone else — including ordinary members of the owning
+     * department — to be approved before protected content unlocks.
+     */
+    private function hasCustodyOf(MediaFile $media, User $user): bool
+    {
+        if ($user->role === 'super-admin') return true;
+        if (!$this->sameDepartment($media, $user)) return false;
+        if ($user->role === 'department-admin') return true;
+        return ((int) $media->uploaded_by === (int) $user->id)
+            || ((int) $media->owner_user_id === (int) $user->id);
+    }
+
     public function canPreview(MediaFile $media, User $user): bool
     {
         if (!$this->canSeeMetadata($media, $user)) return false;
-        if ($user->role === 'super-admin' || $this->sameDepartment($media, $user)) return true;
+        if ($this->hasCustodyOf($media, $user)) return true;
         if ($media->access_policy === 'public') return true;
-        if ($media->access_policy === 'private') return false;
+        // Private content stays inside the owning department (BR-03).
+        if ($media->access_policy === 'private') return $this->sameDepartment($media, $user);
+        // Protected content is locked until an approval exists (BR-02).
         return $this->approvedRequest($media, $user) !== null;
     }
 
     public function canDownload(MediaFile $media, User $user): bool
     {
         if (!$media->download_allowed || !$this->canSeeMetadata($media, $user)) return false;
-        if ($user->role === 'super-admin' || $this->sameDepartment($media, $user)) return true;
+        if ($this->hasCustodyOf($media, $user)) return true;
         if ($media->access_policy === 'public') return true;
-        if ($media->access_policy === 'private') return false;
+        if ($media->access_policy === 'private') return $this->sameDepartment($media, $user);
         return $this->approvedRequest($media, $user)?->access_level === 'download';
     }
 
     public function canRequest(MediaFile $media, User $user): bool
     {
         if (($user->status ?? 'active') !== 'active' || $media->access_policy !== 'protected') return false;
-        if ($user->role === 'super-admin' || $this->sameDepartment($media, $user)) return false;
+        // Custodians already have access, so they have nothing to request.
+        if ($this->hasCustodyOf($media, $user)) return false;
         $latest=$this->latestRequest($media,$user);
         if(!$latest||in_array($latest->status,['rejected','more-info','expired','revoked','cancelled'],true))return true;
         if($latest->status==='approved'&&($latest->revoked_at||($latest->expires_at&&$latest->expires_at->isPast())))return true;

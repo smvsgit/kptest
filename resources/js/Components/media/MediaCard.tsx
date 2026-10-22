@@ -33,7 +33,8 @@ export default function MediaCard({ file, isSelected, onSelect, onFavorite, onOp
             return <div className="doc-card-representation" style={{ gap: 8 }}><LockKeyhole size={42} /><span style={{ fontSize: 11 }}>Protected content</span></div>;
         }
         if (file.type === 'image') {
-            return file.thumbnail_url ? <img src={file.thumbnail_url} alt={file.name} className="card-image" loading="lazy" /> : <div className="doc-card-representation">Image processing…</div>;
+            const imageSrc = file.thumbnail_url || file.image_url;
+            return imageSrc ? <img src={imageSrc} alt={file.name} className="card-image" loading="lazy" /> : <div className="doc-card-representation">Image processing…</div>;
         }
         if (file.type === 'video') {
             return <>

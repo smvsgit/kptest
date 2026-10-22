@@ -1,0 +1,67 @@
+KARYALAY PORTAL v17.00 - FINAL VALIDATION REPORT
+Generated: 2026-10-22
+Release: UAT Remediation and Governance Hardening
+Previous: v16.00
+
+SCOPE DELIVERED
+Closes 20 findings from the v16.00 UAT/Go-Live register and executes the 14 register
+rows that had never been run.
+
+APPLICATION DEFECTS FIXED
+- JSON error rendering was restricted to api/* routes, so every in-portal fetch caller
+  received a 302 HTML redirect instead of a 422/403 body. A failed action could therefore
+  report success while nothing was saved. This was the shared root cause behind the
+  "user created but not in the list" (C01) and "2FA not working" (C17) reports.
+- Bulk department transfer always failed: Rule::exists(...)->where('is_system', false)
+  serialises boolean false to an empty string and matched no row.
+- XLSX user import compared a SimpleXMLElement attribute with ===, so shared strings were
+  never resolved and every imported row was skipped.
+- Protected content was openable by any member of the owning department. BR-02 is now
+  enforced: content stays locked until an access request is approved. Super Admin, the
+  owning department's admin and the asset owner retain direct access.
+- Images whose thumbnail job had not run showed a broken placeholder; the original file
+  is now served as a fallback.
+- The header Sun/Moon control is now a session-level mode override, so opening Profile no
+  longer reverts a light/dark choice.
+
+FUNCTIONAL SCOPE
+- Category and sub-category: drawer menus for both levels, parent-first creation flow,
+  rename and re-parent, live search, duplicate-safe naming.
+- Master Data Management: one form per type, parent selection only where the hierarchy
+  requires it, per-type search, inline edit, parents shown by name.
+- Department storage quotas: per-department limits with live usage, meter and
+  Within/Near/Reached state; blank follows the default, 0 GB means unlimited.
+- Batch Upload: inline master-value creation for Super Admin and Department Admin;
+  queue and shared metadata reset after a successful batch, failed items retained.
+- User groups: inline rename/re-role/deactivate and a filterable member picker.
+- Departments: usage counts shown and deletion blocked while users, assets or
+  sub-departments depend on them.
+
+AUTOMATED CHECKS
+[PASS] PHPUnit suite: 188/188 tests, 600 assertions, 0 failures, 0 errors, 0 skipped
+[PASS] Vite production build completes
+[PASS] Version contract: config/version.php (17.00) matches root VERSION
+[PASS] Seven suites failing at v16.00 are fixed (see CHANGELOG)
+
+UAT REGISTER STATUS (from Karyalay_Portal_UAT_GoLive_Test_Report_v16.00)
+  20  fixed in this release
+  12  executed and verified in this release
+   1  partly verified (UAT-002 - /up verified; container Healthy needs the deployed host)
+  27  previously recorded as working
+   1  gap confirmed (C11 - Gujarati interface translation not implemented)
+  36  open, awaiting environment, provider configuration or a management decision
+   0  not tested
+
+PACKAGING
+- Added the Laravel per-directory storage/framework ignore files that were absent, so a
+  fresh clone no longer fails with "Please provide a valid cache path".
+
+OPEN GATES (unchanged from v16.00 unless noted)
+- Gujarati interface translation: locale preference, branding default, locale resolution
+  and font loading all work; the translation catalogue does not exist, so UI text is
+  English. Scope measured at ~1,240 strings / ~5,870 words.
+- Email / WhatsApp / SMS provider configuration and delivery testing.
+- Backup and disaster-recovery evidence on a real host.
+- Network / VPN approved CIDR values (policy logic itself is now covered by tests).
+- Protected-content download policy: management decision.
+- SHA256 manifest and master BRD/development tracker were not regenerated for this release.

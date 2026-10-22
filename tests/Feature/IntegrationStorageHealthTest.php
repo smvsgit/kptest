@@ -53,7 +53,9 @@ class IntegrationStorageHealthTest extends TestCase
         $f=$this->fixture(); $source=$f['media']->sources()->firstOrFail();
         $this->actingAs($f['operator'])->patchJson('/files/'.$f['media']->id.'/sources/'.$source->id,['type'=>'local','label'=>'Primary','locator'=>$source->locator,'is_primary'=>true,'is_enabled'=>false])->assertOk();
         $this->assertSame('inactive',$source->fresh()->status);
-        $source->update(['is_enabled'=>true,'status'=>'active']); Storage::disk('media')->delete($source->locator);
+        // The PATCH above disabled the row in its own request, so this instance is stale.
+        // Without the refresh the re-enable is a no-op (nothing dirty) and the row stays disabled.
+        $source->refresh()->update(['is_enabled'=>true,'status'=>'active']); Storage::disk('media')->delete($source->locator);
         $this->actingAs($f['operator'])->postJson('/files/'.$f['media']->id.'/sources/'.$source->id.'/check')->assertOk()->assertJson(['status'=>'missing']);
         $this->assertNotNull($source->fresh()->broken_detected_at);
     }

@@ -55,3 +55,39 @@ export function applyUserTheme(value?: UiTheme | string | null, legacyMode: UiMo
     document.documentElement.style.colorScheme = resolved.mode;
     return resolved.preset;
 }
+
+/*
+ * The header Sun/Moon button is a temporary viewing-mode override: it changes
+ * light/dark for the session while the account keeps its saved theme family.
+ * It has to be stored and re-applied explicitly, because a saved value like
+ * "smvs-dark" already carries its own mode and would otherwise win on every
+ * page mount and snap the override back (UAT C25).
+ */
+const MODE_OVERRIDE_KEY = 'smvs_theme';
+
+export function readModeOverride(): UiMode | null {
+    try {
+        const stored = localStorage.getItem(MODE_OVERRIDE_KEY);
+        return stored === 'light' || stored === 'dark' ? stored : null;
+    } catch { return null; }
+}
+
+export function writeModeOverride(mode: UiMode): void {
+    try { localStorage.setItem(MODE_OVERRIDE_KEY, mode); } catch { /* private mode */ }
+}
+
+/** Called when the user picks a specific preset, which supersedes the override. */
+export function clearModeOverride(): void {
+    try { localStorage.removeItem(MODE_OVERRIDE_KEY); } catch { /* private mode */ }
+}
+
+/** Apply the account theme for this page, honouring any Sun/Moon override. */
+export function applySessionTheme(value?: UiTheme | string | null): { preset: UiThemePreset; mode: UiMode } {
+    const override = readModeOverride();
+    const resolved = splitThemeSelection(value, override ?? 'dark');
+    const mode = override ?? resolved.mode;
+    document.documentElement.setAttribute('data-color-theme', resolved.family);
+    document.documentElement.setAttribute('data-theme', mode);
+    document.documentElement.style.colorScheme = mode;
+    return { preset: resolved.preset, mode };
+}

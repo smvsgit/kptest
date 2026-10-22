@@ -11,10 +11,30 @@ class VersionAndDepartmentTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_application_version_is_14_00(): void
+    /**
+     * VERSIONING.md makes config/version.php the source of truth and the root
+     * VERSION file its mirror. Asserting that contract keeps the test correct
+     * across releases, instead of pinning a number that goes stale every time.
+     */
+    public function test_application_version_config_matches_version_file(): void
     {
-        $this->assertSame('14.00', config('version.current'));
-        $this->assertSame('13.06', config('version.previous'));
+        $current = config('version.current');
+        $previous = config('version.previous');
+
+        $this->assertMatchesRegularExpression('/^\d+\.\d{2}$/', (string) $current);
+        $this->assertMatchesRegularExpression('/^\d+\.\d{2}$/', (string) $previous);
+
+        $this->assertSame(
+            trim((string) file_get_contents(base_path('VERSION'))),
+            (string) $current,
+            'Root VERSION must mirror config/version.php.',
+        );
+
+        $this->assertGreaterThan(
+            (float) $previous,
+            (float) $current,
+            'Current version must be newer than the previous version.',
+        );
     }
 
     public function test_super_admin_can_create_department(): void
