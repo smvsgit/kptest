@@ -78,7 +78,7 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--border);
 <body><div class="wrap">
 <header>
   <h1>Karyalay Portal &mdash; Test Report</h1>
-  <div class="sub">Application v17.00 &middot; PHPUnit feature &amp; unit suite &middot; Generated 22 Oct 2026, 17:05</div>
+  <div class="sub">Application v17.00 &middot; PHPUnit feature &amp; unit suite &middot; Generated 22 Oct 2026, 22:26</div>
   <div class="verdict PASSED">AUTOMATED SUITE: PASSED</div>
 </header>
 
@@ -496,12 +496,12 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--border);
   Carried over from <i>Karyalay_Portal_UAT_GoLive_Test_Report_v16.00</i>. &ldquo;Fixed now&rdquo; marks rows closed by code changes and
   &ldquo;Tested now&rdquo; marks rows that had never been executed and were run for this report;
   everything else keeps the tester&rsquo;s recorded outcome.
-  Counts: <b>20</b> fixed now &middot; <b>12</b> tested now &middot; <b>1</b> partly verified &middot; <b>27</b> working &middot; <b>1</b> gap confirmed &middot; <b>36</b> open issue.
+  Counts: <b>20</b> fixed now &middot; <b>13</b> tested now &middot; <b>27</b> working &middot; <b>1</b> gap confirmed &middot; <b>36</b> open issue.
 </div>
 <div class="panel scroll"><table>
 <thead><tr><th>ID</th><th>Area</th><th>Check</th><th>Tester&rsquo;s note</th><th>State</th></tr></thead>
 <tbody><tr class="st-passing"><td class="id">UAT-001</td><td>Go-Live / Navigation</td><td>Application opens from deployed URL</td><td>yes open</td><td><span class="badge passed">Working</span></td></tr>
-<tr class="st-partial"><td class="id">UAT-002</td><td>Go-Live / Navigation</td><td>Coolify healthcheck</td><td>/up answers successfully for anonymous callers, during maintenance mode, with network policy on, and for a 2FA-enrolled user; Dockerfile and Compose both point at it. Container-level "Healthy" still needs a check on the deployed host.</td><td><span class="badge skipped">Partly verified</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-002</td><td>Go-Live / Navigation</td><td>Coolify healthcheck</td><td>Verified on the deployed host after the v17.00 release: /up returned 200 on 5 consecutive probes with a 17 ms worst case against the healthcheck’s 4 s timeout, so the container curl succeeds. Also covered by tests for anonymous callers, maintenance mode, network policy enabled and a 2FA-enrolled user; Dockerfile and Compose both point at the same endpoint.</td><td><span class="badge passed">Tested now</span></td></tr>
 <tr class="st-passing"><td class="id">UAT-003</td><td>Go-Live / Navigation</td><td>Sidebar navigation</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
 <tr class="st-passing"><td class="id">UAT-004</td><td>Go-Live / Navigation</td><td>Refresh / Back / Forward regression</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
 <tr class="st-passing"><td class="id">UAT-005</td><td>Authentication</td><td>Valid user login</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
