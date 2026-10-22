@@ -205,13 +205,25 @@ Route::middleware('auth')->group(function () {
     Route::delete('/files/bulk-delete', [MediaFileController::class, 'bulkDelete'])
         ->name('files.bulk-delete')->middleware(['role:super-admin,department-admin','permission:delete']);
 
+    // Quick-add of a missing master value from the Batch Upload form (UAT C19).
+    // Curation of master data stays on the Super Admin settings screen.
+    Route::post('/master-data/quick', [MasterDataController::class, 'quickStore'])
+        ->name('master-data.quick-store')->middleware(['role:super-admin,department-admin','permission:upload']);
+
     // Category administration is limited to Super Admin and Department Admin.
     Route::post('/categories', [CategoryController::class, 'store'])
         ->name('categories.store')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
+    Route::put('/categories/{category}', [CategoryController::class, 'update'])
+        ->name('categories.update')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])
         ->name('categories.destroy')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
     Route::post('/categories/{category}/subcategories', [CategoryController::class, 'storeSubcategory'])
         ->name('subcategories.store')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
+    // Sub-category creation where the parent main category is selected inside the form.
+    Route::post('/subcategories', [CategoryController::class, 'storeSubcategoryForSelectedParent'])
+        ->name('subcategories.store-selected')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
+    Route::put('/subcategories/{subcategory}', [CategoryController::class, 'updateSubcategory'])
+        ->name('subcategories.update')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
     Route::delete('/subcategories/{subcategory}', [CategoryController::class, 'destroySubcategory'])
         ->name('subcategories.destroy')->middleware(['role:super-admin,department-admin','permission:manage_categories']);
 

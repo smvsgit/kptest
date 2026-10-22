@@ -16,6 +16,47 @@ class MasterDataController extends Controller
         if(!empty($data['parent_id'])){$parent=MasterDataValue::findOrFail($data['parent_id']);$valid=match($data['type']){'state'=>$parent->type==='country','city'=>$parent->type==='state','mandir'=>$parent->type==='city',default=>false};abort_unless($valid,422,'Invalid parent type for this master value.');}elseif(in_array($data['type'],['state','city','mandir'],true))abort(422,'Parent is required for State, City and Mandir master values.');
         $row=MasterDataValue::create($data+['is_active'=>$request->boolean('is_active',true)]);$audit->log($request,'master-data.created',$row,'Master data value created.',['after'=>$row->only(['type','name','code','parent_id','aliases','is_active'])]);return back()->with('success','Master value created.');
     }
+    /**
+     * Quick-add used by the Batch Upload form when a needed value is missing
+     * from a dropdown (UAT C19).
+     *
+     * ADM-01 keeps master data admin-controlled, so this stays limited to the
+     * roles that already administer controlled lists, and to the flat list
+     * types plus the hierarchical ones when a valid parent is supplied. The
+     * full master-data screen remains the place for bulk curation.
+     */
+    public const QUICK_TYPES = ['event','person','language','media_type','city','mandir','state','country'];
+
+    public function quickStore(Request $request, AuditService $audit)
+    {
+        $data=$request->validate([
+            'type'=>['required',Rule::in(self::QUICK_TYPES)],
+            'name'=>'required|string|max:180',
+            'parent_id'=>'nullable|integer|exists:master_data_values,id',
+        ]);
+
+        $existing=MasterDataValue::where('type',$data['type'])->whereRaw('LOWER(name)=LOWER(?)',[$data['name']])->first();
+        if($existing){
+            // Re-use rather than reject: the uploader just wants a usable option.
+            if(!$existing->is_active){$existing->update(['is_active'=>true]);$audit->log($request,'master-data.reactivated',$existing,'Master value reactivated from upload form.');}
+            return response()->json(['message'=>"\"{$existing->name}\" is already available.",'value'=>$existing->only(['id','type','name','parent_id','is_active'])]);
+        }
+
+        if(in_array($data['type'],['state','city','mandir'],true)){
+            abort_if(empty($data['parent_id']),422,'Parent is required for State, City and Mandir master values.');
+            $parent=MasterDataValue::findOrFail($data['parent_id']);
+            $valid=match($data['type']){'state'=>$parent->type==='country','city'=>$parent->type==='state','mandir'=>$parent->type==='city',default=>false};
+            abort_unless($valid,422,'Invalid parent type for this master value.');
+        } else {
+            $data['parent_id']=null;
+        }
+
+        $row=MasterDataValue::create($data+['is_active'=>true]);
+        $audit->log($request,'master-data.created',$row,'Master data value created from upload form.',['type'=>$row->type,'name'=>$row->name,'parent_id'=>$row->parent_id]);
+
+        return response()->json(['message'=>"Added \"{$row->name}\".",'value'=>$row->only(['id','type','name','parent_id','is_active'])],201);
+    }
+
     public function update(Request $request, MasterDataValue $masterDataValue, AuditService $audit)
     {
         $data=$request->validate(['name'=>'required|string|max:180','code'=>'nullable|string|max:80','parent_id'=>'nullable|exists:master_data_values,id','aliases'=>'nullable|array','aliases.*'=>'string|max:180','is_active'=>'required|boolean','sort_order'=>'nullable|integer|min:0|max:100000']);

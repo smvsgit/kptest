@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karyalay Portal Test Report</title>
+<style>
+:root { --bg:#f6f7f9; --card:#fff; --text:#1a1d23; --muted:#6b7280; --border:#e3e6eb;
+  --pass:#17803d; --pass-bg:#e7f6ec; --fail:#c0282d; --fail-bg:#fdeaea;
+  --skip:#92700c; --skip-bg:#fdf3dc; --accent:#2b5cd9; --accent-bg:#eaf0fd; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#15181d; --card:#1d2128; --text:#e8eaed; --muted:#9aa1ac; --border:#2e333c;
+  --pass:#5ed68c; --pass-bg:#16301f; --fail:#ff8b8b; --fail-bg:#36191b;
+  --skip:#e9c35c; --skip-bg:#332a12; --accent:#7fa6ff; --accent-bg:#1b2436; } }
+:root[data-theme="dark"] { --bg:#15181d; --card:#1d2128; --text:#e8eaed; --muted:#9aa1ac;
+  --border:#2e333c; --pass:#5ed68c; --pass-bg:#16301f; --fail:#ff8b8b; --fail-bg:#36191b;
+  --skip:#e9c35c; --skip-bg:#332a12; --accent:#7fa6ff; --accent-bg:#1b2436; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); line-height:1.55;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+.wrap { max-width:1120px; margin:0 auto; padding:40px 16px 80px; }
+header h1 { margin:0 0 6px; font-size:26px; letter-spacing:-.4px; }
+header .sub { color:var(--muted); font-size:13.5px; }
+.verdict { display:inline-block; margin-top:14px; padding:7px 16px; border-radius:999px;
+  font-weight:700; font-size:13px; letter-spacing:.4px; }
+.verdict.PASSED { background:var(--pass-bg); color:var(--pass); }
+.verdict.FAILED { background:var(--fail-bg); color:var(--fail); }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:12px; margin:26px 0 30px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+.card .n { font-size:27px; font-weight:700; letter-spacing:-.5px; }
+.card .l { font-size:11px; text-transform:uppercase; letter-spacing:.9px; color:var(--muted); margin-top:3px; }
+.card.pass .n { color:var(--pass); } .card.fail .n { color:var(--fail); } .card.skip .n { color:var(--skip); }
+.bar { height:9px; background:var(--border); border-radius:999px; overflow:hidden; display:flex; margin-bottom:12px; }
+.bar i { display:block; height:100%; }
+.legend { font-size:11.5px; color:var(--muted); margin-bottom:30px; }
+.legend b { font-weight:600; }
+h2 { font-size:17px; margin:36px 0 12px; letter-spacing:-.2px; }
+h2 .count { font-size:12px; font-weight:500; color:var(--muted); margin-left:8px; }
+.note { background:var(--accent-bg); border-left:3px solid var(--accent); border-radius:8px;
+  padding:13px 16px; font-size:13.5px; margin-bottom:18px; }
+.note.warn { background:var(--fail-bg); border-left-color:var(--fail); }
+table { width:100%; border-collapse:collapse; background:var(--card); font-size:13.2px; }
+th, td { text-align:left; padding:9px 13px; border-bottom:1px solid var(--border); vertical-align:top; }
+th { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted);
+  font-weight:600; position:sticky; top:0; background:var(--card); }
+td.num { text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+td.id { font-weight:700; white-space:nowrap; }
+td.mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; color:var(--fail); }
+.panel { border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.scroll { max-height:620px; overflow:auto; }
+.badge { display:inline-block; padding:2px 10px; border-radius:999px; font-size:10.5px;
+  font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; }
+.badge.passed { background:var(--pass-bg); color:var(--pass); }
+.badge.failed, .badge.errored { background:var(--fail-bg); color:var(--fail); }
+.badge.skipped { background:var(--skip-bg); color:var(--skip); }
+tr.st-fixed td,tr.st-verified td { background:var(--pass-bg); }
+tr.st-partial td { background:var(--skip-bg); }
+tr.st-gap td { background:var(--fail-bg); }
+.detail { margin-top:7px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11.5px; white-space:pre-wrap; color:var(--fail); background:var(--fail-bg);
+  padding:9px 11px; border-radius:7px; max-height:200px; overflow:auto; }
+details.suite { background:var(--card); border:1px solid var(--border); border-radius:10px;
+  margin-bottom:9px; overflow:hidden; }
+details.suite summary { cursor:pointer; padding:12px 16px; display:flex; justify-content:space-between;
+  align-items:center; gap:12px; font-size:13.5px; }
+details.suite summary::-webkit-details-marker { display:none; }
+details.suite .suite-name { font-weight:600; }
+details.suite .suite-name::before { content:"\25B8  "; color:var(--muted); }
+details.suite[open] .suite-name::before { content:"\25BE  "; }
+details.suite .suite-stats { font-size:12px; color:var(--muted); white-space:nowrap; }
+details.suite.failed .suite-stats { color:var(--fail); font-weight:600; }
+details.suite table { border-top:1px solid var(--border); }
+details.suite tr:last-child td { border-bottom:none; }
+code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px;
+  background:var(--bg); padding:1px 5px; border-radius:4px; }
+footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--border);
+  color:var(--muted); font-size:12px; }
+@media (max-width:640px) { .wrap { padding:26px 16px 60px; } th, td { padding:8px 9px; } }
+</style></head>
+<body><div class="wrap">
+<header>
+  <h1>Karyalay Portal &mdash; Test Report</h1>
+  <div class="sub">Application v17.00 &middot; PHPUnit feature &amp; unit suite &middot; Generated 22 Oct 2026, 17:05</div>
+  <div class="verdict PASSED">AUTOMATED SUITE: PASSED</div>
+</header>
+
+<div class="cards">
+  <div class="card"><div class="n">188</div><div class="l">Tests run</div></div>
+  <div class="card pass"><div class="n">188</div><div class="l">Passed</div></div>
+  <div class="card fail"><div class="n">0</div><div class="l">Failed</div></div>
+  <div class="card skip"><div class="n">0</div><div class="l">Skipped</div></div>
+  <div class="card"><div class="n">100%</div><div class="l">Pass rate</div></div>
+  <div class="card"><div class="n">70s</div><div class="l">Duration</div></div>
+</div>
+<div class="bar">
+  <i style="width:100.00%;background:var(--pass)"></i>
+  <i style="width:0.00%;background:var(--fail)"></i>
+  <i style="width:0.00%;background:var(--skip)"></i>
+</div>
+<div class="legend"><b>188</b> passed &middot; <b>0</b> failed
+ &middot; <b>0</b> skipped, across 30 test classes.</div>
+
+<h2>1. UAT findings closed</h2>
+<div class="note">
+  <b>Category &rarr; Sub-category order is enforced.</b> A main category is created first; the
+  <b>Add Sub-Category</b> form asks for the parent in <b>Step&nbsp;1</b> and only then enables the
+  <b>Step&nbsp;2</b> name field, so a sub-category can never exist without a parent. Both actions sit
+  in the left drawer menu as well as in Settings &rarr; Category Management.
+  <br><br><b>C23 changes who can open protected content.</b> Ordinary members of the owning department
+  must now request access, matching BR-02 (&ldquo;metadata may be visible, content access needs approval&rdquo;).
+  Super Admin, the owning department&rsquo;s admin and the asset&rsquo;s owner keep direct access.
+</div>
+<div class="panel"><table>
+<thead><tr><th>ID</th><th>Area</th><th>Reported in UAT</th><th>What was done</th><th>Status</th></tr></thead>
+<tbody><tr><td class="id">C01</td><td>setting</td><td>create user na form thi new user creation no msg ave 6e pan user list ma aa user bantu nathi</td><td>A failed creation looked like a success because the JSON endpoint returned an HTML redirect. It now returns 422 with the real reason, and a created user appears in the list immediately.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C02</td><td>setting</td><td>je department add karelo 6e e deleterno option aapelo 6e, e department user ne assign karelo hoy ne jho delete thai jaay to issue thay, users depatment vagar na thai jaay</td><td>Each department row shows its user/asset counts, and Delete is disabled with the blocking reason while anything still depends on it.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C03</td><td>setting</td><td>Category Management ma subcategory add karvano option 6e but e option isdho left drawer menu ma available hovo joie, tya matra category j add thay 6e.</td><td>Drawer menu now has both <b>Add Main Category</b> and <b>Add Sub-Category</b>, plus a per-row "add sub" button.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C04</td><td>setting</td><td>category, subcategory ne edit karvano koi option nathi</td><td>Rename for main categories; rename and re-parent for sub-categories, from the drawer and from Settings.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C05</td><td>setting</td><td>category, subcategory search no koi option nathi</td><td>Live search over categories and sub-categories in the drawer and in the Settings card.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C06</td><td>setting</td><td>role maangement ma created roles ne edit karva mateno option nathi, ketalk field disable 6e</td><td>Role editing already existed but silently discarded validation failures; those now surface. Built-in roles keep their fixed identity by design.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C07</td><td>setting</td><td>User Groups ne edit karvano koi option nathi available</td><td>User groups can be renamed, re-described, re-roled and deactivated from an inline edit panel.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C08</td><td>setting</td><td>User Groups ma user add karva mate user nu list nathi aavtu, list searchalble hovu joie to easy rahe add karva mate</td><td>The group member picker filters by name or email as you type and shows the candidate count.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C20</td><td>Batch Upload</td><td>batch upload pa6i field reset nathi thata</td><td>After a fully successful batch the uploaded items leave the queue and the shared metadata form resets; failed items stay for retry.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C21</td><td>Batch Upload</td><td>images complete upload thai 6e, downlaod thay 6e pan link broken batave 6e.</td><td>Images whose thumbnail job has not run are served from the original file instead of showing a broken placeholder.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C22</td><td>Batch Upload</td><td>superadmin na role ma previdew nathi aavtu, same suer na role map review male 6e</td><td>Same root cause as C21 — image preview no longer depends on the queued thumbnail job.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C23</td><td>Batch Upload</td><td>protected file viewr na role ma direct display thay 6e</td><td>Protected content is now locked for ordinary members of the owning department too, per BR-02. Only Super Admin, the owning department admin and the asset owner keep direct access.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C25</td><td>Batch Upload</td><td>theme dark to light karya pa6i jo profile open karie to theme pa6i dark thai jaay 6e</td><td>The Sun/Moon button is now a real session-level mode override, so opening Profile no longer snaps the theme back.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C09</td><td>setting</td><td>recyclebin ma data kai rite aavse enu clarification nathi</td><td>The Recycle Bin panel now explains how items arrive there, what Restore does, and that a configured retention period purges automatically.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C17</td><td>setting</td><td>Two-Factor Authentication pan jovu padse, i think not working</td><td>Verified end to end against a real authenticator: enrolment, challenge, single-use recovery codes, disable-with-password and the audit trail all work. The TOTP generator matches the RFC 6238 reference vector. What made it look broken was the same JSON-redirect defect as C01 &mdash; a rejected setup code returned HTML, so the profile screen announced success while nothing had been saved. Covered now by 13 tests.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C12</td><td>setting</td><td>mater data management ma country, city, stae etc badhu aapoyu 6e e badha na seaprate master form hova joie.</td><td>Master Data Management now has a dedicated form per type, with a parent selector only where the hierarchy needs one, per-type search, inline edit, and parents shown by name instead of a raw ID.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C18</td><td>setting</td><td>Department Storage Quotas ma master 1 j 6e, department wise space manage karva mate option joie.</td><td>Storage quotas are managed per department beside Department Management, each row showing live usage, a meter and a Within/Near/Reached state. Blank follows the default; 0 GB means unlimited.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C19</td><td>Batch Upload</td><td>aa form ma je dropdawn 6e ena enty mate mater form laag thi je, jo value dropdawn ma na hoy ne navi add karvi hoy to ahiya thi thaay evu kavu</td><td>A value missing from a Batch Upload dropdown can be added inline and is selected immediately. Limited to Super Admin and Department Admin, so ADM-01 keeps master data admin-controlled.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C10</td><td>setting</td><td>Language-wise Font Assignment ma UI proper nathi, achhe margin add karvu</td><td>Font-assignment preview and its action buttons have proper spacing.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">C13</td><td>setting</td><td>ghani badhi jagyae margin missing 6e atyare aa image ma pan butotn aand text area vachhe space nathi.</td><td>Settings cards give consistent spacing between a field or preview block and the button under it.</td><td><span class="badge passed">Fixed</span></td></tr><tr><td class="id">—</td><td>Category Management</td><td>Duplicate sub-category names were accepted inside the same main category.</td><td>Unique-per-parent validation; the same name is still allowed under a different main category.</td><td><span class="badge passed">Fixed</span></td></tr></tbody></table></div>
+
+<h2>2. Defects fixed while clearing the failing suites</h2>
+<div class="note">
+  Fixing the seven previously-failing tests surfaced three genuine application defects
+  (marked <b>App</b>) alongside three stale tests (<b>Test</b>). The application defects were
+  breaking real flows in production, not just the suite.
+</div>
+<div class="panel"><table>
+<thead><tr><th>Kind</th><th>Defect</th><th>What was wrong</th><th>Fix</th><th>Status</th></tr></thead>
+<tbody><tr><td class="id">App</td><td>JSON endpoints returned HTML redirects</td><td>bootstrap/app.php limited JSON error rendering to <code>api/*</code>. Every <code>fetch</code> caller on a web route (access request, access policy, saved search, bulk edit) got a 302 HTML redirect instead of a 422/403 body, so the UI could only show a generic fallback message.</td><td>Render JSON whenever the caller asks for it, excluding Inertia visits which need the redirect flow.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">App</td><td>Department transfer always rejected</td><td><code>Rule::exists(...)-&gt;where(&apos;is_system&apos;, false)</code> serialises <code>false</code> to an empty string, so it matched no row. Bulk department transfer failed with &ldquo;The selected department id is invalid&rdquo; for every valid department.</td><td>Pass <code>0</code>/<code>1</code> instead of booleans in the exists rule.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">App</td><td>XLSX import read back index numbers</td><td><code>XlsxService::read()</code> compared a SimpleXMLElement attribute to a string with <code>===</code>, which is always false. Shared strings were never resolved, so user XLSX import saw <code>0, 1, 2</code> instead of the column text and skipped every row.</td><td>Cast the attribute before comparing.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">Test</td><td>Version assertion pinned to v14.00</td><td>The test hard-coded <code>14.00</code>/<code>13.06</code> while the app ships <code>16.00</code>/<code>15.01</code>, so it broke on every release.</td><td>Assert the contract from VERSIONING.md instead: config matches the root VERSION file and moves forward.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">Test</td><td>Stale model made a re-enable a no-op</td><td>The integration-health test re-enabled a source through an instance that predated the disabling request, so nothing was dirty and no UPDATE was issued.</td><td>Refresh the model before updating it.</td><td><span class="badge passed">Fixed</span></td></tr>
+<tr><td class="id">Test</td><td>Expiry never exercised</td><td>The temporary-approval test used a requester inside the file&rsquo;s own department, where preview is granted on department membership alone &mdash; the expired entitlement was never consulted.</td><td>Use a cross-department requester, and add a companion test for the still-valid case.</td><td><span class="badge passed">Fixed</span></td></tr></tbody></table></div>
+
+<h2>3. Category &amp; Sub-Category tests<span class="count">CategoryHierarchyTest</span></h2>
+<div class="panel"><table>
+<thead><tr><th>Test</th><th class="num">Time</th><th>Result</th></tr></thead>
+<tbody><tr class="passed"><td>Category and subcategory changes are audited</td><td class="num">0.071s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Dashboard exposes categories with their subcategories</td><td class="num">0.167s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Deleting main category removes its subcategories</td><td class="num">0.037s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department admin can manage categories</td><td class="num">0.062s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Guest cannot manage categories</td><td class="num">0.052s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Main category name is required</td><td class="num">0.040s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Main category name must be unique</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Nested subcategory route still works</td><td class="num">0.053s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Renaming main category to an existing name is rejected</td><td class="num">0.047s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Renaming main category to its own name is allowed</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Renaming subcategory into a duplicate is rejected</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Same subcategory name is allowed under a different main category</td><td class="num">0.043s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Subcategory can be deleted without touching its parent</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Subcategory can be moved to another main category</td><td class="num">0.051s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Subcategory is created for the selected main category</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Subcategory name is unique within its main category</td><td class="num">0.043s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Subcategory requires a main category to be selected</td><td class="num">0.040s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Subcategory requires an existing main category</td><td class="num">0.045s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can create main category</td><td class="num">0.053s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can rename main category</td><td class="num">0.044s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can rename subcategory</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Viewer cannot create or edit categories</td><td class="num">0.079s</td><td><span class="badge passed">passed</span></td></tr></tbody>
+</table></div>
+
+<h2>4. Failures outside this change<span class="count">pre-existing, not introduced here</span></h2>
+<div class="note">None &mdash; the whole suite is green. The seven suites that were failing before this round are all fixed and listed in section&nbsp;2.</div>
+
+
+<h2>5. Full regression suite<span class="count">29 other test classes</span></h2>
+
+    <details class="suite passed">
+      <summary><span class="suite-name">AccessControlWorkflowTest</span>
+        <span class="suite-stats">4 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Owner department admin can review but other admin cannot</td><td class="num">0.113s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Private file is hidden from other department</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Protected file is visible but locked until approved</td><td class="num">3.171s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Request and view only approval do not grant download</td><td class="num">0.665s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">AuthorizationFoundationTest</span>
+        <span class="suite-stats">4 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Department operator cannot bulk delete</td><td class="num">0.038s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department operator reaches upload validation instead of being forbidden</td><td class="num">0.070s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Non super admin cannot simulate roles</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Viewer cannot access upload endpoint</td><td class="num">0.073s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">BackupDisasterRecoveryTest</span>
+        <span class="suite-stats">5 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Backup is encrypted and can restore a fresh migrated database</td><td class="num">0.094s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Only super admin can change backup settings and create backup</td><td class="num">0.270s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Passed restore evidence requires a verified backup</td><td class="num">0.046s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Restore test record supports rto readiness monitoring</td><td class="num">0.081s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Zero rpo rto and retention are policy pending not invented defaults</td><td class="num">0.044s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">DepartmentStorageQuotaTest</span>
+        <span class="suite-stats">7 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Department override takes precedence over the default</td><td class="num">0.026s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>One department quota does not constrain another</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Overview is exposed to super admin only</td><td class="num">0.129s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Overview reports usage state per department</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Quota zero means unlimited</td><td class="num">0.035s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can save per department quotas</td><td class="num">0.064s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Upload beyond the department quota is rejected</td><td class="num">0.037s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">ExampleTest</span>
+        <span class="suite-stats">1 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>That true is true</td><td class="num">0.003s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">ExampleTest</span>
+        <span class="suite-stats">1 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Guest redirect uses forwarded https origin</td><td class="num">0.030s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">FileLifecycleTest</span>
+        <span class="suite-stats">5 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Department admin can archive and unarchive own asset</td><td class="num">5.582s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department admin can restore own recycle bin item</td><td class="num">4.465s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Initial upload has version one history</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Normal delete moves file to recycle bin without deleting bytes</td><td class="num">7.511s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Only super admin can permanently delete recycled asset</td><td class="num">2.821s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">HealthcheckEndpointTest</span>
+        <span class="suite-stats">6 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Dockerfile and compose healthchecks point at the same endpoint</td><td class="num">0.032s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 002 up endpoint does not require authentication</td><td class="num">0.023s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 002 up endpoint is unaffected by an enrolled two factor user</td><td class="num">0.030s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 002 up endpoint still succeeds while maintenance mode is enabled</td><td class="num">0.026s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 002 up endpoint still succeeds while network policy is enabled</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 002 up endpoint succeeds for an anonymous request</td><td class="num">0.090s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">IntegrationStorageHealthTest</span>
+        <span class="suite-stats">4 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Department admin health view hides connection paths</td><td class="num">0.053s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department operator can attach multiple sources only to own asset</td><td class="num">0.062s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Only super admin can create integration and credentials are encrypted</td><td class="num">0.068s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Source can be disabled and local source check detects missing file</td><td class="num">0.100s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">LifecycleGovernanceTest</span>
+        <span class="suite-stats">2 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Controlled transition changes status and records history</td><td class="num">7.274s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Generic bulk metadata edit cannot bypass lifecycle workflow</td><td class="num">0.082s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">LocalePreferenceTest</span>
+        <span class="suite-stats">9 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>An unsupported language is rejected</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Branding default language applies to guests</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Locale falls back to english for an invalid branding value</td><td class="num">0.036s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Locale is shared with the front end</td><td class="num">0.058s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>New users default to english</td><td class="num">0.026s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>No translation catalogue exists yet</td><td class="num">0.024s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>User can save a gujarati interface preference</td><td class="num">0.142s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>User preference drives the application locale</td><td class="num">0.086s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>User preference overrides the branding default</td><td class="num">0.059s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">MandatoryMetadataAndQuotaTest</span>
+        <span class="suite-stats">9 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Uat 037 common required metadata blocks the governed transition</td><td class="num">2.818s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 037 location hierarchy mismatch is rejected</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 037 media type specific metadata blocks the governed transition</td><td class="num">5.802s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 037 upload is rejected when required metadata is missing</td><td class="num">0.130s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 037 year outside the configured range is rejected</td><td class="num">0.062s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 040 quota is scoped to the uploading department</td><td class="num">2.840s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 040 upload is refused once the department quota is reached</td><td class="num">0.070s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 040 upload succeeds while the department is under quota</td><td class="num">3.106s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 040 warning threshold is reported before the quota is reached</td><td class="num">7.336s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">MasterDataQuickAddTest</span>
+        <span class="suite-stats">8 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Department admin can quick add a flat master value</td><td class="num">0.091s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Flat types ignore a supplied parent</td><td class="num">0.043s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Hierarchical value requires a valid parent</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Operator and viewer cannot quick add</td><td class="num">0.049s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Quick add is audited</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Quick add reactivates a deactivated value</td><td class="num">0.036s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Quick add returns the existing value instead of failing</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Unknown type is rejected</td><td class="num">0.058s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">MediaPreviewUrlTest</span>
+        <span class="suite-stats">4 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Image url is null for non images and for missing files</td><td class="num">0.038s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Image url is serialized for the frontend</td><td class="num">0.027s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Image without thumbnail still exposes a preview url</td><td class="num">0.029s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Preview endpoint serves the original image</td><td class="num">0.138s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">MetadataMasterDataTest</span>
+        <span class="suite-stats">3 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Metadata rules are super admin configurable</td><td class="num">0.036s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Non super admin cannot manage master data</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can create hierarchical master data</td><td class="num">0.049s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">NetworkAccessPolicyTest</span>
+        <span class="suite-stats">16 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>An authenticated session is cut off when the source becomes disallowed</td><td class="num">0.106s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Cidr matching does not leak to neighbouring ranges</td><td class="num">0.029s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Emergency super admin is never locked out</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 021 internal and vpn ranges are allowed</td><td class="num">0.028s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 021 internal user can actually log in</td><td class="num">0.052s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 021 policy disabled means every source is unrestricted</td><td class="num">0.029s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 022 blocked user cannot log in and is not authenticated</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 022 public internet is blocked without an exception</td><td class="num">0.031s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 023 entitled user can log in through the same url</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 023 user with external entitlement is allowed from the internet</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 024 access after the expiry is denied</td><td class="num">0.031s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 024 access before the start time is denied</td><td class="num">0.035s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 024 access inside the window is granted</td><td class="num">0.026s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 025 department admin cannot grant external access while disabled</td><td class="num">0.038s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 025 granting and revoking external access is audited with reason and approver</td><td class="num">0.064s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 026 login audit records the access source</td><td class="num">0.099s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">NotificationAuditReportsTest</span>
+        <span class="suite-stats">6 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Access request delivers portal and queues enabled email</td><td class="num">0.091s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Audit chain verifies and model is append only</td><td class="num">0.033s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department admin activity report is department scoped</td><td class="num">0.054s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Overdue access request escalates using configured event</td><td class="num">0.065s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can verify audit integrity</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>User can save notification preferences</td><td class="num">0.050s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">OrganizationAccessMaturityTest</span>
+        <span class="suite-stats">6 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Active delegation allows department request review</td><td class="num">0.033s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department transfer revokes old entitlements</td><td class="num">0.035s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Disabling user requires successor for owned assets and revokes access</td><td class="num">0.037s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Org hierarchy supports sub department and team</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Temporary approval expires and access service stops preview</td><td class="num">0.038s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Unexpired temporary approval allows cross department preview</td><td class="num">0.035s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">ProtectedContentLockTest</span>
+        <span class="suite-stats">6 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Approved request unlocks content for department viewer</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Custodians keep direct access</td><td class="num">0.031s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Outside viewer is still locked out</td><td class="num">0.035s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Public and private policies are unchanged</td><td class="num">0.035s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Viewer in owning department can request access</td><td class="num">0.036s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Viewer in owning department sees metadata but not content</td><td class="num">0.046s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">RemainingFeatureCompletionTest</span>
+        <span class="suite-stats">4 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Network policy accepts allowed cidr</td><td class="num">0.028s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Policy pending defaults do not auto delete</td><td class="num">0.029s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Totp service generates and verifies current code</td><td class="num">0.028s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Xlsx round trip obeys simple sheet contract</td><td class="num">0.127s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">SearchDiscoveryTest</span>
+        <span class="suite-stats">4 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Favorite toggle is user specific and private metadata is not exposed</td><td class="num">0.061s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Recent view tracking upserts timestamp</td><td class="num">0.045s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>User can save and delete own search</td><td class="num">0.050s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>User cannot delete another users saved search</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">TwoFactorEnforcementTest</span>
+        <span class="suite-stats">5 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Confirmed user is redirected to challenge when session is not fresh</td><td class="num">0.038s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Confirmed user with fresh challenge can reach profile</td><td class="num">0.044s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Disabled two factor policy does not challenge confirmed users</td><td class="num">0.040s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Required super admin can reach profile and enrollment endpoint</td><td class="num">0.065s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Valid totp challenge redirects to dashboard and marks session fresh</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">TwoFactorFlowTest</span>
+        <span class="suite-stats">13 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Challenge is refused when two factor is not enabled</td><td class="num">0.031s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Confirm rejects an invalid code and leaves two factor off</td><td class="num">0.037s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Confirm with a valid code enables two factor and returns recovery codes</td><td class="num">0.063s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Disable requires the current password</td><td class="num">0.052s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Generated secret is valid base32 of expected length</td><td class="num">0.021s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Issuer from settings appears in the otpauth uri</td><td class="num">0.052s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Login forces a fresh challenge even with a stale pass marker</td><td class="num">0.063s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Recovery code is accepted case insensitively</td><td class="num">0.050s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Recovery code passes the challenge and is consumed</td><td class="num">0.058s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Setup issues a secret and otpauth uri</td><td class="num">0.034s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Totp matches the rfc 6238 reference vector</td><td class="num">0.023s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Two factor events are audited</td><td class="num">0.062s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Wrong code is rejected at the challenge</td><td class="num">0.057s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">UatReadinessTest</span>
+        <span class="suite-stats">6 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Management dependency statuses are explicit and go live approval refuses blockers</td><td class="num">2.887s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Only super admin can change uat results</td><td class="num">0.061s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Passed uat requires evidence or execution notes</td><td class="num">0.040s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Resolved or risk accepted management dependency requires decision note</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat signoff is bound to current application release</td><td class="num">0.055s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat signoff requires passed case and resets when result changes</td><td class="num">0.066s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">UploadBulkIntegrityTest</span>
+        <span class="suite-stats">4 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Department operator bulk edit is scoped to own department</td><td class="num">0.151s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Preflight hides private possible duplicates from other department</td><td class="num">0.176s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can bulk transfer department ownership</td><td class="num">3.085s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can configure upload policy</td><td class="num">0.804s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">UserGuideAccessTest</span>
+        <span class="suite-stats">5 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Manual source contains exactly twenty two pages</td><td class="num">0.038s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Role default limits portal and html manual</td><td class="num">0.066s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin always has full manual and word download route</td><td class="num">0.045s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>User override wins over department and role defaults</td><td class="num">0.080s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Zero pages hides manual and direct endpoint is forbidden</td><td class="num">0.095s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">UserScopeAndGroupRoleTest</span>
+        <span class="suite-stats">11 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Uat 014 department admin creates users only inside their own department</td><td class="num">0.303s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 014 department admin only sees users from their department</td><td class="num">0.144s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 018 adding a member applies the configured group role</td><td class="num">0.041s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 018 apply group role updates every member</td><td class="num">0.094s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 018 department admin cannot give a group an administrator role</td><td class="num">0.048s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 018 group membership is restricted to the group department</td><td class="num">0.039s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 018 group role application is audited</td><td class="num">0.047s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 019 department admin cannot create a role at all</td><td class="num">0.104s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 019 department admin cannot create an administrator</td><td class="num">0.061s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 019 department admin cannot promote a user to administrator</td><td class="num">0.036s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Uat 019 department admin cannot touch users in another department</td><td class="num">0.069s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">V15IdentityNetworkTest</span>
+        <span class="suite-stats">5 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Dashboard does not preload hidden page administration data</td><td class="num">0.102s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department admin cannot assign admin based custom role</td><td class="num">0.064s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department admin cannot put administrator accounts into role applying groups</td><td class="num">0.071s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>External user exception is time bounded and internal network still wins</td><td class="num">0.035s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Portal role page access is server enforced for reports</td><td class="num">0.050s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+    <details class="suite passed">
+      <summary><span class="suite-name">VersionAndDepartmentTest</span>
+        <span class="suite-stats">3 passed</span>
+      </summary>
+      <table><tbody><tr class="passed"><td>Application version config matches version file</td><td class="num">0.045s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Department admin cannot create department</td><td class="num">0.044s</td><td><span class="badge passed">passed</span></td></tr>
+<tr class="passed"><td>Super admin can create department</td><td class="num">0.107s</td><td><span class="badge passed">passed</span></td></tr></tbody></table>
+    </details>
+
+<h2>6. UAT / Go-Live register<span class="count">97 rows from the v16.00 workbook</span></h2>
+<div class="note">
+  Carried over from <i>Karyalay_Portal_UAT_GoLive_Test_Report_v16.00</i>. &ldquo;Fixed now&rdquo; marks rows closed by code changes and
+  &ldquo;Tested now&rdquo; marks rows that had never been executed and were run for this report;
+  everything else keeps the tester&rsquo;s recorded outcome.
+  Counts: <b>20</b> fixed now &middot; <b>12</b> tested now &middot; <b>1</b> partly verified &middot; <b>27</b> working &middot; <b>1</b> gap confirmed &middot; <b>36</b> open issue.
+</div>
+<div class="panel scroll"><table>
+<thead><tr><th>ID</th><th>Area</th><th>Check</th><th>Tester&rsquo;s note</th><th>State</th></tr></thead>
+<tbody><tr class="st-passing"><td class="id">UAT-001</td><td>Go-Live / Navigation</td><td>Application opens from deployed URL</td><td>yes open</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-partial"><td class="id">UAT-002</td><td>Go-Live / Navigation</td><td>Coolify healthcheck</td><td>/up answers successfully for anonymous callers, during maintenance mode, with network policy on, and for a 2FA-enrolled user; Dockerfile and Compose both point at it. Container-level "Healthy" still needs a check on the deployed host.</td><td><span class="badge skipped">Partly verified</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-003</td><td>Go-Live / Navigation</td><td>Sidebar navigation</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-004</td><td>Go-Live / Navigation</td><td>Refresh / Back / Forward regression</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-005</td><td>Authentication</td><td>Valid user login</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-006</td><td>Authentication</td><td>Invalid login / lockout</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-007</td><td>Authentication</td><td>Forgot Password by email</td><td>email config nathi to reset link send thati nathi</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-008</td><td>Authentication</td><td>Admin password reset</td><td>email config nathi to reset link send thati nathi</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-009</td><td>Authentication</td><td>Change Password</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-010</td><td>Authentication</td><td>Disabled / inactive user</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-011</td><td>Authentication</td><td>Two-Factor Authentication (2FA)</td><td>Enrolment, challenge, single-use recovery codes, disable-with-password and the audit trail all verified against real TOTP codes; the generator matches the RFC 6238 vector.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-012</td><td>Authentication</td><td>Session controls</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-013</td><td>Users &amp; Roles</td><td>Super Admin user creation</td><td>user create thay 6e, but kyay lsit ma aavtu nathi</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-014</td><td>Users &amp; Roles</td><td>Department Admin scoped user creation</td><td>A Department Admin creating a user always lands them in their own department even if another is submitted, and only sees users from that department.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-open"><td class="id">UAT-015</td><td>Users &amp; Roles</td><td>Built-in role page rights</td><td>built in roles ne edit karvano option nathi, ema na amuk fields disable aave 6e.</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-016</td><td>Users &amp; Roles</td><td>Custom role creation</td><td>yes, custom role create tahy 6e but ene edit karvno optopn nathi</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-017</td><td>Users &amp; Roles</td><td>Custom role assignment</td><td>yes working</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-018</td><td>Users &amp; Roles</td><td>User group and groupwise role assignment</td><td>Adding a member applies the configured group role, cross-department members are refused, and re-applying updates every member. Audited.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-019</td><td>Users &amp; Roles</td><td>Privilege-escalation protection</td><td>A Department Admin cannot create or promote administrators, cannot touch users in another department, and cannot create roles.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-020</td><td>Users &amp; Roles</td><td>User enable / disable</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-021</td><td>Network Access</td><td>Internal / VPN default access</td><td>Approved office CIDRs resolve as internal and trusted proxies as VPN; both log in normally. With the policy off, every source is unrestricted.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-022</td><td>Network Access</td><td>External user blocked by default</td><td>A public-internet address is blocked, login is refused despite correct credentials, and the block is audited.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-023</td><td>Network Access</td><td>User-wise external internet allow</td><td>A user with an external entitlement signs in through the same URL from the internet; a user without one is still blocked.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-024</td><td>Network Access</td><td>External access start / expiry</td><td>Access before the start time and after the expiry is denied; inside the window it is granted.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-025</td><td>Network Access</td><td>External access approval audit</td><td>Grant and revoke are audited with reason and approver recorded. Department Admins cannot grant while the Super Admin switch is off.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-026</td><td>Network Access</td><td>Login source audit</td><td>Login audit records the source as internal, vpn or external as applicable.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-027</td><td>Profile / Theme</td><td>Theme selection</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-028</td><td>Profile / Theme</td><td>Theme persistence</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-029</td><td>Profile / Theme</td><td>Light / Dark readability</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-030</td><td>Localization / Branding</td><td>Gujarati / English interface</td><td>yes, but no language switch happen in pages. all text are in englsih , no change to gujarati</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-031</td><td>Localization / Branding</td><td>Branding settings</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-032</td><td>User Guide</td><td>User Guide page rights</td><td>no, it visible on roles other than superadmin while disable</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-033</td><td>User Guide</td><td>Restricted manual access</td><td>no, it visible on roles other than superadmin while disable</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-034</td><td>Upload / Storage</td><td>Single file upload</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-035</td><td>Upload / Storage</td><td>Batch upload</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-036</td><td>Upload / Storage</td><td>Large / resumable upload</td><td>na, jo page change or refresh thay 6e to upload bandh thai jaay 6e, resume no option aavto nathi</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-037</td><td>Upload / Storage</td><td>Mandatory metadata</td><td>Missing common metadata, an out-of-range year and a mismatched location hierarchy are all rejected at upload; common and media-type-specific requirements both block the governed approval step.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-038</td><td>Upload / Storage</td><td>File type / size validation</td><td>yes working fine</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-039</td><td>Upload / Storage</td><td>Persistent /srv/media storage</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-verified"><td class="id">UAT-040</td><td>Upload / Storage</td><td>Department quota / warning</td><td>An over-quota upload is refused, an under-quota one succeeds, the warning threshold reports without blocking, and quotas stay scoped to the uploading department.</td><td><span class="badge passed">Tested now</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-041</td><td>Search &amp; Discovery</td><td>Basic search</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-042</td><td>Search &amp; Discovery</td><td>Filters and scope</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-043</td><td>Search &amp; Discovery</td><td>Saved search / Favorites / Recently Viewed</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-044</td><td>Preview / Download</td><td>Image/PDF/audio/video preview</td><td>issues in some previews</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-045</td><td>Preview / Download</td><td>View and Download permissions</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-046</td><td>Access Control</td><td>Public policy</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-047</td><td>Access Control</td><td>Protected request and approval</td><td>role base</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-048</td><td>Access Control</td><td>Reject / More Information</td><td>role base</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-049</td><td>Access Control</td><td>Temporary protected access</td><td>role base</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-050</td><td>Access Control</td><td>Private policy</td><td>role base</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-051</td><td>Lifecycle / Versioning</td><td>Controlled lifecycle</td><td>role base</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-052</td><td>Lifecycle / Versioning</td><td>Version history and restore</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-053</td><td>Lifecycle / Versioning</td><td>Recycle Bin / restore / permanent delete</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-054</td><td>Content Organization</td><td>Folders / Collections / Related Assets</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-055</td><td>Content Protection</td><td>Watermark</td><td>preview disable while protected</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-056</td><td>Reports</td><td>Role-aware dashboard</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-passing"><td class="id">UAT-057</td><td>Reports</td><td>Report export</td><td>yes</td><td><span class="badge passed">Working</span></td></tr>
+<tr class="st-open"><td class="id">UAT-058</td><td>Reports</td><td>Scheduled reports</td><td>no, gives error with Scheduled report run failed: SQLSTATE[42S22]: Column not found: 1054 Unknown column &#x27;actor_user_id&#x27; in &#x27;SELECT&#x27; (Connection: mysql, Host: db, Port: 3306, Database: karyalay, SQL: select `id`, `event`, `description`, `actor_user_id`, `actor_department_id`, `created_at` from `audit_logs` where `event` like %access% order by `id` desc limit 5000)</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-059</td><td>Notifications</td><td>Notification center and decision alerts</td><td>yes but not realtime refresing component, update on page refresh</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-060</td><td>Notifications</td><td>Configured delivery provider</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-061</td><td>Audit &amp; Security</td><td>Critical audit coverage</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-062</td><td>Audit &amp; Security</td><td>Audit tamper protection</td><td>role base</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-063</td><td>Integrations</td><td>Local/NAS/Drive/YouTube health</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-064</td><td>Integrations</td><td>Broken source detection / repair</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-065</td><td>Backup / DR</td><td>Backup creation and verification</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-066</td><td>Backup / DR</td><td>Fresh-DB restore verification</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-067</td><td>Operations</td><td>Queue worker</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-068</td><td>Operations</td><td>Scheduler</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-069</td><td>Maintenance</td><td>Maintenance Mode</td><td>yes</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-070</td><td>Responsive UI</td><td>Desktop / Tablet / Mobile</td><td>no, need some more responsive design</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-071</td><td>Performance</td><td>Search with production-like data</td><td>yes</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">UAT-072</td><td>Go-Live</td><td>No unresolved P0 / Critical UAT failure</td><td>need to check</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-fixed"><td class="id">C01</td><td>setting</td><td>create user</td><td>create user na form thi new user creation no msg ave 6e pan user list ma aa user bantu nathi</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C02</td><td>setting</td><td>Department Management</td><td>je department add karelo 6e e deleterno option aapelo 6e, e department user ne assign karelo hoy ne jho delete thai jaay to issue thay, users depatment vagar na thai jaay</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C03</td><td>setting</td><td>Category Management</td><td>Category Management ma subcategory add karvano option 6e but e option isdho left drawer menu ma available hovo joie, tya matra category j add thay 6e.</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C04</td><td>setting</td><td>Category Management</td><td>category, subcategory ne edit karvano koi option nathi</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C05</td><td>setting</td><td>Category Management</td><td>category, subcategory search no koi option nathi</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C06</td><td>setting</td><td>Role Management</td><td>role maangement ma created roles ne edit karva mateno option nathi, ketalk field disable 6e</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C07</td><td>setting</td><td>User Groups</td><td>User Groups ne edit karvano koi option nathi available</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C08</td><td>setting</td><td>User Groups</td><td>User Groups ma user add karva mate user nu list nathi aavtu, list searchalble hovu joie to easy rahe add karva mate</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C09</td><td>setting</td><td>recycle bin</td><td>recyclebin ma data kai rite aavse enu clarification nathi</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C10</td><td>setting</td><td>Language-wise Font Assignment</td><td>Language-wise Font Assignment ma UI proper nathi, achhe margin add karvu</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-gap"><td class="id">C11</td><td>setting</td><td>multilanguage check karvanu ek baki</td><td>Executed: the per-user preference, branding default, locale resolution and the locale reaching the front end all work. The translation content does not exist — there is no lang/ catalogue and the React components carry hardcoded English, so choosing ગુજરાતી changes the stored locale, not the words on screen.</td><td><span class="badge failed">Gap confirmed</span></td></tr>
+<tr class="st-fixed"><td class="id">C12</td><td>setting</td><td></td><td>mater data management ma country, city, stae etc badhu aapoyu 6e e badha na seaprate master form hova joie.</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C13</td><td>setting</td><td></td><td>ghani badhi jagyae margin missing 6e atyare aa image ma pan butotn aand text area vachhe space nathi.</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-open"><td class="id">C14</td><td>setting</td><td></td><td>email configration, whatsapp and text config aapde haju karyu nathi karya pa6i enu testing levanu thase</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">C15</td><td>setting</td><td></td><td>backup and DR ma setup kari ne aakhu jovanu thase sceduled backups and restore na options 6e to e kevi rite work karse e jovu padse</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-open"><td class="id">C16</td><td>setting</td><td></td><td>Network / VPN / External Internet ma su detail 6e e jovi padse, enu implementation jovu padse</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-fixed"><td class="id">C17</td><td>setting</td><td></td><td>Two-Factor Authentication pan jovu padse, i think not working</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C18</td><td>setting</td><td></td><td>Department Storage Quotas ma master 1 j 6e, department wise space manage karva mate option joie.</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C19</td><td>Batch Upload</td><td></td><td>aa form ma je dropdawn 6e ena enty mate mater form laag thi je, jo value dropdawn ma na hoy ne navi add karvi hoy to ahiya thi thaay evu kavu</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C20</td><td>Batch Upload</td><td></td><td>batch upload pa6i field reset nathi thata</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C21</td><td>Batch Upload</td><td></td><td>images complete upload thai 6e, downlaod thay 6e pan link broken batave 6e.</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C22</td><td>Batch Upload</td><td></td><td>superadmin na role ma previdew nathi aavtu, same suer na role map review male 6e</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-fixed"><td class="id">C23</td><td>Batch Upload</td><td></td><td>protected file viewr na role ma direct display thay 6e</td><td><span class="badge passed">Fixed now</span></td></tr>
+<tr class="st-open"><td class="id">C24</td><td>Batch Upload</td><td></td><td>protected content particular dept. ne assign karyu to e dept. sivay na koi users joi na sake, pan ahiya basic details display thay 6e have je dept ne assign karyu 6e ena user matra ene view to kari shake to judgement lai shakay k levu k nai. to ena mate download bandh rakhiye to je user access kare 6e ei approve ni ek ek request ma donload cahlu karie to e badha mate donloadable thai jay</td><td><span class="badge failed">Open issue</span></td></tr>
+<tr class="st-fixed"><td class="id">C25</td><td>Batch Upload</td><td></td><td>theme dark to light karya pa6i jo profile open karie to theme pa6i dark thai jaay 6e</td><td><span class="badge passed">Fixed now</span></td></tr></tbody></table></div>
+
+<footer>
+  Automated results generated from PHPUnit JUnit output; failing suites are expanded by default.
+  UAT rows read from <i>Karyalay_Portal_UAT_GoLive_Test_Report_v16.00.xlsx</i>.
+  Requirements cross-checked against <i>Karyalay_Portal_Final_BRD_v3.6</i>.
+</footer>
+</div></body></html>

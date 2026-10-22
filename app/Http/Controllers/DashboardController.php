@@ -28,6 +28,7 @@ use App\Services\SearchIndexService;
 use App\Services\IntegrationHealthService;
 use App\Services\BackupService;
 use App\Services\ReadinessService;
+use App\Services\StorageQuotaService;
 use App\Services\UserGuideService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class DashboardController extends Controller
         'asset_status','source_type','uploaded_by','date_from','date_to','quick_view','panel','page',
     ];
 
-    public function index(Request $request, SearchIndexService $searchIndex, MediaAccessService $access, IntegrationHealthService $integrationHealth, BackupService $backups, ReadinessService $readiness, UserGuideService $userGuide)
+    public function index(Request $request, SearchIndexService $searchIndex, MediaAccessService $access, IntegrationHealthService $integrationHealth, BackupService $backups, ReadinessService $readiness, UserGuideService $userGuide, StorageQuotaService $storageQuota)
     {
         $user = $request->user();
         $simulatedRole = $user->role === 'super-admin' ? session('simulated_role', 'super-admin') : $user->role;
@@ -195,8 +196,10 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'categories' => $categories,
-            'departments' => Department::orderBy('is_system')->orderBy('name')->get(),
+            'departments' => Department::withCount(['users','mediaFiles','organizationUnits'])->orderBy('is_system')->orderBy('name')->get(),
             'users'=>$userList,
+            // Storage usage per department for the quota screen (Super Admin only).
+            'departmentStorage'=>$user->role==='super-admin' ? $storageQuota->overview() : [],
             'organizationUnits'=>$canAccessOrSettingsData ? OrganizationUnit::with('parent:id,name')->when($user->role!=='super-admin',fn($q)=>$q->where('department_id',$user->department_id))->orderBy('department_id')->orderBy('type')->orderBy('name')->get() : [],
             'permissionSets'=>($canAccessPage && $user->role==='super-admin') ? PermissionSet::orderBy('name')->get() : [],
             'approvalDelegations'=>$delegations,

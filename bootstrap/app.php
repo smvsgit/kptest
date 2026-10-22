@@ -44,7 +44,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // The portal is an Inertia SPA that also calls plain JSON endpoints under the
+        // normal web routes (access requests, policy changes, saved searches, bulk edit).
+        // Those callers must get a structured 422/403 JSON body, not an HTML redirect.
+        // Inertia's own visits are excluded: they rely on the redirect-with-errors flow.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*')
+                || ($request->expectsJson() && ! $request->hasHeader('X-Inertia')),
         );
     })->create();

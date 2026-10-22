@@ -105,6 +105,20 @@ a{color:inherit;text-decoration:none;}
 .sub-category-row:hover{color:var(--color-primary);background-color:var(--bg-card-hover);}
 .sub-category-row.active{color:var(--color-primary);font-weight:600;}
 .sub-category-count{font-size:9px;color:var(--text-muted);}
+.category-header-actions{display:flex;align-items:center;gap:4px;}
+.category-search-wrapper{position:relative;padding:0 24px 10px;}
+.category-search-icon{position:absolute;left:33px;top:7px;color:var(--text-muted);pointer-events:none;}
+.category-search-input{width:100%;background-color:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-sm);color:var(--text-primary);font-size:11.5px;padding:6px 10px 6px 26px;outline:none;transition:border-color var(--transition-fast);}
+.category-search-input:focus{border-color:var(--color-primary);}
+.category-search-input::placeholder{color:var(--text-muted);}
+.category-search-empty{padding:14px 12px;font-size:11.5px;color:var(--text-muted);line-height:1.5;}
+.category-row-actions{display:flex;align-items:center;gap:4px;}
+.category-action-btn{opacity:0;width:20px;height:20px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:opacity var(--transition-fast),background-color var(--transition-fast),color var(--transition-fast);}
+.category-row:hover .category-action-btn,.sub-category-row:hover .category-action-btn,.category-action-btn:focus-visible{opacity:1;}
+.category-action-btn:hover{background-color:var(--bg-card-hover);color:var(--color-primary);}
+.sub-category-empty{padding:6px 12px;font-size:11px;color:var(--text-muted);font-style:italic;}
+.category-manager-search{width:100%;background-color:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;padding:8px 12px;outline:none;margin-bottom:10px;}
+.category-manager-search:focus{border-color:var(--color-primary);}
 
 /* PANELS */
 .module-panel{display:none;animation:fadeIn var(--transition-normal);}
@@ -450,6 +464,19 @@ a{color:inherit;text-decoration:none;}
 .group-member-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-color);background:var(--bg-card);border-radius:var(--radius-full);padding:4px 8px;font-size:11px;}
 .group-member-chip button{font-size:16px;line-height:1;color:var(--text-muted);}
 .group-member-chip button:hover{color:var(--color-danger);}
+.group-edit-box{border:1px dashed var(--border-color);border-radius:var(--radius-md);padding:12px;display:grid;gap:8px;background:var(--bg-card);}
+.group-member-picker{border-top:1px solid var(--border-color);padding-top:10px;margin-top:2px;}
+.queue-remove-btn:disabled{pointer-events:none;}
+/* UAT C10 / C13: stacked settings controls had no breathing room between a
+   field or preview block and the button underneath it. */
+.font-preview{margin:14px 0;}
+.settings-card textarea.form-input{margin-top:8px;}
+.settings-card .form-input+.btn,.settings-card .form-select+.btn,
+.settings-card textarea+.btn,.settings-card .font-preview+.btn,
+.settings-card .chip-list+.btn,.settings-card table+.btn{margin-top:12px;}
+.settings-card .btn+.btn{margin-left:8px;}
+.settings-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.settings-actions .btn+.btn{margin-left:0;}
 .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-secondary);}
 .icon-btn.danger:hover{color:var(--color-danger);border-color:var(--color-danger);background:var(--color-danger-light);}
 .theme-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
@@ -458,3 +485,44 @@ a{color:inherit;text-decoration:none;}
 .theme-swatch{display:flex;gap:5px;margin-top:auto;padding-top:10px}.theme-swatch i{display:block;flex:1;max-width:38px;height:10px;border-radius:999px;border:1px solid rgba(127,127,127,.18)}
 @media(max-width:900px){.role-check-grid,.settings-grid.compact,.theme-choice-grid{grid-template-columns:1fr}.user-admin-grid,.role-admin-grid,.group-admin-grid{grid-template-columns:1fr}}
 .profile-security-summary{display:grid;gap:8px;margin-top:10px}.profile-security-summary>div{display:flex;justify-content:space-between;gap:18px;padding:9px 10px;background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-sm)}.profile-security-summary span{font-size:11px;color:var(--text-muted)}.profile-security-summary b{font-size:12px;text-align:right}
+
+/* ---- Master data: one form per type (UAT C12) ---- */
+.master-type-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px;}
+.master-type-tab{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border-color);background:var(--bg-input);border-radius:var(--radius-full);font-size:12px;font-weight:600;color:var(--text-secondary);transition:all var(--transition-fast);}
+.master-type-tab:hover{color:var(--text-primary);background:var(--bg-card-hover);}
+.master-type-tab.active{background:var(--color-primary);border-color:var(--color-primary);color:var(--text-on-accent);}
+.master-type-count{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--bg-card);color:var(--text-secondary);}
+.master-type-tab.active .master-type-count{background:rgba(255,255,255,.22);color:var(--text-on-accent);}
+.master-form{border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px;margin:12px 0 6px;background:var(--bg-input);}
+.master-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px;}
+.master-list-head{display:flex;align-items:center;gap:12px;margin:14px 0 2px;}
+.master-list{max-height:460px;overflow-y:auto;}
+.master-inactive-pill{margin-left:7px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:999px;background:var(--bg-input);color:var(--color-warning,#b4820c);}
+
+/* ---- Department storage quotas (UAT C18) ---- */
+.quota-list{display:grid;gap:10px;margin-top:14px;}
+.quota-row{border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px 14px;background:var(--bg-input);display:grid;gap:8px;}
+.quota-row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.quota-row-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.quota-input{display:grid;gap:3px;min-width:150px;}
+.quota-input .form-input{padding:6px 10px;font-size:12px;}
+.quota-meter{height:8px;border-radius:999px;background:var(--border-color);overflow:hidden;}
+.quota-meter i{display:block;height:100%;border-radius:999px;transition:width var(--transition-normal);}
+.quota-meter i.ok{background:var(--color-primary);}
+.quota-meter i.warning{background:var(--color-warning,#d9a406);}
+.quota-meter i.full{background:var(--color-danger,#d9534f);}
+.quota-meter i.unlimited{background:var(--border-color);}
+.quota-pill{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+.quota-pill.ok{background:var(--color-primary-light);color:var(--color-primary);}
+.quota-pill.warning{background:#fdf3dc;color:#92700c;}
+.quota-pill.full{background:#fdeaea;color:#c0282d;}
+.quota-pill.unlimited{background:var(--bg-card);color:var(--text-muted);}
+
+/* ---- Inline master value add in Batch Upload (UAT C19) ---- */
+.master-quick-row{display:flex;gap:6px;align-items:center;}
+.master-quick-row .form-select{flex:1;min-width:0;}
+.master-quick-btn{flex:0 0 auto;width:32px;height:32px;border:1px solid var(--border-color);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-muted);background:var(--bg-input);transition:all var(--transition-fast);}
+.master-quick-btn:hover{color:var(--color-primary);border-color:var(--color-primary);}
+.master-quick-add{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+.master-quick-add .form-input{flex:1;min-width:120px;}
+.master-quick-add .btn{padding:7px 12px;font-size:11.5px;}

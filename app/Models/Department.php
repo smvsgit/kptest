@@ -21,4 +21,14 @@ class Department extends Model
 
     public function users(){return $this->hasMany(User::class);}
     public function organizationUnits(){return $this->hasMany(OrganizationUnit::class);}
+    public function mediaFiles(){return $this->hasMany(MediaFile::class);}
+
+    /** A department can only be deleted once nothing depends on it. */
+    public function isDeletable(): bool
+    {
+        return !$this->is_system
+            && !$this->users()->exists()
+            && !MediaFile::withTrashed()->where('department_id', $this->id)->exists()
+            && !$this->organizationUnits()->exists();
+    }
 }

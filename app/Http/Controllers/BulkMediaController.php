@@ -34,7 +34,9 @@ class BulkMediaController extends Controller
             'metadata.source_type'=>'nullable|in:local,nas,google-drive,youtube','metadata.asset_status'=>'prohibited',
             'tags_mode'=>'nullable|in:add,remove,replace','tags'=>'nullable|array|max:100','tags.*'=>'string|max:80',
             'category_id'=>'nullable|exists:categories,id','subcategory_id'=>'nullable|exists:subcategories,id',
-            'department_id'=>['nullable',Rule::exists('departments','id')->where('is_active',true)->where('is_system',false)],
+            // Integers, not booleans: the exists rule serialises `false` to an empty
+            // string, which matches no row and rejects every valid department.
+            'department_id'=>['nullable',Rule::exists('departments','id')->where('is_active',1)->where('is_system',0)],
             'archive_mode'=>'nullable|in:archive,unarchive',
             'access_policy'=>'nullable|in:public,protected,private','download_allowed'=>'nullable|boolean',
         ]);
