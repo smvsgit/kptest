@@ -575,3 +575,30 @@ a{color:inherit;text-decoration:none;}
   /* Stacked: the picture takes what it needs, the details take the rest and scroll. */
   .modal-container{grid-template-rows:auto minmax(0,1fr);}
 }
+
+/* ---- Details-only dialog ----
+   A viewable image has its own full-size viewer, so the dialog drops the
+   picture and lays the metadata out in columns: it fits without scrolling and
+   the values stay close to their labels. */
+.modal-container.details-only{grid-template-columns:1fr;max-width:780px;}
+.modal-container.details-only .metadata-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 26px;}
+.modal-container.details-only .metadata-row{grid-template-columns:118px 1fr;align-items:baseline;gap:8px;}
+.modal-container.details-only .metadata-value{overflow-wrap:anywhere;}
+@media(max-width:620px){
+  .modal-container.details-only .metadata-grid{grid-template-columns:1fr;}
+}
+.view-image-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;border:1px solid var(--color-primary);background:var(--color-primary-light);color:var(--color-primary);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.view-image-pill:hover{background:var(--color-primary);color:var(--text-on-accent);}
+
+/* ---- Advanced tools behind a disclosure ----
+   Opening details should answer "what is this file"; sources, lifecycle,
+   versions and policy are tools you reach for occasionally, so they start
+   closed and the dialog fits without scrolling. */
+.advanced-sections{border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:18px;background:var(--bg-input);}
+.advanced-sections>summary{cursor:pointer;padding:11px 14px;font-size:12.5px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:8px;list-style:none;}
+.advanced-sections>summary::-webkit-details-marker{display:none;}
+.advanced-sections>summary::before{content:"\25B8";color:var(--text-muted);font-size:11px;}
+.advanced-sections[open]>summary::before{content:"\25BE";}
+.advanced-sections>summary:hover{color:var(--text-primary);}
+.advanced-sections-body{padding:0 14px 4px;}
+.advanced-sections-body>div{margin-bottom:14px;}
