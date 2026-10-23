@@ -1,5 +1,17 @@
 # Karyalay Portal - Changelog
 
+## v17.02 - Full-size Image View and Direct Download (2026-10-23)
+
+- Clicking an image in the preview now opens it at full size. The inline preview is still capped so
+  the metadata stays readable beside it, but the viewer offers Fit to screen and Actual size, scrolls
+  when the image is larger than the window, shows name/resolution/file size, and closes with Escape.
+- A single selected file now downloads as itself. Previously every download went through the ZIP
+  endpoint, so one image arrived wrapped in an archive that had to be unpacked again.
+- Several selected files still download as a ZIP, and the action bar label switches between
+  "Download" and "Download ZIP" so it is clear which will happen.
+- Added a download button to each card for files the user is allowed to download, so a single asset
+  can be saved without opening the preview first.
+
 ## v17.01 - Readable Storage Metrics (2026-10-23)
 
 - Dashboards & Reports showed Integration Capacity and Integration Free Space as raw byte counts

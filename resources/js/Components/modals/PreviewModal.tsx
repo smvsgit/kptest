@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Download, Trash2, Headphones, LockKeyhole, ShieldAlert, History, UploadCloud, RotateCcw, AlertTriangle, Link2, RefreshCw, Plus } from 'lucide-react';
+import { X, Download, Trash2, Headphones, LockKeyhole, ShieldAlert, History, UploadCloud, RotateCcw, AlertTriangle, Link2, RefreshCw, Plus, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import type { AccessLevel, AccessPolicy, MediaFile, MediaFileVersion, Category, UploadSettings, SourceConnection, MediaSourceItem } from '../../types';
 
 interface Props {
@@ -27,6 +27,10 @@ function formatBytes(bytes: number) {
 export default function PreviewModal({ file, categories, canDelete, uploadSettings, sourceConnections, lifecycleSettings, onClose, onDelete, onDownload, onRequestAccess, onUpdatePolicy, onLifecycleChanged }: Props) {
     const cat = categories.find(c => c.id === file.category_id);
     const sub = cat?.subcategories.find(s => s.id === file.subcategory_id);
+    // Full-size viewer: the inline preview is deliberately capped so the metadata
+    // stays visible, so opening the original is a separate overlay.
+    const [zoomOpen, setZoomOpen] = useState(false);
+    const [actualSize, setActualSize] = useState(false);
     const [reason, setReason] = useState('');
     const [level, setLevel] = useState<AccessLevel>(file.can_preview && !file.can_download ? 'download' : 'view');
     const [requesting, setRequesting] = useState(false);
@@ -123,13 +127,48 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         setSavingPolicy(false);
     };
 
+    useEffect(() => {
+        if (!zoomOpen) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoomOpen(false); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [zoomOpen]);
+
+    const imageSrc = file.image_url || file.thumbnail_url || undefined;
+
+    const renderZoomViewer = () => {
+        if (!zoomOpen || !imageSrc) return null;
+        return <div className="image-zoom-overlay" onClick={e => { if (e.target === e.currentTarget) setZoomOpen(false); }}>
+            <div className="image-zoom-toolbar">
+                <span className="image-zoom-name">{file.name}{file.resolution ? ` · ${file.resolution}` : ''} · {formatBytes(file.size)}</span>
+                <div className="image-zoom-actions">
+                    <button className="btn btn-secondary" onClick={() => setActualSize(v => !v)} title={actualSize ? 'Fit to screen' : 'Show at actual pixel size'}>
+                        {actualSize ? <><ZoomOut size={14}/> Fit to screen</> : <><ZoomIn size={14}/> Actual size</>}
+                    </button>
+                    {file.can_download && <button className="btn btn-primary" onClick={() => onDownload(file.id)}><Download size={14}/> Download</button>}
+                    <button className="btn btn-secondary" onClick={() => setZoomOpen(false)} aria-label="Close full-size view"><X size={14}/></button>
+                </div>
+            </div>
+            <div className={`image-zoom-canvas${actualSize ? ' actual' : ''}`}>
+                <img src={imageSrc} alt={file.name} className={actualSize ? 'actual' : 'fit'} />
+            </div>
+        </div>;
+    };
+
     const renderPreview = () => {
         if (!file.can_preview) {
             return <div className="access-locked-panel"><LockKeyhole size={58} /><div><h3 style={{ color: '#fff', marginBottom: 6 }}>Protected content is locked</h3><p style={{ color: '#cbd5e1', maxWidth: 360 }}>You can see the file name and basic metadata, but preview requires approval from the owner department.</p></div></div>;
         }
         const external=(file.source_items||[]).find(s=>s.is_primary&&s.status==='active'&&s.embed_url)||(file.source_items||[]).find(s=>s.status==='active'&&s.embed_url);
         if (external?.embed_url) return <iframe src={external.embed_url} title={file.name} style={{width:'100%',height:'50vh',border:0}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen/>;
-        if (file.type === 'image') return (file.image_url||file.thumbnail_url)?<img src={file.image_url||file.thumbnail_url||undefined} alt={file.name} style={{ maxWidth: '100%', maxHeight: '50vh', objectFit: 'contain' }} />:<div className="access-locked-panel"><Link2 size={50}/><p>Image source has no local preview. Open an active linked source below.</p></div>;
+        if (file.type === 'image') {
+            const src = file.image_url || file.thumbnail_url;
+            if (!src) return <div className="access-locked-panel"><Link2 size={50}/><p>Image source has no local preview. Open an active linked source below.</p></div>;
+            return <button type="button" className="image-zoom-trigger" onClick={() => { setActualSize(false); setZoomOpen(true); }} title="Click to view at full size">
+                <img src={src} alt={file.name} style={{ maxWidth: '100%', maxHeight: '50vh', objectFit: 'contain' }} />
+                <span className="image-zoom-hint"><Maximize2 size={13}/> Full size</span>
+            </button>;
+        }
         if (file.type === 'video') return file.video_url?<video controls autoPlay muted style={{ width: '100%', height: '100%', maxHeight: '50vh' }}><source src={file.video_url} />Your browser does not support the video tag.</video>:<div className="access-locked-panel"><Link2 size={50}/><p>Video source is external or unavailable. Use the Sources section below.</p></div>;
         if (file.type === 'audio') return <div className="modal-audio-player"><div className="audio-preview-icon"><Headphones size={32} /></div><div style={{ textAlign: 'center' }}><h4 style={{ fontWeight: 600, marginBottom: 4 }}>{file.name}</h4><span style={{ fontSize: 11, color: '#94a3b8' }}>Audio Track</span></div><audio controls autoPlay className="audio-element"><source src={file.audio_url || ''} /></audio></div>;
         const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE';
@@ -145,7 +184,7 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         ['Current Version:', `v${file.current_version || 1}`], ['Upload Date:', new Date(file.created_at).toLocaleString()], ['Uploaded By:', file.uploader?.name || 'System'],
     ];
 
-    return <div className="modal-overlay active" onClick={e => { if (e.target === e.currentTarget) onClose(); }}><div className="modal-container"><div className="modal-preview-pane" style={{position:'relative'}}>{renderPreview()}{file.can_preview&&file.watermark_enabled_effective&&<div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',opacity:.18,fontSize:34,fontWeight:800,transform:'rotate(-28deg)',color:'#fff',textShadow:'0 1px 2px #000'}}>{file.watermark_text||'Karyalay Portal'}</div>}</div><div className="modal-info-pane"><div className="modal-header"><div><h2 className="modal-title">{file.name}</h2><div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><span className={`card-type-badge badge-${file.type}`} style={{ position: 'static', display: 'inline-block' }}>{file.type}</span><span className={`access-policy-badge access-${file.access_policy}`}>{file.access_policy}</span>{file.access_request_status && <span className="request-status-pill">Request: {file.access_request_status}</span>}</div></div><button className="modal-close-btn" onClick={onClose}><X size={20} /></button></div>
+    return <>{renderZoomViewer()}<div className="modal-overlay active" onClick={e => { if (e.target === e.currentTarget) onClose(); }}><div className="modal-container"><div className="modal-preview-pane" style={{position:'relative'}}>{renderPreview()}{file.can_preview&&file.watermark_enabled_effective&&<div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',opacity:.18,fontSize:34,fontWeight:800,transform:'rotate(-28deg)',color:'#fff',textShadow:'0 1px 2px #000'}}>{file.watermark_text||'Karyalay Portal'}</div>}</div><div className="modal-info-pane"><div className="modal-header"><div><h2 className="modal-title">{file.name}</h2><div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><span className={`card-type-badge badge-${file.type}`} style={{ position: 'static', display: 'inline-block' }}>{file.type}</span><span className={`access-policy-badge access-${file.access_policy}`}>{file.access_policy}</span>{file.access_request_status && <span className="request-status-pill">Request: {file.access_request_status}</span>}</div></div><button className="modal-close-btn" onClick={onClose}><X size={20} /></button></div>
         <div className="metadata-grid">{metadata.map(([label, value]) => <div key={String(label)} className="metadata-row"><span className="metadata-label">{label}</span><span className="metadata-value">{value}</span></div>)}</div>
         {file.description&&<div className="form-group"><span className="form-label">Description:</span><div style={{fontSize:12,color:'var(--text-secondary)',marginTop:4}}>{file.description}</div></div>}<div className="form-group" style={{ marginBottom: 18 }}><span className="form-label">Associated Tags:</span><div className="card-tags" style={{ marginTop: 6 }}>{file.tags.map(tag => <span key={tag} className="card-tag" style={{ fontSize: 11, padding: '4px 8px' }}>{tag}</span>)}</div></div>
 
@@ -164,5 +203,5 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         {file.can_manage_policy && <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: 14, marginBottom: 18 }}><h3 style={{ fontSize: 13, marginBottom: 10 }}>Owner Access Policy</h3><select className="form-select" value={policy} onChange={e => setPolicy(e.target.value as AccessPolicy)}><option value="public">Public — registered internal users</option><option value="protected">Protected — approval required</option><option value="private">Private — owner department only</option></select><label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12 }}><input type="checkbox" checked={downloadAllowed} onChange={e => setDownloadAllowed(e.target.checked)} /> Downloads allowed for otherwise authorized users</label><button className="btn btn-secondary" style={{ width: '100%', marginTop: 10 }} disabled={savingPolicy || (policy === file.access_policy && downloadAllowed === file.download_allowed)} onClick={savePolicy}>{savingPolicy ? 'Saving…' : 'Save Access Policy'}</button></div>}
 
         <div style={{ display: 'flex', gap: 12, marginTop: 'auto' }}><button className="btn btn-primary" style={{ flex: 1 }} disabled={!file.can_download} onClick={() => onDownload(file.id)}><Download size={16} /> {file.can_download ? 'Download Asset' : 'Download Not Permitted'}</button>{canDelete && <button className="btn btn-secondary" style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }} onClick={() => onDelete(file.id)}><Trash2 size={16} /> Move to Recycle Bin</button>}</div>
-    </div></div></div>;
+    </div></div></div></>;
 }
