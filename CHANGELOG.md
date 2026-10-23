@@ -1,5 +1,19 @@
 # Karyalay Portal - Changelog
 
+## v17.03 - Unified Master Data Pages (2026-10-23)
+
+- Category and Sub-category are now administered alongside the other controlled lists under
+  Settings -> Metadata & Master Data, so every controlled value is managed from one place.
+  Sub-category is hierarchical: the parent category is chosen first, exactly like Country -> State.
+- This is a presentation change only. Categories keep their own `categories` / `subcategories`
+  tables and routes; no data was migrated and no foreign key changed.
+- Code, aliases and the activate/deactivate action are hidden on the two category tabs, because
+  categories do not carry those fields.
+- Removed the duplicate Category Management card from Settings -> System for Super Admin, who now
+  manages categories in the Master Data tab. Department Admin keeps that card, since the Metadata
+  tab is Super Admin only and they would otherwise lose their Settings path to categories.
+- The left drawer quick-add, rename and search for categories are unchanged.
+
 ## v17.02 - Full-size Image View and Direct Download (2026-10-23)
 
 - Clicking an image in the preview now opens it at full size. The inline preview is still capped so

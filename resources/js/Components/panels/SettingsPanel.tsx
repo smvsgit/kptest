@@ -111,7 +111,7 @@ export default function SettingsPanel(p:Props){
      </div>}</div>})}
    {p.canManageDepartments&&<button className="btn btn-primary" style={{width:'100%',marginTop:8}} onClick={createDepartment}><Plus size={15}/> Create Department</button>}</div>
    {isSuper&&<DepartmentQuotaPanel departmentStorage={p.departmentStorage} defaultQuotaGb={Number((p.featureCompletionSettings?.storage_quotas as Record<string,unknown>)?.default_quota_gb??0)} warningPercent={Number((p.featureCompletionSettings?.storage_quotas as Record<string,unknown>)?.warning_percent??80)} onSuccess={p.onSuccess} onError={p.onError}/>}
-   <div className="settings-card"><h2 className="settings-card-title"><FolderTree size={18}/> Category Management</h2>
+   {!isSuper&&<div className="settings-card"><h2 className="settings-card-title"><FolderTree size={18}/> Category Management</h2>
    <Guide>Add the main category first, then add its sub-categories. The same two actions are also available in the left drawer menu.</Guide>
    <input className="category-manager-search" value={categorySearch} onChange={e=>setCategorySearch(e.target.value)} placeholder="Search category / sub-category…" aria-label="Search categories"/>
    {visibleCategories.map(({category:c,subcategories})=><div key={c.id} style={{padding:10,background:'var(--bg-input)',borderRadius:'var(--radius-md)',marginBottom:8}}>
@@ -127,7 +127,7 @@ export default function SettingsPanel(p:Props){
    {categoryQuery&&visibleCategories.length===0&&<div style={{fontSize:12,color:'var(--text-muted)',padding:'10px 2px'}}>No category or sub-category matches “{categorySearch}”.</div>}
    {p.canConfigCategories&&<div style={{display:'flex',gap:8,marginTop:10}}>
     <button className="btn btn-primary" style={{flex:1}} onClick={()=>p.onCategoryModal({mode:'add-category'})}><Plus size={15}/> Add Main Category</button>
-    <button className="btn btn-secondary" style={{flex:1}} onClick={()=>p.onCategoryModal({mode:'add-subcategory'})}><Plus size={15}/> Add Sub-Category</button></div>}</div>
+    <button className="btn btn-secondary" style={{flex:1}} onClick={()=>p.onCategoryModal({mode:'add-subcategory'})}><Plus size={15}/> Add Sub-Category</button></div>}</div>}
    <div className="settings-card"><h2 className="settings-card-title"><PieChart size={18}/> Repository Allocation</h2><div style={{height:220}}><Doughnut data={chartData} options={chartOptions}/></div><div style={{textAlign:'center',fontSize:12,marginTop:8}}>Used: <b>{formatBytes(safeStats.total_size)}</b></div></div></div>
   </>}
 
@@ -170,7 +170,7 @@ export default function SettingsPanel(p:Props){
   {tab==='metadata'&&isSuper&&<div style={{display:'grid',gap:18}}>
    <Guide><b>Metadata Governance:</b> Central Admin decides which fields are mandatory for uploads. Controlled values reduce spelling duplicates and improve search. Example: Ahmedabad/Amdavad/અમદાવાદ can be aliases of one City master value.</Guide>
    <div className="settings-card"><h2 className="settings-card-title"><SlidersHorizontal size={18}/> Mandatory Metadata Rules</h2><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:8}}>{[['year','Year'],['country_id','Country'],['state_id','State'],['city_id','City / Location'],['mandir_id','Mandir'],['event_id','Event / Prasang'],['person_id','Guruji / Person'],['language_id','Language'],['media_type_id','Media Type'],['description','Description']].map(([k,label])=><label key={k} className="admin-guide" style={{display:'flex',gap:8,alignItems:'center'}}><input type="checkbox" checked={metadata.required_fields.includes(k)} onChange={e=>setMetadata({...metadata,required_fields:e.target.checked?[...metadata.required_fields,k]:metadata.required_fields.filter(x=>x!==k)})}/>{label}</label>)}</div><div className="settings-grid" style={{marginTop:12}}><div className="form-group"><label className="form-label">Minimum Year</label><input className="form-input" type="number" value={metadata.years_min} onChange={e=>setMetadata({...metadata,years_min:Number(e.target.value)})}/></div><div className="form-group"><label className="form-label">Maximum Year</label><input className="form-input" type="number" value={metadata.years_max} onChange={e=>setMetadata({...metadata,years_max:Number(e.target.value)})}/></div></div><div className="setting-row"><div><div className="setting-title">Person / Guruji always required</div><div className="setting-help">Keep OFF when some assets do not logically belong to a person.</div></div><Toggle checked={metadata.person_required} onChange={v=>setMetadata({...metadata,person_required:v})}/></div><div className="setting-row"><div><div className="setting-title">Allow free-form tags</div><div className="setting-help">Controlled masters remain primary; tags can add supplementary keywords.</div></div><Toggle checked={metadata.allow_free_tags} onChange={v=>setMetadata({...metadata,allow_free_tags:v})}/></div><button className="btn btn-primary" onClick={saveMetadata}>Save Metadata Rules</button></div>
-   <MasterDataPanel masterData={p.masterData} onSuccess={p.onSuccess} onError={p.onError}/>
+   <MasterDataPanel masterData={p.masterData} categories={p.categories} onSuccess={p.onSuccess} onError={p.onError}/>
   </div>}
 
 
