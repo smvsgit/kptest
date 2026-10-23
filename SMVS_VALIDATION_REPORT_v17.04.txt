@@ -1,0 +1,50 @@
+KARYALAY PORTAL v17.04 - VALIDATION REPORT
+Generated: 2026-10-23
+Release: Image Preview Rework
+Previous: v17.03
+
+REPORTED
+1. Clicking an image showed a black pane instead of a preview.
+2. Clicking a card should open the image itself, at original size.
+3. A separate view icon beside download should open the metadata.
+
+DEFECT AND CAUSE
+v17.00 added an image_url fallback so images without a generated thumbnail were
+still viewable, and made the preview dialog prefer that original over the
+thumbnail. The inline pane therefore downloaded the full original every time.
+With a multi-megabyte image the pane, whose background is #0b0f19, stayed empty
+for several seconds with no indicator and was indistinguishable from a failure.
+
+Reproduced locally with an 11.91 MB image: one second after opening the dialog
+the img element reported complete=false and naturalWidth=0 while the pane
+rendered rgb(11,15,25) - the reported black rectangle.
+
+FIX
+- The inline pane now prefers the generated thumbnail and falls back to the
+  original only when no thumbnail exists.
+- Both the inline pane and the full-size viewer show an explicit loading state
+  with the file size, and an error message on failure. A dark pane is never
+  shown without an explanation again.
+
+INTERACTION CHANGE
+- Clicking an image card opens the picture at full size directly.
+- A new info button sits beside the download button on each card and opens the
+  details dialog.
+- Cards with no picture to show (video, audio, document) continue to open the
+  details dialog on click.
+- The full-size viewer was extracted into its own component so it can be opened
+  straight from a card as well as from inside the details dialog.
+
+VERIFIED IN A RUNNING PORTAL
+[PASS] Reproduced the black pane with an 11.91 MB image before the fix
+[PASS] Clicking an image card opens the full-size viewer, not the details dialog
+[PASS] Viewer shows the loading state, then renders the original at 2600x1600
+[PASS] Info button opens the details dialog and not the viewer
+[PASS] Every card carries info and download buttons; image cards get a zoom cursor
+[PASS] PHPUnit suite 188/188, TypeScript check and production build clean
+
+DEPENDENCY WORTH NOTING
+The thumbnail that keeps the inline pane fast is produced by the queued
+ProcessMediaFile job. Where the queue worker is not running, no thumbnail is
+generated and the original is used as the fallback - correct, but slower. This
+is the same queue dependency recorded against UAT-067.

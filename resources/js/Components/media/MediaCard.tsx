@@ -1,4 +1,4 @@
-import { Check, Video as VideoIcon, LockKeyhole, Globe2, ShieldAlert, Building2, Archive, Copy, Star, Link2, Download } from 'lucide-react';
+import { Check, Video as VideoIcon, LockKeyhole, Globe2, ShieldAlert, Building2, Archive, Copy, Star, Link2, Download, Info } from 'lucide-react';
 import type { MediaFile } from '../../types';
 
 const VideoPlaceholder = () => <VideoIcon size={42} style={{ color: 'var(--text-muted)' }} />;
@@ -10,6 +10,7 @@ interface Props {
     onFavorite: () => void;
     onOpen: () => void;
     onDownload: () => void;
+    onOpenImage: () => void;
 }
 
 function formatBytes(bytes: number) {
@@ -19,15 +20,22 @@ function formatBytes(bytes: number) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-export default function MediaCard({ file, isSelected, onSelect, onFavorite, onOpen, onDownload }: Props) {
+export default function MediaCard({ file, isSelected, onSelect, onFavorite, onOpen, onDownload, onOpenImage }: Props) {
+    const canViewImage = file.type === 'image' && file.can_preview && Boolean(file.image_url || file.thumbnail_url);
+
     const handleClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
         const overlay = target.closest('.card-select-overlay');
         const favorite = target.closest('.card-favorite-btn');
         const download = target.closest('.card-download-btn');
+        const info = target.closest('.card-info-btn');
         if (overlay) { e.stopPropagation(); onSelect(); }
         else if (favorite) { e.stopPropagation(); onFavorite(); }
         else if (download) { e.stopPropagation(); onDownload(); }
+        else if (info) { e.stopPropagation(); onOpen(); }
+        // An image opens as a picture; anything else has no picture to show, so
+        // it opens its details instead.
+        else if (canViewImage) { onOpenImage(); }
         else { onOpen(); }
     };
 
@@ -70,9 +78,10 @@ export default function MediaCard({ file, isSelected, onSelect, onFavorite, onOp
             : { icon: <Building2 size={11} />, label: 'Private', cls: 'access-private' };
 
     return (
-        <div className={`media-card${isSelected ? ' selected' : ''}`} data-id={file.id} onClick={handleClick}>
+        <div className={`media-card${isSelected ? ' selected' : ''}${canViewImage ? ' viewable' : ''}`} data-id={file.id} onClick={handleClick}>
             <div className="card-select-overlay"><div className="custom-checkbox"><Check size={14} /></div></div>
             <button className={`card-favorite-btn${file.is_favorite ? ' active' : ''}`} title={file.is_favorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={file.is_favorite ? 'Remove from favorites' : 'Add to favorites'}><Star size={15} fill={file.is_favorite ? 'currentColor' : 'none'} /></button>
+            <button className="card-info-btn" title={`Details for ${file.name}`} aria-label={`Details for ${file.name}`}><Info size={14} /></button>
             {file.can_download && <button className="card-download-btn" title={`Download ${file.name}`} aria-label={`Download ${file.name}`}><Download size={14} /></button>}
             <div className="card-preview-wrapper">{renderPreview()}<span className={`card-type-badge badge-${file.type}`}>{file.type}</span></div>
             <div className="card-details">

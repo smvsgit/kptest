@@ -1,5 +1,22 @@
 # Karyalay Portal - Changelog
 
+## v17.04 - Image Preview Rework (2026-10-23)
+
+- Fixed the preview pane showing as a black rectangle. v17.00 made the inline preview load the full
+  original, so a multi-megabyte image left the dark pane empty for several seconds with no feedback
+  and looked broken. The inline pane now uses the generated thumbnail when one exists and falls back
+  to the original, and both the inline pane and the full-size viewer show an explicit loading state,
+  and an error message instead of staying blank.
+- Clicking an image card now opens the picture itself at full size, rather than the details dialog.
+- Added an info button beside the download button on every card, which opens the details dialog.
+  Cards with no picture to show (video, audio, documents) still open details on click.
+- The full-size viewer moved into its own component so it can be opened straight from a card as well
+  as from inside the details dialog.
+
+Note: the thumbnail that keeps the inline preview fast is produced by the queued ProcessMediaFile
+job. Where the queue worker is not running no thumbnail exists, so the original is used as the
+fallback - slower, but now with a visible loading state rather than a blank pane.
+
 ## v17.03 - Unified Master Data Pages (2026-10-23)
 
 - Category and Sub-category are now administered alongside the other controlled lists under
