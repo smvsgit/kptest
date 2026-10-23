@@ -1,26 +1,39 @@
 import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { Check, Database, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
-import type { MasterDataMap, MasterDataType, MasterDataValue } from '../../types';
+import type { Category, MasterDataMap, MasterDataType, MasterDataValue } from '../../types';
 
 interface Props {
     masterData: MasterDataMap;
+    /** Categories live in their own tables; they are surfaced here as master lists. */
+    categories: Category[];
     onSuccess: (msg: string) => void;
     onError: (msg: string) => void;
 }
 
+/**
+ * Category and Sub-category are presented alongside the controlled master lists
+ * so every controlled value is administered in one place, but they keep their
+ * own tables and routes - only the screen is shared.
+ */
+type TabKey = MasterDataType | 'category' | 'subcategory';
+
 /** Each master type gets its own form, because they do not share the same fields. */
 interface TypeSpec {
-    type: MasterDataType;
+    type: TabKey;
     label: string;
     /** Parent type this value hangs under, when the list is hierarchical. */
-    parent: MasterDataType | null;
+    parent: TabKey | null;
     parentLabel: string;
     help: string;
     placeholder: string;
+    /** Categories have no code, aliases or active flag, so those inputs are hidden. */
+    extras?: boolean;
 }
 
 const SPECS: TypeSpec[] = [
+    { type: 'category', label: 'Category', parent: null, parentLabel: '', extras: false, help: 'Top-level grouping for media. Sub-categories hang under a category.', placeholder: 'e.g. Satsang' },
+    { type: 'subcategory', label: 'Sub-category', parent: 'category', parentLabel: 'Category', extras: false, help: 'Belongs to a main category. Choose the category first, then name the sub-category.', placeholder: 'e.g. Satsang Sabha' },
     { type: 'country', label: 'Country', parent: null, parentLabel: '', help: 'Top of the location hierarchy. States hang under a country.', placeholder: 'e.g. India' },
     { type: 'state', label: 'State', parent: 'country', parentLabel: 'Country', help: 'Belongs to a country. Cities hang under a state.', placeholder: 'e.g. Gujarat' },
     { type: 'city', label: 'City', parent: 'state', parentLabel: 'State', help: 'Belongs to a state. Mandirs hang under a city.', placeholder: 'e.g. Vadodara' },
@@ -33,23 +46,40 @@ const SPECS: TypeSpec[] = [
 
 const blankDraft = { name: '', code: '', parent: '', aliases: '' };
 
-export default function MasterDataPanel({ masterData, onSuccess, onError }: Props) {
-    const [active, setActive] = useState<MasterDataType>('country');
+export default function MasterDataPanel({ masterData, categories, onSuccess, onError }: Props) {
+    const [active, setActive] = useState<TabKey>('category');
     const [draft, setDraft] = useState({ ...blankDraft });
     const [query, setQuery] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editDraft, setEditDraft] = useState({ ...blankDraft });
 
     const spec = SPECS.find(s => s.type === active)!;
-    const values = useMemo(() => masterData[active] || [], [masterData, active]);
+
+    /**
+     * Categories and sub-categories come from their own tables, so they are
+     * mapped into the same row shape the master lists render with. Fields they
+     * do not have (code, aliases, sort order) stay empty and their inputs are
+     * hidden via spec.extras.
+     */
+    const rowsFor = (key: TabKey): MasterDataValue[] => {
+        if (key === 'category') {
+            return categories.map(c => ({ id: c.id, type: 'category' as MasterDataType, name: c.name, code: null, parent_id: null, aliases: [], is_active: true, sort_order: 0 }));
+        }
+        if (key === 'subcategory') {
+            return categories.flatMap(c => c.subcategories.map(sub => ({ id: sub.id, type: 'subcategory' as MasterDataType, name: sub.name, code: null, parent_id: c.id, aliases: [], is_active: true, sort_order: 0 })));
+        }
+        return masterData[key as MasterDataType] || [];
+    };
+
+    const values = useMemo(() => rowsFor(active), [masterData, categories, active]);
     const parentValues = useMemo(
-        () => (spec.parent ? (masterData[spec.parent] || []).filter(v => v.is_active) : []),
-        [masterData, spec.parent],
+        () => (spec.parent ? rowsFor(spec.parent).filter(v => v.is_active) : []),
+        [masterData, categories, spec.parent],
     );
 
     const parentName = (row: MasterDataValue) => {
         if (!row.parent_id || !spec.parent) return null;
-        return (masterData[spec.parent] || []).find(v => v.id === row.parent_id)?.name ?? `#${row.parent_id}`;
+        return rowsFor(spec.parent).find(v => v.id === row.parent_id)?.name ?? `#${row.parent_id}`;
     };
 
     const visible = useMemo(() => {
@@ -62,7 +92,7 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
             || (parentName(v) || '').toLowerCase().includes(q));
     }, [values, query, masterData, spec.parent]);
 
-    const switchType = (type: MasterDataType) => {
+    const switchType = (type: TabKey) => {
         setActive(type);
         setDraft({ ...blankDraft });
         setQuery('');
@@ -75,18 +105,26 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
         if (!draft.name.trim()) return onError(`Enter a ${spec.label.toLowerCase()} name.`);
         if (spec.parent && !draft.parent) return onError(`Select the ${spec.parentLabel.toLowerCase()} this ${spec.label.toLowerCase()} belongs to.`);
 
-        router.post('/settings/master-data', {
-            type: active,
-            name: draft.name.trim(),
-            code: draft.code.trim() || null,
-            parent_id: draft.parent ? Number(draft.parent) : null,
-            aliases: draft.aliases.split(',').map(x => x.trim()).filter(Boolean),
-            is_active: true,
-        }, {
+        const opts = {
             preserveScroll: true,
             onSuccess: () => { onSuccess(`Added ${spec.label} “${draft.name.trim()}”.`); setDraft({ ...blankDraft }); },
-            onError: e => onError(firstError(e) || `Could not add this ${spec.label.toLowerCase()}.`),
-        });
+            onError: (e: Record<string, string>) => onError(firstError(e) || `Could not add this ${spec.label.toLowerCase()}.`),
+        };
+
+        if (active === 'category') {
+            router.post('/categories', { name: draft.name.trim() }, opts);
+        } else if (active === 'subcategory') {
+            router.post('/subcategories', { category_id: Number(draft.parent), name: draft.name.trim() }, opts);
+        } else {
+            router.post('/settings/master-data', {
+                type: active,
+                name: draft.name.trim(),
+                code: draft.code.trim() || null,
+                parent_id: draft.parent ? Number(draft.parent) : null,
+                aliases: draft.aliases.split(',').map(x => x.trim()).filter(Boolean),
+                is_active: true,
+            }, opts);
+        }
     };
 
     const startEdit = (row: MasterDataValue) => {
@@ -101,18 +139,26 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
 
     const saveEdit = (row: MasterDataValue) => {
         if (!editDraft.name.trim()) return onError('Name cannot be empty.');
-        router.patch(`/settings/master-data/${row.id}`, {
-            name: editDraft.name.trim(),
-            code: editDraft.code.trim() || null,
-            parent_id: editDraft.parent ? Number(editDraft.parent) : null,
-            aliases: editDraft.aliases.split(',').map(x => x.trim()).filter(Boolean),
-            is_active: row.is_active,
-            sort_order: row.sort_order || 0,
-        }, {
+        const opts = {
             preserveScroll: true,
             onSuccess: () => { onSuccess(`Updated “${editDraft.name.trim()}”.`); setEditingId(null); },
-            onError: e => onError(firstError(e) || 'Could not update this value.'),
-        });
+            onError: (e: Record<string, string>) => onError(firstError(e) || 'Could not update this value.'),
+        };
+
+        if (active === 'category') {
+            router.put(`/categories/${row.id}`, { name: editDraft.name.trim() }, opts);
+        } else if (active === 'subcategory') {
+            router.put(`/subcategories/${row.id}`, { category_id: Number(editDraft.parent) || row.parent_id, name: editDraft.name.trim() }, opts);
+        } else {
+            router.patch(`/settings/master-data/${row.id}`, {
+                name: editDraft.name.trim(),
+                code: editDraft.code.trim() || null,
+                parent_id: editDraft.parent ? Number(editDraft.parent) : null,
+                aliases: editDraft.aliases.split(',').map(x => x.trim()).filter(Boolean),
+                is_active: row.is_active,
+                sort_order: row.sort_order || 0,
+            }, opts);
+        }
     };
 
     const toggle = (row: MasterDataValue) => router.patch(`/settings/master-data/${row.id}`, {
@@ -125,8 +171,18 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
     });
 
     const remove = (row: MasterDataValue) => {
-        if (!confirm(`Delete ${spec.label.toLowerCase()} “${row.name}”? Values already used by media cannot be deleted.`)) return;
-        router.delete(`/settings/master-data/${row.id}`, {
+        const warning = active === 'category'
+            ? `Delete category “${row.name}”? Its sub-categories are removed too and its files become uncategorised.`
+            : active === 'subcategory'
+                ? `Delete sub-category “${row.name}”?`
+                : `Delete ${spec.label.toLowerCase()} “${row.name}”? Values already used by media cannot be deleted.`;
+        if (!confirm(warning)) return;
+
+        const url = active === 'category' ? `/categories/${row.id}`
+            : active === 'subcategory' ? `/subcategories/${row.id}`
+                : `/settings/master-data/${row.id}`;
+
+        router.delete(url, {
             preserveScroll: true,
             onSuccess: () => onSuccess(`Deleted “${row.name}”.`),
             onError: e => onError(firstError(e) || 'Could not delete this value.'),
@@ -137,9 +193,11 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
         <div className="settings-card">
             <h2 className="settings-card-title"><Database size={18} /> Master Data Management</h2>
             <div className="admin-guide">
-                Each master list has its own form below. <b>Country → State → City → Mandir</b> are hierarchical,
-                so a parent must be chosen. <b>Event, Guruji/Person, Language</b> and <b>Media Type</b> are flat
-                controlled lists. Deactivate a value instead of deleting it once media already uses it.
+                Every controlled list is administered here. <b>Category → Sub-category</b> and
+                <b>Country → State → City → Mandir</b> are hierarchical, so a parent must be chosen first.
+                <b>Event, Guruji/Person, Language</b> and <b>Media Type</b> are flat lists. For the master
+                lists, deactivate a value instead of deleting it once media already uses it. Categories keep
+                their own quick-add in the left drawer for day-to-day use.
             </div>
 
             <div className="master-type-tabs">
@@ -150,7 +208,7 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
                         onClick={() => switchType(s.type)}
                     >
                         {s.label}
-                        <span className="master-type-count">{(masterData[s.type] || []).length}</span>
+                        <span className="master-type-count">{rowsFor(s.type).length}</span>
                     </button>
                 ))}
             </div>
@@ -178,16 +236,18 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
                             onChange={e => setDraft({ ...draft, name: e.target.value })}
                             onKeyDown={e => e.key === 'Enter' && create()} />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Code</label>
-                        <input className="form-input" placeholder="Optional short code" value={draft.code}
-                            onChange={e => setDraft({ ...draft, code: e.target.value })} />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Aliases</label>
-                        <input className="form-input" placeholder="Comma separated, used by search" value={draft.aliases}
-                            onChange={e => setDraft({ ...draft, aliases: e.target.value })} />
-                    </div>
+                    {spec.extras !== false && <>
+                        <div className="form-group">
+                            <label className="form-label">Code</label>
+                            <input className="form-input" placeholder="Optional short code" value={draft.code}
+                                onChange={e => setDraft({ ...draft, code: e.target.value })} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Aliases</label>
+                            <input className="form-input" placeholder="Comma separated, used by search" value={draft.aliases}
+                                onChange={e => setDraft({ ...draft, aliases: e.target.value })} />
+                        </div>
+                    </>}
                 </div>
                 <button className="btn btn-primary" onClick={create} disabled={Boolean(spec.parent) && parentValues.length === 0}>
                     <Plus size={14} /> Add {spec.label}
@@ -217,8 +277,10 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
                                 </select>
                             )}
                             <input className="form-input" value={editDraft.name} onChange={e => setEditDraft({ ...editDraft, name: e.target.value })} />
-                            <input className="form-input" placeholder="Code" value={editDraft.code} onChange={e => setEditDraft({ ...editDraft, code: e.target.value })} />
-                            <input className="form-input" placeholder="Aliases" value={editDraft.aliases} onChange={e => setEditDraft({ ...editDraft, aliases: e.target.value })} />
+                            {spec.extras !== false && <>
+                                <input className="form-input" placeholder="Code" value={editDraft.code} onChange={e => setEditDraft({ ...editDraft, code: e.target.value })} />
+                                <input className="form-input" placeholder="Aliases" value={editDraft.aliases} onChange={e => setEditDraft({ ...editDraft, aliases: e.target.value })} />
+                            </>}
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                             <button className="btn btn-primary" onClick={() => saveEdit(row)}><Check size={13} /> Save</button>
@@ -234,13 +296,13 @@ export default function MasterDataPanel({ masterData, onSuccess, onError }: Prop
                                 {!row.is_active && <span className="master-inactive-pill">Inactive</span>}
                             </div>
                             <div className="setting-help">
-                                {parentName(row) && <>{spec.parentLabel}: {parentName(row)} · </>}
-                                {(row.aliases || []).length ? `Aliases: ${(row.aliases || []).join(', ')}` : 'No aliases'}
+                                {parentName(row) && <>{spec.parentLabel}: {parentName(row)}</>}
+                                {spec.extras !== false && <>{parentName(row) ? ' · ' : ''}{(row.aliases || []).length ? `Aliases: ${(row.aliases || []).join(', ')}` : 'No aliases'}</>}
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                             <button className="btn btn-secondary" title={`Edit ${row.name}`} onClick={() => startEdit(row)}><Pencil size={12} /></button>
-                            <button className="btn btn-secondary" onClick={() => toggle(row)}>{row.is_active ? 'Deactivate' : 'Activate'}</button>
+                            {spec.extras !== false && <button className="btn btn-secondary" onClick={() => toggle(row)}>{row.is_active ? 'Deactivate' : 'Activate'}</button>}
                             <button className="queue-remove-btn" title={`Delete ${row.name}`} onClick={() => remove(row)}><Trash2 size={14} /></button>
                         </div>
                     </div>

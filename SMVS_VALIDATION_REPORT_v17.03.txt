@@ -1,0 +1,44 @@
+KARYALAY PORTAL v17.03 - VALIDATION REPORT
+Generated: 2026-10-23
+Release: Unified Master Data Pages
+Previous: v17.02
+
+SCOPE DELIVERED
+Category and Sub-category are presented alongside the controlled master lists.
+Presentation only: no schema change, no data migration, no foreign key change.
+
+REQUESTED
+All controlled data should be administered from master pages, including main
+category and sub-category.
+
+DELIVERED
+- Settings -> Metadata & Master Data now opens on Category and carries ten tabs:
+  Category, Sub-category, Country, State, City, Mandir, Event / Prasang,
+  Guruji / Person, Language, Media Type.
+- Sub-category is hierarchical. The parent category is selected first and the
+  name field follows, matching the Country -> State -> City -> Mandir pattern.
+- Each tab keeps its own form, search, inline edit and delete.
+- Code, aliases and activate/deactivate are hidden on the two category tabs
+  because the categories tables do not carry those columns.
+- Categories continue to use their own tables and their existing routes
+  (/categories, /subcategories). Only the screen is shared.
+
+PERMISSION HANDLING
+The Metadata & Master Data tab is Super Admin only, but Department Admin may
+also manage categories. The Settings -> System "Category Management" card is
+therefore kept for Department Admin and hidden for Super Admin, who now uses the
+Master Data tab. No single user sees two editors for the same data, and no role
+loses access.
+
+VERIFIED IN A RUNNING PORTAL
+[PASS] Ten tabs render with live counts, opening on Category
+[PASS] Category form shows only the name field
+[PASS] Sub-category form shows Category (parent) then Sub-category name
+[PASS] Creating a sub-category from the master page succeeded; the tab count
+       moved 1 -> 2 and the row lists its parent by name
+[PASS] Category Management card no longer present for Super Admin
+[PASS] PHPUnit suite 188/188, TypeScript check and production build clean
+
+NOT CHANGED
+Left drawer quick-add, rename and search for categories; upload and browse
+behaviour; category permissions.
