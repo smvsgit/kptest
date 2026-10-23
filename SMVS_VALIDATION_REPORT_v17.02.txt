@@ -1,0 +1,43 @@
+KARYALAY PORTAL v17.02 - VALIDATION REPORT
+Generated: 2026-10-23
+Release: Full-size Image View and Direct Download
+Previous: v17.01
+
+SCOPE DELIVERED
+Browse Files viewing and download ergonomics. No schema, permission or
+access-control change: every download still goes through the existing
+entitlement checks.
+
+REPORTED
+1. Clicking an image did not show it at original size.
+2. A single selected image should download directly.
+3. Multiple selected images should download as a ZIP.
+
+DELIVERED
+- Preview image is now a button that opens a full-size viewer. The viewer offers
+  Fit to screen and Actual size (1:1 pixels, canvas scrolls when larger than the
+  window), shows file name, resolution and size, carries a Download action, and
+  closes on Escape or a click outside.
+- The inline preview stays capped at 50vh on purpose so metadata remains visible
+  beside it; the viewer is the full-size path.
+- Selecting one file downloads that file directly via GET /files/{id}/download.
+- Selecting several still posts to /files/bulk-download and returns a ZIP.
+- Action bar reads "Download" for one file and "Download ZIP" for several, and
+  the count label is singular/plural correct.
+- Each card carries a download button, shown when the file is downloadable, so a
+  single asset can be saved without opening the preview.
+
+VERIFIED IN A RUNNING PORTAL
+[PASS] 2400x1400 test image: inline preview renders 739x431, viewer Fit renders
+       930x543, viewer Actual size renders 2400x1400 and the canvas scrolls
+[PASS] Viewer title reads "wide-scene.png - 2400x1400 - 12.66 KB"
+[PASS] One selected file issued GET /files/2/download (no ZIP)
+[PASS] Two selected files issued POST /files/bulk-download with ids 2 and 3
+[PASS] Action bar label switched between Download and Download ZIP
+[PASS] Download button present on every downloadable card
+[PASS] PHPUnit suite 188/188, TypeScript check and production build clean
+
+NOT CHANGED
+Download entitlement, watermark behaviour and the protected-content rules from
+v17.00 are untouched. A card download button only appears when can_download is
+already true for that user.

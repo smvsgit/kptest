@@ -34,6 +34,7 @@ interface Props {
     onToggleSelect: (id: number) => void;
     onToggleFavorite: (file: MediaFile) => void;
     onOpenPreview: (file: MediaFile) => void;
+    onDownload: (file: MediaFile) => void;
     onPageChange: (page: number) => void;
     onSaveSearch: (name: string) => void;
     onApplySavedSearch: (saved: SavedSearch) => void;
@@ -145,7 +146,7 @@ export default function BrowsePanel(p:Props){
 
         {(activeFilterEntries.length>0||filters.quick_view)&&<div className="active-filter-strip"><span>Active:</span>{filters.quick_view&&<button onClick={()=>p.onFilterChange({quick_view:undefined})}>{filters.quick_view==='favorites'?'Favorites':'Recently Viewed'} <X size={12}/></button>}{activeFilterEntries.map(item=><button key={String(item.key)} onClick={()=>p.onFilterChange({[item.key]:undefined})}>{item.label}: {item.value} <X size={12}/></button>)}<button className="clear-all" onClick={()=>p.onFilterChange(clearKeys)}>Clear all</button></div>}
 
-        <div className="media-grid">{files.data.length===0?<div className="search-empty-state"><Search size={48}/><h3>No matching files</h3><p>Try a broader search, remove filters, or switch the search scope.</p><button className="btn btn-secondary" onClick={()=>p.onFilterChange({...clearKeys,search:undefined,type:undefined,scope:'everywhere'})}><RotateCcw size={14}/> Reset Search</button></div>:files.data.map(file=><MediaCard key={file.id} file={file} isSelected={selectedFiles.has(file.id)} onSelect={()=>p.onToggleSelect(file.id)} onFavorite={()=>p.onToggleFavorite(file)} onOpen={()=>p.onOpenPreview(file)}/>)}</div>
+        <div className="media-grid">{files.data.length===0?<div className="search-empty-state"><Search size={48}/><h3>No matching files</h3><p>Try a broader search, remove filters, or switch the search scope.</p><button className="btn btn-secondary" onClick={()=>p.onFilterChange({...clearKeys,search:undefined,type:undefined,scope:'everywhere'})}><RotateCcw size={14}/> Reset Search</button></div>:files.data.map(file=><MediaCard key={file.id} file={file} isSelected={selectedFiles.has(file.id)} onSelect={()=>p.onToggleSelect(file.id)} onFavorite={()=>p.onToggleFavorite(file)} onOpen={()=>p.onOpenPreview(file)} onDownload={()=>p.onDownload(file)}/>)}</div>
 
         {files.last_page>1&&<div className="pagination-bar"><span className="pagination-info">Showing {files.from??0}–{files.to??0} of {files.total.toLocaleString()} files</span><div className="pagination-controls"><button className="pagination-btn" disabled={files.current_page===1} onClick={()=>p.onPageChange(files.current_page-1)}>← Prev</button>{pageWindows.map((n,i)=>n==='…'?<span key={`e${i}`} className="pagination-ellipsis">…</span>:<button key={n} className={`pagination-btn${n===files.current_page?' active':''}`} onClick={()=>p.onPageChange(n as number)}>{n}</button>)}<button className="pagination-btn" disabled={files.current_page===files.last_page} onClick={()=>p.onPageChange(files.current_page+1)}>Next →</button></div></div>}
     </section>;

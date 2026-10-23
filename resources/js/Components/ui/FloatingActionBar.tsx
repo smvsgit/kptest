@@ -13,11 +13,13 @@ interface Props {
 export default function FloatingActionBar({ selectedCount, canDelete, canBulkEdit, onClear, onDownload, onBulkEdit, onDelete }: Props) {
     return (
         <div className={`floating-action-bar${selectedCount > 0 ? ' visible' : ''}`}>
-            <div className="selected-count-label">Selected: <span>{selectedCount}</span> files</div>
+            <div className="selected-count-label">Selected: <span>{selectedCount}</span> {selectedCount === 1 ? 'file' : 'files'}</div>
             <div className="bar-actions">
                 <button className="btn btn-secondary" onClick={onClear}>Clear Selection</button>
                 {canBulkEdit&&<button className="btn btn-secondary" onClick={onBulkEdit}><Layers3 size={16}/> Bulk Edit</button>}
-                <button className="btn btn-primary" onClick={onDownload}><DownloadCloud size={16} /> Download ZIP</button>
+                <button className="btn btn-primary" onClick={onDownload} title={selectedCount === 1 ? 'Download this file' : `Download ${selectedCount} files as a ZIP`}>
+                    <DownloadCloud size={16} /> {selectedCount === 1 ? 'Download' : 'Download ZIP'}
+                </button>
                 {canDelete && <button className="btn btn-secondary" onClick={onDelete} style={{ borderColor: 'var(--color-danger-light)', color: 'var(--color-danger)', backgroundColor: 'var(--color-danger-light)' }}><Trash2 size={16} /> Delete</button>}
             </div>
         </div>
