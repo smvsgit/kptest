@@ -1,5 +1,18 @@
 # Karyalay Portal - Changelog
 
+## v17.06 - Compact Details Dialog (2026-10-23)
+
+- The info button now opens details only. A viewable image already has its own full-size viewer,
+  reached by clicking the card, so the dialog no longer repeats the picture. A "View image" action
+  in the dialog header still opens the viewer.
+- Metadata is laid out in two columns on a normal screen and one column under 620px.
+- Sources, lifecycle, version history and access policy moved behind a single collapsed disclosure.
+  Opening details should answer "what is this file"; those are tools reached for occasionally.
+- Together these take the dialog from 1629px of content in a 774px pane to 637px that fits exactly,
+  so the common case needs no scrolling at all. The scrolling added in v17.05 remains as the safety
+  net for when the disclosure is opened.
+- Video, audio and documents keep their media pane, since that is the only place they can be played.
+
 ## v17.05 - Scrollable Details Dialog (2026-10-23)
 
 - The details dialog cut its metadata off partway down, so Uploaded By, tags, sources, the access

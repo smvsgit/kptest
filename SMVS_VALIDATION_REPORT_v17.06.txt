@@ -1,0 +1,43 @@
+KARYALAY PORTAL v17.06 - VALIDATION REPORT
+Generated: 2026-10-23
+Release: Compact Details Dialog
+Previous: v17.05
+
+REQUESTED
+Clicking info should show metadata only - the image preview is redundant there
+now that clicking the card opens the picture. Metadata in multiple columns so it
+takes less space and needs no scrolling.
+
+DELIVERED
+- A viewable image no longer repeats its picture in the details dialog. The
+  dialog renders details only and a "View image" action in its header opens the
+  full-size viewer.
+- Metadata is laid out in two columns on a normal screen, one column under 620px.
+- Sources, lifecycle, version history and access policy are behind a single
+  collapsed disclosure, since opening details should answer "what is this file"
+  rather than present every tool.
+- Video, audio and documents keep their media pane: that is the only place they
+  can be played, so nothing was taken away from them.
+- A duplicate-asset warning was lifted above the disclosure so it stays visible.
+
+MEASURED EFFECT (same asset, same viewport)
+  before  1629 px of content inside a 774 px pane  -> scrolling required
+  after    637 px of content inside a 637 px pane  -> no scrolling
+
+  header            55        metadata grid    319 (two columns)
+  tags              55        disclosure        43 (was 981 across 4 sections)
+  actions           42
+
+VERIFIED IN A RUNNING PORTAL
+[PASS] Details dialog carries no image pane for a viewable image
+[PASS] Metadata renders two columns of 352 px
+[PASS] Pane scrollHeight equals clientHeight - nothing to scroll
+[PASS] Disclosure starts closed and expands to 1100 px with Sources, Lifecycle,
+       Version History and Access Policy all present
+[PASS] "View image" opens the full-size viewer at 5504x3072
+[PASS] PHPUnit suite 188/188, TypeScript check and production build clean
+
+NOT CHANGED
+The v17.05 scrolling fix stays as the safety net for when the disclosure is
+opened or the window is short. Permissions, download entitlement and the
+lifecycle rules are untouched.
