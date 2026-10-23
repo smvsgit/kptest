@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { X, Download, Trash2, Headphones, LockKeyhole, ShieldAlert, History, UploadCloud, RotateCcw, AlertTriangle, Link2, RefreshCw, Plus, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, Download, Trash2, Headphones, LockKeyhole, ShieldAlert, History, UploadCloud, RotateCcw, AlertTriangle, Link2, RefreshCw, Plus, Maximize2 } from 'lucide-react';
 import type { AccessLevel, AccessPolicy, MediaFile, MediaFileVersion, Category, UploadSettings, SourceConnection, MediaSourceItem } from '../../types';
+import ImageViewer from './ImageViewer';
 
 interface Props {
     file: MediaFile;
@@ -30,7 +31,7 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
     // Full-size viewer: the inline preview is deliberately capped so the metadata
     // stays visible, so opening the original is a separate overlay.
     const [zoomOpen, setZoomOpen] = useState(false);
-    const [actualSize, setActualSize] = useState(false);
+    const [inlineStatus, setInlineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [reason, setReason] = useState('');
     const [level, setLevel] = useState<AccessLevel>(file.can_preview && !file.can_download ? 'download' : 'view');
     const [requesting, setRequesting] = useState(false);
@@ -127,33 +128,7 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         setSavingPolicy(false);
     };
 
-    useEffect(() => {
-        if (!zoomOpen) return;
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoomOpen(false); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [zoomOpen]);
-
     const imageSrc = file.image_url || file.thumbnail_url || undefined;
-
-    const renderZoomViewer = () => {
-        if (!zoomOpen || !imageSrc) return null;
-        return <div className="image-zoom-overlay" onClick={e => { if (e.target === e.currentTarget) setZoomOpen(false); }}>
-            <div className="image-zoom-toolbar">
-                <span className="image-zoom-name">{file.name}{file.resolution ? ` · ${file.resolution}` : ''} · {formatBytes(file.size)}</span>
-                <div className="image-zoom-actions">
-                    <button className="btn btn-secondary" onClick={() => setActualSize(v => !v)} title={actualSize ? 'Fit to screen' : 'Show at actual pixel size'}>
-                        {actualSize ? <><ZoomOut size={14}/> Fit to screen</> : <><ZoomIn size={14}/> Actual size</>}
-                    </button>
-                    {file.can_download && <button className="btn btn-primary" onClick={() => onDownload(file.id)}><Download size={14}/> Download</button>}
-                    <button className="btn btn-secondary" onClick={() => setZoomOpen(false)} aria-label="Close full-size view"><X size={14}/></button>
-                </div>
-            </div>
-            <div className={`image-zoom-canvas${actualSize ? ' actual' : ''}`}>
-                <img src={imageSrc} alt={file.name} className={actualSize ? 'actual' : 'fit'} />
-            </div>
-        </div>;
-    };
 
     const renderPreview = () => {
         if (!file.can_preview) {
@@ -162,10 +137,17 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         const external=(file.source_items||[]).find(s=>s.is_primary&&s.status==='active'&&s.embed_url)||(file.source_items||[]).find(s=>s.status==='active'&&s.embed_url);
         if (external?.embed_url) return <iframe src={external.embed_url} title={file.name} style={{width:'100%',height:'50vh',border:0}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen/>;
         if (file.type === 'image') {
-            const src = file.image_url || file.thumbnail_url;
+            // Prefer the generated thumbnail here: the inline pane is small, and
+            // loading a multi-megabyte original just to fill it leaves the pane
+            // blank for seconds. The original is loaded by the full-size viewer.
+            const src = file.thumbnail_url || file.image_url;
             if (!src) return <div className="access-locked-panel"><Link2 size={50}/><p>Image source has no local preview. Open an active linked source below.</p></div>;
-            return <button type="button" className="image-zoom-trigger" onClick={() => { setActualSize(false); setZoomOpen(true); }} title="Click to view at full size">
-                <img src={src} alt={file.name} style={{ maxWidth: '100%', maxHeight: '50vh', objectFit: 'contain' }} />
+            return <button type="button" className="image-zoom-trigger" onClick={() => setZoomOpen(true)} title="Click to view at full size">
+                {inlineStatus === 'loading' && <span className="image-inline-status"><span className="image-zoom-spinner" aria-hidden="true" />Loading preview…</span>}
+                {inlineStatus === 'error' && <span className="image-inline-status">Preview unavailable</span>}
+                <img src={src} alt={file.name}
+                    style={{ maxWidth: '100%', maxHeight: '50vh', objectFit: 'contain', display: inlineStatus === 'ready' ? undefined : 'none' }}
+                    onLoad={() => setInlineStatus('ready')} onError={() => setInlineStatus('error')} />
                 <span className="image-zoom-hint"><Maximize2 size={13}/> Full size</span>
             </button>;
         }
@@ -184,7 +166,7 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         ['Current Version:', `v${file.current_version || 1}`], ['Upload Date:', new Date(file.created_at).toLocaleString()], ['Uploaded By:', file.uploader?.name || 'System'],
     ];
 
-    return <>{renderZoomViewer()}<div className="modal-overlay active" onClick={e => { if (e.target === e.currentTarget) onClose(); }}><div className="modal-container"><div className="modal-preview-pane" style={{position:'relative'}}>{renderPreview()}{file.can_preview&&file.watermark_enabled_effective&&<div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',opacity:.18,fontSize:34,fontWeight:800,transform:'rotate(-28deg)',color:'#fff',textShadow:'0 1px 2px #000'}}>{file.watermark_text||'Karyalay Portal'}</div>}</div><div className="modal-info-pane"><div className="modal-header"><div><h2 className="modal-title">{file.name}</h2><div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><span className={`card-type-badge badge-${file.type}`} style={{ position: 'static', display: 'inline-block' }}>{file.type}</span><span className={`access-policy-badge access-${file.access_policy}`}>{file.access_policy}</span>{file.access_request_status && <span className="request-status-pill">Request: {file.access_request_status}</span>}</div></div><button className="modal-close-btn" onClick={onClose}><X size={20} /></button></div>
+    return <>{zoomOpen && <ImageViewer file={file} onClose={() => setZoomOpen(false)} onDownload={onDownload} />}<div className="modal-overlay active" onClick={e => { if (e.target === e.currentTarget) onClose(); }}><div className="modal-container"><div className="modal-preview-pane" style={{position:'relative'}}>{renderPreview()}{file.can_preview&&file.watermark_enabled_effective&&<div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',opacity:.18,fontSize:34,fontWeight:800,transform:'rotate(-28deg)',color:'#fff',textShadow:'0 1px 2px #000'}}>{file.watermark_text||'Karyalay Portal'}</div>}</div><div className="modal-info-pane"><div className="modal-header"><div><h2 className="modal-title">{file.name}</h2><div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><span className={`card-type-badge badge-${file.type}`} style={{ position: 'static', display: 'inline-block' }}>{file.type}</span><span className={`access-policy-badge access-${file.access_policy}`}>{file.access_policy}</span>{file.access_request_status && <span className="request-status-pill">Request: {file.access_request_status}</span>}</div></div><button className="modal-close-btn" onClick={onClose}><X size={20} /></button></div>
         <div className="metadata-grid">{metadata.map(([label, value]) => <div key={String(label)} className="metadata-row"><span className="metadata-label">{label}</span><span className="metadata-value">{value}</span></div>)}</div>
         {file.description&&<div className="form-group"><span className="form-label">Description:</span><div style={{fontSize:12,color:'var(--text-secondary)',marginTop:4}}>{file.description}</div></div>}<div className="form-group" style={{ marginBottom: 18 }}><span className="form-label">Associated Tags:</span><div className="card-tags" style={{ marginTop: 6 }}>{file.tags.map(tag => <span key={tag} className="card-tag" style={{ fontSize: 11, padding: '4px 8px' }}>{tag}</span>)}</div></div>
 

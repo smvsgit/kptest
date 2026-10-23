@@ -547,3 +547,18 @@ a{color:inherit;text-decoration:none;}
 .media-card:hover .card-download-btn,.card-download-btn:focus-visible{opacity:1;}
 .card-download-btn:hover{background:var(--color-primary);border-color:var(--color-primary);color:var(--text-on-accent);}
 @media(hover:none){.card-download-btn{opacity:1}}
+
+/* ---- Image loading feedback (a dark pane must never look like a failure) ---- */
+.image-zoom-status,.image-inline-status{display:inline-flex;align-items:center;gap:9px;color:#cbd5e1;font-size:12.5px;font-weight:600;padding:14px 18px;text-align:center;}
+.image-zoom-spinner{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;animation:image-spin .7s linear infinite;flex:0 0 auto;}
+@keyframes image-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.image-zoom-spinner{animation-duration:2.4s}}
+
+/* ---- Card actions: details beside download ---- */
+.card-info-btn{position:absolute;top:10px;right:46px;z-index:5;width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.72);color:#fff;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px);opacity:0;transition:opacity var(--transition-fast),background-color var(--transition-fast);}
+/* Download shifts left when the info button is present. */
+.card-info-btn~.card-download-btn{right:82px;}
+.media-card:hover .card-info-btn,.card-info-btn:focus-visible{opacity:1;}
+.card-info-btn:hover{background:var(--color-primary);border-color:var(--color-primary);color:var(--text-on-accent);}
+@media(hover:none){.card-info-btn{opacity:1}}
+.media-card.viewable .card-preview-wrapper{cursor:zoom-in;}
