@@ -1,5 +1,16 @@
 # Karyalay Portal - Changelog
 
+## v17.05 - Scrollable Details Dialog (2026-10-23)
+
+- The details dialog cut its metadata off partway down, so Uploaded By, tags, sources, the access
+  policy controls and the Download / Move to Recycle Bin buttons could not be reached. The pane
+  already carried `overflow-y:auto`, but a CSS grid item defaults to `min-height:auto`, so the pane
+  grew to its full content height instead of scrolling and the dialog's `overflow:hidden` clipped
+  it. Constraining the dialog's grid row and letting the panes shrink makes the existing scrolling
+  engage.
+- Applies to the stacked layout under 1024px too: the picture takes the height it needs and the
+  details take the remainder and scroll.
+
 ## v17.04 - Image Preview Rework (2026-10-23)
 
 - Fixed the preview pane showing as a black rectangle. v17.00 made the inline preview load the full
