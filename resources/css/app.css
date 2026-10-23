@@ -562,3 +562,16 @@ a{color:inherit;text-decoration:none;}
 .card-info-btn:hover{background:var(--color-primary);border-color:var(--color-primary);color:var(--text-on-accent);}
 @media(hover:none){.card-info-btn{opacity:1}}
 .media-card.viewable .card-preview-wrapper{cursor:zoom-in;}
+
+/* ---- Details dialog must scroll, not clip ----
+   A grid item defaults to min-height:auto, so the info pane grew to its full
+   content height instead of scrolling, and .modal-container's overflow:hidden
+   then cut the end of the metadata off. Constraining the row and allowing the
+   panes to shrink lets the existing overflow-y:auto actually engage. */
+.modal-container{grid-template-rows:minmax(0,1fr);}
+.modal-preview-pane,.modal-info-pane{min-height:0;}
+.modal-info-pane{overscroll-behavior:contain;}
+@media(max-width:1024px){
+  /* Stacked: the picture takes what it needs, the details take the rest and scroll. */
+  .modal-container{grid-template-rows:auto minmax(0,1fr);}
+}

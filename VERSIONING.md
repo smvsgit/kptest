@@ -1,7 +1,7 @@
 # Versioning Policy
 
-Current application version: **17.04**  
-Previous application version: **17.03**
+Current application version: **17.05**  
+Previous application version: **17.04**
 
 - Major module/change release: increment the major digits, e.g. `14.00 -> 15.00`.
 - Verified v17 staging/deployment defects only: increment the last two digits, e.g. `17.00 -> 17.01 -> 17.02`.
@@ -11,10 +11,10 @@ The source-of-truth application version is `config/version.php` and is mirrored 
 
 ## Current release
 
-- Current: `17.04`
-- Previous: `17.03`
+- Current: `17.05`
+- Previous: `17.04`
 - Type: minor
-- Release name: Image Preview Rework
+- Release name: Scrollable Details Dialog
 - Development boundary: v17.00 closes 20 findings from the v16.00 UAT/Go-Live register, executes the 14 rows that had never been run, and raises the automated suite from 98 to 188 passing tests. It preserves the v16.00 theme gallery and the v15.01 healthcheck, user/role/network, storage and security architecture. Gujarati interface translation, provider configuration (email/WhatsApp/SMS), backup/DR evidence on a real host and Go-Live sign-off remain open gates.
 
 ## Release lifecycle after v17.00

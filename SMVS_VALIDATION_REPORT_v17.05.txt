@@ -1,0 +1,32 @@
+KARYALAY PORTAL v17.05 - VALIDATION REPORT
+Generated: 2026-10-23
+Release: Scrollable Details Dialog
+Previous: v17.04
+
+REPORTED
+The details dialog cut off partway down. Everything after Upload Date was
+unreachable, so the full metadata could not be read.
+
+CAUSE
+.modal-info-pane already declared overflow-y:auto, but it is a CSS grid item and
+a grid item defaults to min-height:auto. The pane therefore sized itself to its
+full content height rather than to the dialog, overflow-y never engaged, and
+.modal-container's overflow:hidden clipped the remainder.
+
+FIX
+- .modal-container gets an explicit grid-template-rows of minmax(0,1fr).
+- .modal-preview-pane and .modal-info-pane get min-height:0 so they may shrink.
+- Under 1024px the stacked dialog uses rows auto / minmax(0,1fr), so the picture
+  takes the height it needs and the details take the remainder and scroll.
+- overscroll-behavior:contain stops the page behind scrolling once the pane ends.
+
+CSS only. No markup, component, route or data change.
+
+VERIFIED IN A RUNNING PORTAL
+[PASS] Desktop: details pane content 2042px inside a 694px pane and scrolling
+[PASS] Dialog itself no longer overflows, so nothing is clipped
+[PASS] All 20 metadata rows present, ending at Uploaded By
+[PASS] Scrolled to the bottom and reached Save Access Policy, Download Asset and
+       Move to Recycle Bin, all previously unreachable
+[PASS] 375x812: single column, picture 204px, details 525px, scrolls to bottom
+[PASS] Production build clean
