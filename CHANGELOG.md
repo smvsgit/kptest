@@ -1,5 +1,17 @@
 # Karyalay Portal - Changelog
 
+## v17.01 - Readable Storage Metrics (2026-10-23)
+
+- Dashboards & Reports showed Integration Capacity and Integration Free Space as raw byte counts
+  (21,89,20,43,89,888), because the KPI tile only converted a metric whose key contained the word
+  "storage". Every `*_bytes` metric is now scaled to the largest sensible unit, so those tiles read
+  2.0 TB and 929.9 GB, and hovering a value shows the exact byte count.
+- Storage Used no longer forces GB, so small totals read 20.6 MB instead of 0.02 GB.
+- Renamed the three byte tiles to Storage Used, Integration Capacity and Integration Free Space;
+  the "Bytes" suffix was misleading once the value carries its own unit.
+- Added `resources/js/format.ts` as the single place this formatting lives. The portal had six
+  separate copies of a byte formatter and this panel had none, which is why the tiles were raw.
+
 ## v17.00 - UAT Remediation and Governance Hardening (2026-10-22)
 
 Closes 20 findings from the v16.00 UAT/Go-Live register and executes the 14 rows that had never been run.

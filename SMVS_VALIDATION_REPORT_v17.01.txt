@@ -1,0 +1,39 @@
+KARYALAY PORTAL v17.01 - VALIDATION REPORT
+Generated: 2026-10-23
+Release: Readable Storage Metrics
+Previous: v17.00
+
+SCOPE DELIVERED
+Display-only fix on Dashboards & Reports. No schema, route, permission or
+business-logic change.
+
+DEFECT
+The KPI tile converted a metric to a human unit only when its key contained the
+word "storage". integration_capacity_bytes and integration_free_bytes therefore
+rendered as raw byte counts (21,89,20,43,89,888 and 9,98,52,01,27,488), which
+are unreadable at a glance. storage_bytes was converted, but always to GB, so a
+small total showed as 0.02 GB.
+
+FIX
+- Every metric key ending in _bytes is now scaled to the largest sensible unit
+  (B / KB / MB / GB / TB / PB).
+- The exact byte count is kept in the value's tooltip.
+- Tiles relabelled: Storage Used, Integration Capacity, Integration Free Space.
+  The "Bytes" suffix was misleading once the value carries its own unit.
+- Byte formatting consolidated into resources/js/format.ts. Six copies of a
+  byte formatter existed elsewhere in the front end and this panel had none,
+  which is why these tiles were raw.
+
+VERIFIED
+[PASS] Integration Capacity renders 2.0 TB for 2,189,204,389,888 bytes
+[PASS] Integration Free Space renders 929.9 GB for 998,520,127,488 bytes
+[PASS] Tooltips carry the exact byte counts
+[PASS] Non-byte metrics (Files, Users, Departments) unchanged
+[PASS] Integrations & Health already formatted correctly and is untouched
+[PASS] PHPUnit suite: 188/188 tests, 0 failures
+[PASS] TypeScript check and Vite production build clean
+[PASS] Version contract: config/version.php (17.01) matches root VERSION
+
+OPEN GATES
+Unchanged from v17.00. Gujarati interface translation remains the one confirmed
+functional gap.
