@@ -61,6 +61,7 @@ class DashboardController extends Controller
         $query = MediaFile::with([
             'uploader.department', 'department', 'category', 'subcategory',
             'country','state','city','mandir','event','person','language','mediaType','sources.connection',
+            'visibleToRoles:id,name',
             'favorites' => fn ($q) => $q->where('user_id', $user->id),
             'accessRequests' => fn ($q) => $q->where('user_id', $user->id)->latest('id'),
         ]);
@@ -199,6 +200,11 @@ class DashboardController extends Controller
             'departments' => Department::withCount(['users','mediaFiles','organizationUnits'])->orderBy('is_system')->orderBy('name')->get(),
             'users'=>$userList,
             // Storage usage per department for the quota screen (Super Admin only).
+            // Roles that may be granted sight of an asset. Only Super Admin and
+            // Department Admin can widen visibility, so nobody else is offered it.
+            'visibilityRoles'=>in_array($user->role,['super-admin','department-admin'],true)
+                ? PortalRole::where('is_active',true)->orderByDesc('is_builtin')->orderBy('name')->get(['id','name','base_role'])
+                : [],
             'departmentStorage'=>$user->role==='super-admin' ? $storageQuota->overview() : [],
             'organizationUnits'=>$canAccessOrSettingsData ? OrganizationUnit::with('parent:id,name')->when($user->role!=='super-admin',fn($q)=>$q->where('department_id',$user->department_id))->orderBy('department_id')->orderBy('type')->orderBy('name')->get() : [],
             'permissionSets'=>($canAccessPage && $user->role==='super-admin') ? PermissionSet::orderBy('name')->get() : [],

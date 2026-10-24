@@ -50,6 +50,17 @@ class User extends Authenticatable
     public function organizationUnit(){return $this->belongsTo(OrganizationUnit::class);}
     public function permissionSet(){return $this->belongsTo(PermissionSet::class);}
     public function portalRole(){return $this->belongsTo(PortalRole::class);}
+
+    /**
+     * The portal role a media role-grant is matched against. Users assigned a
+     * custom role carry portal_role_id; everyone else falls back to the
+     * built-in role whose slug equals their base role.
+     */
+    public function effectivePortalRoleId(): ?int
+    {
+        if ($this->portal_role_id) return (int) $this->portal_role_id;
+        return PortalRole::where('slug', $this->role)->where('is_builtin', true)->value('id');
+    }
     public function groups(){return $this->belongsToMany(UserGroup::class,'user_group_members')->withPivot('added_by')->withTimestamps();}
     public function externalAccessApprover(){return $this->belongsTo(User::class,'external_access_approved_by');}
     public function statusHistory(){return $this->hasMany(UserStatusHistory::class);}

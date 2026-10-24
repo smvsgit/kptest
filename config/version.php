@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'current' => '17.06',
-    'previous' => '17.05',
-    'release_type' => 'Minor',
+    'current' => '18.00',
+    'previous' => '17.06',
+    'release_type' => 'Major',
     'release_date' => '2026-10-23',
-    'release_name' => 'Compact Details Dialog',
+    'release_name' => 'Role-based Asset Visibility',
 ];

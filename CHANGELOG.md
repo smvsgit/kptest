@@ -1,5 +1,21 @@
 # Karyalay Portal - Changelog
 
+## v18.00 - Role-based Asset Visibility (2026-10-24)
+
+Adds a second dimension to access control alongside Public / Protected / Private.
+
+- An asset can be granted to one or more portal roles. Anyone holding a granted role may see and
+  open it wherever they sit in the organisation, without an access request. This is the
+  "explicitly authorized users" case the BRD allows next to owner-department access.
+- The grant is explicit authorization, so it reaches private assets in other departments. It does
+  not override `download_allowed`, and deactivating a role withdraws the grant immediately.
+- Roles are picked on the Batch Upload form beneath Access Policy, and can be changed later from
+  bulk edit. Only Super Admin and Department Admin may widen visibility; an upload from anyone
+  else carries no grants.
+- A user assigned a custom portal role is matched on that role, not on their base role.
+- The details dialog lists the granted roles, and grant changes are audited.
+- New `media_file_role` table. Grants are removed with the asset.
+
 ## v17.06 - Compact Details Dialog (2026-10-23)
 
 - The info button now opens details only. A viewable image already has its own full-size viewer,

@@ -15,12 +15,32 @@ class MediaAccessService
     public function applyVisibility(Builder $query, User $user): Builder
     {
         if ($user->role === 'super-admin') return $query;
-        return $query->where(function (Builder $q) use ($user) {
+        $roleId = $user->effectivePortalRoleId();
+
+        return $query->where(function (Builder $q) use ($user, $roleId) {
             $q->whereIn('access_policy', ['public', 'protected']);
             if ($user->department_id) {
                 $q->orWhere(fn (Builder $private) => $private->where('access_policy', 'private')->where('department_id', $user->department_id));
             }
+            // A role grant is explicit authorization, so it reaches private
+            // assets in other departments too.
+            if ($roleId) {
+                $q->orWhereHas('visibleToRoles', fn ($r) => $r->where('portal_roles.id', $roleId)->where('portal_roles.is_active', true));
+            }
         });
+    }
+
+    /** Does this user hold a role the asset was explicitly granted to? */
+    public function hasRoleGrant(MediaFile $media, User $user): bool
+    {
+        $roleId = $user->effectivePortalRoleId();
+        if (!$roleId) return false;
+
+        if ($media->relationLoaded('visibleToRoles')) {
+            return $media->visibleToRoles->contains(fn ($role) => (int) $role->id === $roleId && $role->is_active);
+        }
+
+        return $media->visibleToRoles()->where('portal_roles.id', $roleId)->where('portal_roles.is_active', true)->exists();
     }
 
     public function canSeeMetadata(MediaFile $media, User $user): bool
@@ -28,7 +48,7 @@ class MediaAccessService
         if (($user->status ?? 'active') !== 'active') return false;
         if ($user->role === 'super-admin') return true;
         if ($media->access_policy !== 'private') return true;
-        return $this->sameDepartment($media, $user);
+        return $this->sameDepartment($media, $user) || $this->hasRoleGrant($media, $user);
     }
 
     /**
@@ -52,6 +72,9 @@ class MediaAccessService
     {
         if (!$this->canSeeMetadata($media, $user)) return false;
         if ($this->hasCustodyOf($media, $user)) return true;
+        // An explicit role grant authorises the content itself, which is what
+        // distinguishes it from merely being able to see the record exists.
+        if ($this->hasRoleGrant($media, $user)) return true;
         if ($media->access_policy === 'public') return true;
         // Private content stays inside the owning department (BR-03).
         if ($media->access_policy === 'private') return $this->sameDepartment($media, $user);
@@ -63,6 +86,7 @@ class MediaAccessService
     {
         if (!$media->download_allowed || !$this->canSeeMetadata($media, $user)) return false;
         if ($this->hasCustodyOf($media, $user)) return true;
+        if ($this->hasRoleGrant($media, $user)) return true;
         if ($media->access_policy === 'public') return true;
         if ($media->access_policy === 'private') return $this->sameDepartment($media, $user);
         return $this->approvedRequest($media, $user)?->access_level === 'download';
@@ -71,8 +95,9 @@ class MediaAccessService
     public function canRequest(MediaFile $media, User $user): bool
     {
         if (($user->status ?? 'active') !== 'active' || $media->access_policy !== 'protected') return false;
-        // Custodians already have access, so they have nothing to request.
-        if ($this->hasCustodyOf($media, $user)) return false;
+        // Custodians and granted roles already have access, so they have
+        // nothing to request.
+        if ($this->hasCustodyOf($media, $user) || $this->hasRoleGrant($media, $user)) return false;
         $latest=$this->latestRequest($media,$user);
         if(!$latest||in_array($latest->status,['rejected','more-info','expired','revoked','cancelled'],true))return true;
         if($latest->status==='approved'&&($latest->revoked_at||($latest->expires_at&&$latest->expires_at->isPast())))return true;
