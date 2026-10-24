@@ -37,6 +37,8 @@ class BulkMediaController extends Controller
             // Integers, not booleans: the exists rule serialises `false` to an empty
             // string, which matches no row and rejects every valid department.
             'department_id'=>['nullable',Rule::exists('departments','id')->where('is_active',1)->where('is_system',0)],
+            'visible_role_ids'=>'nullable|array|max:20',
+            'visible_role_ids.*'=>['integer',Rule::exists('portal_roles','id')->where('is_active',true)],
             'archive_mode'=>'nullable|in:archive,unarchive',
             'access_policy'=>'nullable|in:public,protected,private','download_allowed'=>'nullable|boolean',
         ]);
@@ -48,6 +50,7 @@ class BulkMediaController extends Controller
             abort_unless($user->department_id && $files->every(fn($f)=>(int)$f->department_id===(int)$user->department_id),403,'Bulk editing is limited to files owned by your department.');
         }
         if(array_key_exists('department_id',$data) && $data['department_id']!==null) abort_unless($user->role==='super-admin',403,'Only Super Admin can transfer department ownership.');
+        if(array_key_exists('visible_role_ids',$data)) abort_unless(in_array($user->role,['super-admin','department-admin'],true),403,'Only Super Admin or Department Admin can change role visibility.');
         if(!empty($data['archive_mode'])) abort_unless(in_array($user->role,['super-admin','department-admin'],true),403,'Department Operator cannot bulk archive/unarchive.');
         if(array_key_exists('subcategory_id',$data) && $data['subcategory_id']){
             $sub=Subcategory::findOrFail($data['subcategory_id']);
@@ -59,6 +62,16 @@ class BulkMediaController extends Controller
                 $before=$file->only(['year','country_id','state_id','city_id','mandir_id','event_id','person_id','language_id','media_type_id','description','internal_remarks','source_type','asset_status','tags','category_id','subcategory_id','department_id','access_policy','download_allowed','archived_at']);
                 $updates=[];
                 if(isset($data['metadata'])) $updates=array_merge($updates,$data['metadata']);
+                if(array_key_exists('visible_role_ids',$data)){
+                    $roleIds=array_values(array_unique(array_map('intval',(array)$data['visible_role_ids'])));
+                    $result=$file->visibleToRoles()->sync(array_fill_keys($roleIds,['granted_by'=>$request->user()->id]));
+                    // Changing only the grants still changes the file, so it must
+                    // be reported as updated rather than "0 file(s) updated".
+                    if($result['attached']||$result['detached']){
+                        $audit->log($request,'media.role-visibility.updated',$file,'Role visibility updated.',['visible_role_ids'=>$roleIds]);
+                        if(!in_array($file->id,$changed,true))$changed[]=$file->id;
+                    }
+                }
                 foreach(['category_id','subcategory_id','department_id','access_policy','download_allowed'] as $field) if(array_key_exists($field,$data)) $updates[$field]=$data[$field];
                 if(array_key_exists('category_id',$updates) && !array_key_exists('subcategory_id',$updates)) $updates['subcategory_id']=null;
                 if(!empty($updates['subcategory_id'])) {

@@ -41,6 +41,9 @@ class MediaFileController extends Controller
             'asset_status' => 'nullable|in:draft,active',
             'folder_id' => 'nullable|exists:media_folders,id',
             'watermark_enabled' => 'nullable|boolean',
+            // Roles explicitly granted sight of this asset, on top of the policy.
+            'visible_role_ids' => 'nullable|array|max:20',
+            'visible_role_ids.*' => ['integer', Rule::exists('portal_roles','id')->where('is_active', true)],
         ]);
         $this->enforceMetadataRequirements($request);
 
@@ -89,10 +92,12 @@ class MediaFileController extends Controller
             'uploaded_by'=>$request->user()?->id,'owner_user_id'=>$request->user()?->id,
         ]);
 
+        $this->syncRoleGrants($request, $media);
+
         ProcessMediaFile::dispatch($media->id);
         $audit->log($request, 'media.uploaded', $media, 'Media uploaded.', [
             'name'=>$media->name,'size'=>$media->size,'type'=>$media->type,'department_id'=>$media->department_id,
-            'category_id'=>$media->category_id,'access_policy'=>$media->access_policy,'source_type'=>$media->source_type,
+            'category_id'=>$media->category_id,'access_policy'=>$media->access_policy,'source_type'=>$media->source_type,'visible_role_ids'=>$media->visibleToRoles()->pluck('portal_roles.id')->all(),
         ]);
 
         return response()->json(['message' => 'Uploaded successfully', 'id' => $media->id], 201);
@@ -142,6 +147,18 @@ class MediaFileController extends Controller
     }
 
 
+
+    /**
+     * Only Super Admin and Department Admin may widen who can see an asset, so
+     * an upload from anyone else silently carries no grants rather than failing.
+     */
+    private function syncRoleGrants(Request $request, MediaFile $media): void
+    {
+        if (!in_array($request->user()?->role, ['super-admin','department-admin'], true)) return;
+        $ids = array_values(array_unique(array_map('intval', (array) $request->input('visible_role_ids', []))));
+        if (!$ids) return;
+        $media->visibleToRoles()->sync(array_fill_keys($ids, ['granted_by' => $request->user()->id]));
+    }
 
     private function enforceMetadataRequirements(Request $request): void
     {

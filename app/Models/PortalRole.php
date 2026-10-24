@@ -19,5 +19,6 @@ class PortalRole extends Model
     }
 
     public function users(){return $this->hasMany(User::class);}
+    public function mediaFiles(){return $this->belongsToMany(MediaFile::class,'media_file_role')->withTimestamps();}
     public function groups(){return $this->hasMany(UserGroup::class);}
 }

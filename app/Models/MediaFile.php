@@ -83,6 +83,9 @@ class MediaFile extends Model
      * (queue stopped, retry pending). The thumbnail is an optimisation, not the
      * only way to see the picture, so the original is always offered too.
      */
+    /** Portal roles explicitly granted sight of this asset. */
+    public function visibleToRoles(){return $this->belongsToMany(PortalRole::class,'media_file_role')->withPivot('granted_by')->withTimestamps();}
+
     public function getImageUrlAttribute(): ?string { return $this->type === 'image' && $this->file_path ? route('files.preview', $this) : null; }
     public function getVideoUrlAttribute(): ?string { return $this->type === 'video' && $this->file_path ? route('files.preview', $this) : null; }
     public function getAudioUrlAttribute(): ?string { return $this->type === 'audio' && $this->file_path ? route('files.preview', $this) : null; }

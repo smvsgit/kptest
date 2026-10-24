@@ -1,0 +1,55 @@
+KARYALAY PORTAL v18.00 - VALIDATION REPORT
+Generated: 2026-10-24
+Release: Role-based Asset Visibility
+Previous: v17.06
+
+REQUESTED
+Keep the Public / Protected / Private policy, and alongside it allow a role to
+be assigned so that the data is visible to that role.
+
+AGREED SEMANTICS
+Confirmed with the requester before implementation: a granted role reaches its
+holders across the whole portal, in any department. This is the "explicitly
+authorized users" case the BRD allows beside owner-department access, and is
+recorded here because it widens who can reach private content.
+
+DELIVERED
+- New media_file_role table linking an asset to one or more portal roles, with
+  the granting user recorded. Grants are removed with the asset.
+- A granted role authorises the content itself: metadata, preview and download.
+  It reaches private assets in other departments and unlocks protected content
+  without an access request.
+- The grant does NOT override download_allowed.
+- Deactivating a portal role withdraws its grants immediately.
+- A user assigned a custom portal role is matched on that role; everyone else is
+  matched on the built-in role matching their base role.
+- Browse listings include granted assets, through the same applyVisibility path
+  that already governs the department and policy rules.
+- Roles are chosen on the Batch Upload form directly beneath Access Policy, and
+  can be changed later from bulk edit. The details dialog lists them.
+- Only Super Admin and Department Admin may widen visibility. An upload from any
+  other role silently carries no grants rather than failing; bulk edit refuses
+  with 403.
+- Grant changes are audited as media.role-visibility.updated, and a grant-only
+  bulk edit now reports the file as updated.
+
+VERIFIED IN A RUNNING PORTAL
+[PASS] Private asset owned by Audio Video, viewer sitting in Website:
+       before the grant  canSeeMetadata=false  canPreview=false
+       after  the grant  canSeeMetadata=true   canPreview=true  canDownload=true
+       browse for that viewer returned the asset
+[PASS] Role picker renders under Access Policy with all four active roles
+[PASS] Helper text states the cross-department effect, singular and plural
+[PASS] Grant stored with granting user recorded
+[PASS] PHPUnit suite 204/204 (16 new), TypeScript check and production build clean
+
+DEFECT FOUND AND FIXED DURING VERIFICATION
+A grant-only bulk edit reported "0 file(s) updated" because the counter only
+tracked column changes. Role changes now count and are audited; a regression
+test asserts the reported updated_ids.
+
+SECURITY NOTE FOR ROLLOUT
+Granting a broad role such as Viewer exposes the asset to every holder of that
+role in every department. The upload form states this before the choice is
+saved. Administrators should prefer a narrow custom role where the audience
+should be limited.
