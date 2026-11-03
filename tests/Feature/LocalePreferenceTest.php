@@ -15,11 +15,12 @@ use Tests\TestCase;
  * preference, a branding-level default, resolution to an application locale and
  * the locale being shared with the front end.
  *
- * What does NOT exist yet is the translation content itself — there are no
- * lang/ files and the React components carry hardcoded English strings — so
- * selecting ગુજરાતી currently changes the stored preference and the resolved
- * locale, not the words on screen. These tests therefore assert the contract
- * that is implemented, and deliberately do not claim the UI is translated.
+ * Phase 1 of the translation itself has now landed: lang/en/ui.php is the
+ * source catalogue, lang/gu/ui.php mirrors it, and the whole thing is shared
+ * with the front end so the sign-in screens, the navigation, the header and
+ * Browse render in the chosen language. Later phases add upload, access and
+ * the admin panels; the tests below cover the mechanism and the catalogue,
+ * not how much of the interface each phase reaches.
  */
 class LocalePreferenceTest extends TestCase
 {
@@ -112,11 +113,118 @@ class LocalePreferenceTest extends TestCase
      * translations are added, this test should be replaced by real assertions
      * on translated output.
      */
-    public function test_no_translation_catalogue_exists_yet(): void
+    public function test_the_catalogue_exists_for_both_languages(): void
     {
-        $this->assertDirectoryDoesNotExist(
-            base_path('lang'),
-            'A lang/ directory now exists — replace this test with assertions on translated strings.',
-        );
+        $this->assertFileExists(base_path('lang/en/ui.php'));
+        $this->assertFileExists(base_path('lang/gu/ui.php'));
+    }
+
+    /**
+     * The English file is the source. A string added there without its
+     * Gujarati counterpart would reach a Gujarati screen in English, and this
+     * is what stops that happening quietly.
+     */
+    public function test_every_english_key_has_a_gujarati_translation(): void
+    {
+        $english = $this->flatten(require base_path('lang/en/ui.php'));
+        $gujarati = $this->flatten(require base_path('lang/gu/ui.php'));
+
+        $missing = array_diff(array_keys($english), array_keys($gujarati));
+        $this->assertSame([], array_values($missing), 'Untranslated keys: '.implode(', ', $missing));
+    }
+
+    public function test_the_gujarati_file_has_no_keys_of_its_own(): void
+    {
+        $english = $this->flatten(require base_path('lang/en/ui.php'));
+        $gujarati = $this->flatten(require base_path('lang/gu/ui.php'));
+
+        $extra = array_diff(array_keys($gujarati), array_keys($english));
+        $this->assertSame([], array_values($extra), 'Keys with no English source: '.implode(', ', $extra));
+    }
+
+    /** A :placeholder dropped in translation would render as a literal gap. */
+    public function test_placeholders_survive_translation(): void
+    {
+        $english = $this->flatten(require base_path('lang/en/ui.php'));
+        $gujarati = $this->flatten(require base_path('lang/gu/ui.php'));
+
+        foreach ($english as $key => $line) {
+            preg_match_all('/:([a-z_]+)/', $line, $matches);
+            foreach ($matches[1] as $placeholder) {
+                $this->assertStringContainsString(
+                    ':'.$placeholder,
+                    $gujarati[$key] ?? '',
+                    "The Gujarati line for {$key} has lost the :{$placeholder} placeholder.",
+                );
+            }
+        }
+    }
+
+    public function test_the_catalogue_is_shared_with_the_front_end(): void
+    {
+        $this->actingAs($this->user(['preferred_language' => 'gu']))
+            ->get('/')
+            // The catalogue ships flattened, so its keys contain dots and are
+            // read from the array rather than as a nested Inertia path.
+            ->assertInertia(fn ($page) => $page
+                ->where('locale', 'gu')
+                ->where('translations', fn ($lines) => $lines['nav.browse'] === trans('ui.nav.browse', [], 'gu')
+                    && $lines['auth.sign_in'] === trans('ui.auth.sign_in', [], 'gu')));
+    }
+
+    /** The sign-in screen is the first thing anyone sees, guests included. */
+    public function test_a_guest_sign_in_screen_follows_the_branding_language(): void
+    {
+        SystemSetting::put('branding.settings', ['default_language' => 'gu']);
+
+        $this->get('/login')->assertInertia(fn ($page) => $page
+            ->where('locale', 'gu')
+            ->where('translations', fn ($lines) => $lines['auth.sign_in'] === trans('ui.auth.sign_in', [], 'gu')
+                && $lines['auth.welcome_back'] === trans('ui.auth.welcome_back', [], 'gu')));
+    }
+
+    public function test_an_english_reader_gets_the_english_catalogue(): void
+    {
+        $this->actingAs($this->user(['preferred_language' => 'en']))
+            ->get('/')
+            ->assertInertia(fn ($page) => $page
+                ->where('translations', fn ($lines) => $lines['nav.browse'] === 'Browse Files'));
+    }
+
+    public function test_language_can_be_switched_from_the_header(): void
+    {
+        $user = $this->user(['preferred_language' => 'en']);
+
+        $this->actingAs($user)
+            ->patch('/profile/language', ['preferred_language' => 'gu'])
+            ->assertRedirect();
+
+        $this->assertSame('gu', $user->fresh()->preferred_language);
+    }
+
+    public function test_the_header_switch_refuses_an_unsupported_language(): void
+    {
+        $user = $this->user(['preferred_language' => 'en']);
+
+        $this->actingAs($user)
+            ->patch('/profile/language', ['preferred_language' => 'fr'])
+            ->assertSessionHasErrors('preferred_language');
+
+        $this->assertSame('en', $user->fresh()->preferred_language);
+    }
+
+    /** lang files are nested; the front end reads them as dot keys. */
+    private function flatten(array $items, string $prefix = ''): array
+    {
+        $out = [];
+        foreach ($items as $key => $value) {
+            $path = $prefix === '' ? (string) $key : $prefix.'.'.$key;
+            if (is_array($value)) {
+                $out += $this->flatten($value, $path);
+                continue;
+            }
+            $out[$path] = (string) $value;
+        }
+        return $out;
     }
 }
