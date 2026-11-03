@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { router, Link } from '@inertiajs/react';
-import { Folders, UploadCloud, ShieldCheck, SlidersHorizontal, Sun, Moon, Search, Menu, PlusCircle, FolderPlus, Pencil, LogOut, ChevronRight, Database, Bell, BarChart3, Activity, BookOpen } from 'lucide-react';
+import { Folders, UploadCloud, ShieldCheck, SlidersHorizontal, Sun, Moon, Search, Menu, PlusCircle, FolderPlus, Pencil, LogOut, ChevronRight, Database, Bell, BarChart3, Activity, BookOpen, FolderTree } from 'lucide-react';
 import type { Category, PortalNotification, SearchSettings, User, UserRole } from '../types';
 import { usePortalBranding } from '../branding';
 import { applySessionTheme, writeModeOverride } from '../theme';
@@ -27,6 +27,7 @@ export default function AppLayout(p:Props){
    return []});
  return <div className="app-container"><aside className={`sidebar${sidebarOpen?' active':''}`}><div className="sidebar-logo-container"><div className="sidebar-logo"><img src={branding.logo_url} alt={branding.portal_name} onError={e=>{if(!e.currentTarget.src.endsWith('/logo.svg'))e.currentTarget.src='/logo.svg';else e.currentTarget.style.display='none'}}/><span>{branding.portal_name}</span></div></div><nav className="sidebar-nav">
   <button className={`nav-item${p.activeTab==='browse-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('browse-panel');setSidebarOpen(false)}}><Folders/><span>Browse Files</span></button>
+  <button className={`nav-item${p.activeTab==='folders-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('folders-panel');setSidebarOpen(false)}}><FolderTree/><span>Folders</span></button>
   {p.canUpload&&<button className={`nav-item${p.activeTab==='upload-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('upload-panel');setSidebarOpen(false)}}><UploadCloud/><span>Batch Upload</span></button>}
   {p.canViewAccess&&<button className={`nav-item${p.activeTab==='access-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('access-panel');setSidebarOpen(false)}}><ShieldCheck/><span>Access Requests</span></button>}
   {p.canViewReports&&<button className={`nav-item${p.activeTab==='reports-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('reports-panel');setSidebarOpen(false)}}><BarChart3/><span>Dashboards & Reports</span></button>}

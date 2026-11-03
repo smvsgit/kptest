@@ -43,6 +43,10 @@ class ChunkUploadController extends Controller
             'media_type_id'=>['nullable',Rule::exists('master_data_values','id')->where('type','media_type')->where('is_active',true)],
             'description'=>'nullable|string|max:5000','internal_remarks'=>'nullable|string|max:5000',
             'source_type'=>'nullable|in:local,nas,google-drive,youtube','asset_status'=>'nullable|in:draft,active','folder_id'=>'nullable|exists:media_folders,id','watermark_enabled'=>'nullable|boolean',
+            // A large file inside a folder upload carries the same two fields
+            // as a small one, so it lands in the right folder and may defer
+            // its metadata the same way.
+            'folder_path'=>'nullable|string|max:1000','defer_metadata'=>'nullable|boolean',
         ]);
 
         $uploadPolicy->validateFile($request->filename,(int)$request->total_size);
@@ -91,11 +95,17 @@ class ChunkUploadController extends Controller
         $departmentId=$request->user()?->department_id??Department::where('is_system',true)->value('id'); if($departmentId)$quota->assertCanStore((int)$departmentId,$assembled);
         $resolution=null;if($type==='image'){[$w,$h]=@getimagesize($finalAbs)?:[null,null];if($w&&$h)$resolution="{$w}x{$h}";}
         $tags=$request->tags?array_values(array_filter(array_map('trim',explode(',',$request->tags)))):[];
+        $folderId=$request->folder_id?(int)$request->folder_id:null;
+        if($departmentId && $request->filled('folder_path')){
+            $folderId=app(\App\Services\FolderPathService::class)->resolveForUpload(
+                (string)$request->input('folder_path'),(int)$departmentId,(int)$request->user()->id,$folderId
+            );
+        }
         $media=MediaFile::create([
-            'name'=>$request->filename,'type'=>$type,'size'=>$assembled,'category_id'=>$request->category_id,'subcategory_id'=>$request->subcategory_id,'department_id'=>$departmentId,'folder_id'=>$request->folder_id,'watermark_enabled'=>$request->has('watermark_enabled')?$request->boolean('watermark_enabled'):null,
+            'name'=>$request->filename,'type'=>$type,'size'=>$assembled,'category_id'=>$request->category_id,'subcategory_id'=>$request->subcategory_id,'department_id'=>$departmentId,'folder_id'=>$folderId,'watermark_enabled'=>$request->has('watermark_enabled')?$request->boolean('watermark_enabled'):null,
             'year'=>$request->integer('year')?:null,'country_id'=>$request->country_id,'state_id'=>$request->state_id,'city_id'=>$request->city_id,'mandir_id'=>$request->mandir_id,
             'event_id'=>$request->event_id,'person_id'=>$request->person_id,'language_id'=>$request->language_id,'media_type_id'=>$request->media_type_id,
-            'description'=>$request->description,'internal_remarks'=>$request->internal_remarks,'source_type'=>$request->input('source_type','local'),'asset_status'=>$request->input('asset_status','draft'),
+            'description'=>$request->description,'internal_remarks'=>$request->internal_remarks,'source_type'=>$request->input('source_type','local'),'asset_status'=>$request->boolean('defer_metadata')?'draft':$request->input('asset_status','draft'),
             'access_policy'=>$request->access_policy?:'public','download_allowed'=>$request->boolean('download_allowed',true),'tags'=>$tags,'resolution'=>$resolution,
             'file_path'=>$finalRel,'thumbnail_path'=>null,'uploaded_by'=>$request->user()?->id,'owner_user_id'=>$request->user()?->id,
         ]);
@@ -125,10 +135,13 @@ class ChunkUploadController extends Controller
 
     private function enforceMetadataRequirements(Request $request): void
     {
-        $settings=SystemSetting::valueFor('metadata.settings',[]);$required=$settings['required_fields']??[];
-        if(($settings['person_required']??false)&&!in_array('person_id',$required,true))$required[]='person_id';
-        $labels=['year'=>'Year','country_id'=>'Country','state_id'=>'State','city_id'=>'City','mandir_id'=>'Mandir','event_id'=>'Event / Prasang','person_id'=>'Guruji / Person','language_id'=>'Language','media_type_id'=>'Media Type','description'=>'Description'];
-        $missing=[];foreach($required as $field)if(!$request->filled($field))$missing[]=$labels[$field]??$field;if($missing)abort(422,'Required metadata missing: '.implode(', ',$missing));
+        $settings=SystemSetting::valueFor('metadata.settings',[]);
+        // Same rule as the plain upload: a deferred upload skips the gate and
+        // stays a draft until it is described.
+        if(!$request->boolean('defer_metadata')){
+            $missing=app(\App\Services\MetadataRequirementService::class)->missingFromValues($request->all(),$settings);
+            if($missing)abort(422,'Required metadata missing: '.implode(', ',$missing));
+        }
         $min=(int)($settings['years_min']??1950);$max=(int)($settings['years_max']??((int)date('Y')+2));if($request->filled('year')&&($request->integer('year')<$min||$request->integer('year')>$max))abort(422,"Year must be between {$min} and {$max}.");
     }
 

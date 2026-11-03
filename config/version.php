@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'current' => '19.00',
-    'previous' => '18.00',
-    'release_type' => 'Major',
+    'current' => '19.01',
+    'previous' => '19.00',
+    'release_type' => 'Minor',
     'release_date' => '2026-11-03',
-    'release_name' => 'Folder Workspace & Review Fixes',
+    'release_name' => 'Folder Workspace UI',
 ];
