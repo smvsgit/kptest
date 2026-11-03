@@ -42,6 +42,24 @@ class ProfileController extends Controller
         return back()->with('success','Profile preferences saved successfully.');
     }
 
+    /**
+     * Switch interface language on its own.
+     *
+     * The full profile form needs a name and an email; changing language from
+     * the header should not, so it has its own endpoint. The reply is a plain
+     * redirect, which makes Inertia re-fetch the page with the new catalogue.
+     */
+    public function updateLanguage(Request $request, AuditService $audit)
+    {
+        $data=$request->validate(['preferred_language'=>'required|in:en,gu']);
+        $user=$request->user();
+        $before=$user->preferred_language;
+        if($before===$data['preferred_language'])return back();
+        $user->update($data);
+        $audit->log($request,'profile.language-changed',$user,'Interface language changed.',['before'=>$before,'after'=>$data['preferred_language']]);
+        return back();
+    }
+
     public function updatePassword(Request $request, AuditService $audit)
     {
         $min=max(8,(int)(SystemSetting::valueFor('security.auth',[])['password_min_length']??12));

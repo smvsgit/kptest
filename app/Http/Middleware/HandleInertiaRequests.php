@@ -17,6 +17,30 @@ class HandleInertiaRequests extends Middleware
         return parent::version($request);
     }
 
+    /** lang/<locale>/ui.php as {"nav.browse": "Browse Files", ...}. */
+    private function uiCatalogue(string $locale): array
+    {
+        $flatten = static function (array $items, string $prefix = '') use (&$flatten): array {
+            $out = [];
+            foreach ($items as $key => $value) {
+                $path = $prefix === '' ? (string) $key : $prefix.'.'.$key;
+                if (is_array($value)) {
+                    $out += $flatten($value, $path);
+                    continue;
+                }
+                $out[$path] = (string) $value;
+            }
+            return $out;
+        };
+
+        $lines = trans('ui', [], $locale);
+        // trans() hands back the key itself when the file is missing, so an
+        // absent catalogue degrades to English rather than to a blank screen.
+        if (! is_array($lines)) $lines = is_array(trans('ui', [], 'en')) ? trans('ui', [], 'en') : [];
+
+        return $flatten($lines);
+    }
+
     public function share(Request $request): array
     {
         $assignments = [
@@ -76,6 +100,10 @@ class HandleInertiaRequests extends Middleware
             ],
             'branding' => $branding,
             'locale' => $locale,
+            // The whole interface catalogue, flattened to dot keys. It is a few
+            // kilobytes and every screen draws on it, so sending it with the
+            // page beats a round trip the moment a label renders.
+            'translations' => $this->uiCatalogue($locale),
         ];
     }
 }

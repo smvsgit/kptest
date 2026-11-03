@@ -253,6 +253,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'updateInfo'])->name('profile.update');
+    Route::patch('/profile/language', [ProfileController::class, 'updateLanguage'])->name('profile.language');
     Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     // Super Admin-only organization and authorization management.
