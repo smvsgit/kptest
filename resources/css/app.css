@@ -609,3 +609,32 @@ a{color:inherit;text-decoration:none;}
 .role-grant-option input{flex:0 0 auto;}
 .role-grant-option:hover{color:var(--text-primary);}
 .role-grant-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:var(--color-primary-light);color:var(--color-primary);font-size:10.5px;font-weight:700;}
+
+/* ---- Narrow-screen overflow (390px) ----
+   A grid track defaults to min-width:auto, so the main column grew to its
+   widest child and carried the whole page past the right edge of the phone
+   viewport: the toolbar, the stat cards and the filter row were all cut off
+   with no way to scroll to them. Constraining the tracks lets the inner
+   auto-fit grids collapse to one column as they were meant to. */
+.app-container{grid-template-columns:280px minmax(0,1fr);}
+.main-content{min-width:0;}
+.module-panel{min-width:0;}
+@media(max-width:900px){
+  .app-container{grid-template-columns:minmax(0,1fr);}
+}
+@media(max-width:480px){
+  .main-content{padding:16px 12px;}
+  /* Rows of controls become full-width stacks rather than a line that runs off-screen. */
+  .discovery-toolbar,.saved-search-bar,.filter-bar{align-items:stretch;}
+  .quick-view-group,.search-scope-group,.saved-search-create,.saved-search-select-wrap,.filter-left,.filter-right{width:100%;min-width:0;}
+  .compact-input,.saved-search-select-wrap .sort-select{width:100%;min-width:0;}
+  .stats-grid{grid-template-columns:1fr;}
+  .media-grid{grid-template-columns:1fr;}
+  .filter-bar .btn,.filter-right .btn{flex:1 1 auto;justify-content:center;}
+  .page-title{font-size:22px;}
+  .settings-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;}
+  .settings-tab{flex:0 0 auto;}
+}
+/* A table of audit columns is genuinely wider than a phone; give it its own
+   scroller instead of stretching the page. */
+.report-table{display:block;overflow-x:auto;white-space:nowrap;}

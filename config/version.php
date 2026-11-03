@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'current' => '18.00',
-    'previous' => '17.06',
+    'current' => '19.00',
+    'previous' => '18.00',
     'release_type' => 'Major',
-    'release_date' => '2026-10-23',
-    'release_name' => 'Role-based Asset Visibility',
+    'release_date' => '2026-11-03',
+    'release_name' => 'Folder Workspace & Review Fixes',
 ];
