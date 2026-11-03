@@ -34,8 +34,35 @@ class FolderWorkspaceController extends Controller
     private function departmentFor(Request $request, ?int $requested = null): int
     {
         $user = $request->user();
-        if ($user->role === 'super-admin' && $requested) return $requested;
-        return (int) ($user->department_id ?: $requested ?: abort(422, 'A department is required.'));
+        if ($user->role === 'super-admin') {
+            // A Super Admin usually belongs to no department, so the workspace
+            // opens on one and offers the rest rather than refusing to load.
+            return (int) ($requested ?: $user->department_id ?: $this->firstBrowsableDepartment());
+        }
+        return (int) ($user->department_id ?: abort(422, 'Your account is not attached to a department.'));
+    }
+
+    private function firstBrowsableDepartment(): int
+    {
+        $id = \App\Models\Department::query()
+            ->where('is_active', true)
+            ->orderByRaw('CASE WHEN is_system THEN 1 ELSE 0 END')
+            ->orderBy('name')
+            ->value('id');
+        return (int) ($id ?: abort(422, 'No department has been set up yet.'));
+    }
+
+    /** Departments the signed-in user may switch between in the workspace. */
+    private function switchableDepartments(Request $request): array
+    {
+        if ($request->user()->role !== 'super-admin') return [];
+        return \App\Models\Department::query()
+            ->where('is_active', true)
+            ->orderByRaw('CASE WHEN is_system THEN 1 ELSE 0 END')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])
+            ->all();
     }
 
     /** A folder is only reachable by the department that owns it. */
@@ -97,6 +124,7 @@ class FolderWorkspaceController extends Controller
 
         return response()->json([
             'department_id' => $department,
+            'departments' => $this->switchableDepartments($request),
             'folders' => $paths->tree($department),
             'current' => $current,
             'files' => $files,

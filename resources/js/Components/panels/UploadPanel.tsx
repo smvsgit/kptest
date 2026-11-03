@@ -2,59 +2,18 @@ import { useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { UploadCloud, Upload, Video, Image, Music, FileText, Trash, XCircle, Plus } from 'lucide-react';
 import type { AccessPolicy, Category, UserRole, MasterDataMap, MasterDataType, MetadataSettings, UploadSettings, VisibilityRole } from '../../types';
+import { DEFAULT_ACCEPT as SHARED_ACCEPT, fileKind, uploadChunked, uploadSimple, type UploadFields, type UploadItem } from '../../upload';
 
-interface QueueItem {
-    id:string; file:File; name:string; type:'image'|'video'|'audio'|'document'; size:number;
-    status:'pending'|'uploading'|'success'|'error'|'cancelled'; previewUrl?:string;
-    uploadProgress?:number; uploadedBytes?:number; isChunked?:boolean;
-}
 interface Props { active:boolean; categories:Category[]; simulatedRole:UserRole; visibilityRoles:VisibilityRole[]; masterData:MasterDataMap; metadataSettings:MetadataSettings; uploadSettings:UploadSettings; onSuccess:(msg:string)=>void; onError:(msg:string)=>void; }
 interface MetadataForm { year:string; country_id:string; state_id:string; city_id:string; mandir_id:string; event_id:string; person_id:string; language_id:string; media_type_id:string; description:string; internal_remarks:string; source_type:string; asset_status:string; }
-const IMAGE_EXTS=['jpg','jpeg','png','webp','gif','svg','bmp','tiff','tif','ico','heic','heif','avif','raw'];
-const VIDEO_EXTS=['mp4','mov','avi','mkv','webm','flv','wmv','m4v','3gp'];
-const AUDIO_EXTS=['mp3','wav','aac','ogg','m4a','flac','wma','opus'];
-const DOC_EXTS=['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','csv','rtf','zip','rar','7z'];
-const DEFAULT_ACCEPT=[...IMAGE_EXTS,...VIDEO_EXTS,...AUDIO_EXTS,...DOC_EXTS].map(e=>`.${e}`).join(',');
-
-function getFileType(name:string):QueueItem['type'] { const ext=name.split('.').pop()?.toLowerCase()||''; if(VIDEO_EXTS.includes(ext))return'video'; if(IMAGE_EXTS.includes(ext))return'image'; if(AUDIO_EXTS.includes(ext))return'audio'; return'document'; }
+type QueueItem = UploadItem;
+const DEFAULT_ACCEPT = SHARED_ACCEPT;
+const getFileType = fileKind;
 function formatBytes(bytes:number, precision=2){ if(!bytes)return'0 B'; const k=1024,s=['B','KB','MB','GB','TB']; const i=Math.min(s.length-1,Math.floor(Math.log(bytes)/Math.log(k))); return `${(bytes/Math.pow(k,i)).toFixed(i===0?0:precision)} ${s[i]}`; }
-function getCsrf(){ return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')||''; }
 
-function xhrUpload(url:string, fd:FormData, onProgress:(loaded:number,total:number)=>void, activeRef:React.MutableRefObject<XMLHttpRequest|null>):Promise<void>{
-    return new Promise((resolve,reject)=>{
-        const xhr=new XMLHttpRequest(); activeRef.current=xhr; xhr.open('POST',url,true); xhr.setRequestHeader('X-CSRF-TOKEN',getCsrf()); xhr.setRequestHeader('Accept','application/json');
-        xhr.upload.onprogress=e=>{ if(e.lengthComputable) onProgress(e.loaded,e.total); };
-        xhr.onload=()=>{ activeRef.current=null; if(xhr.status>=200&&xhr.status<300)resolve(); else { let msg=`HTTP ${xhr.status}`; try{msg=JSON.parse(xhr.responseText)?.message||msg}catch{} reject(new Error(msg)); } };
-        xhr.onerror=()=>{activeRef.current=null;reject(new Error('Network error during upload.'));};
-        xhr.onabort=()=>{activeRef.current=null;reject(new DOMException('Upload cancelled','AbortError'));}; xhr.send(fd);
-    });
-}
-
-function appendMetadata(fd:FormData,meta:MetadataForm){ Object.entries(meta).forEach(([k,v])=>{if(v!==''&&v!=null)fd.append(k,String(v))}); }
-async function uploadSimple(item:QueueItem,cat:string,sub:string,tags:string,accessPolicy:AccessPolicy,downloadAllowed:boolean,meta:MetadataForm,roleIds:number[],onProgress:(bytes:number)=>void,activeRef:React.MutableRefObject<XMLHttpRequest|null>){
-    const fd=new FormData(); fd.append('file',item.file);fd.append('category_id',cat);if(sub)fd.append('subcategory_id',sub);if(tags)fd.append('tags',tags);fd.append('access_policy',accessPolicy);fd.append('download_allowed',downloadAllowed?'1':'0');roleIds.forEach(id=>fd.append('visible_role_ids[]',String(id)));appendMetadata(fd,meta);
-    await xhrUpload('/files',fd,(loaded,total)=>onProgress(Math.min(item.size,total?Math.round((loaded/total)*item.size):loaded)),activeRef); onProgress(item.size);
-}
-async function uploadChunked(item:QueueItem,cat:string,sub:string,tags:string,accessPolicy:AccessPolicy,downloadAllowed:boolean,meta:MetadataForm,roleIds:number[],onProgress:(bytes:number)=>void,activeRef:React.MutableRefObject<XMLHttpRequest|null>,uploadIdRef:React.MutableRefObject<string|null>,chunkSize:number,retryCount:number){
-    const resumeKey=`karyalay-upload:${item.name}:${item.size}:${item.file.lastModified}`;
-    let uploadId=localStorage.getItem(resumeKey); if(!uploadId){uploadId=crypto.randomUUID();localStorage.setItem(resumeKey,uploadId);} uploadIdRef.current=uploadId;
-    const totalChunks=Math.ceil(item.file.size/chunkSize);
-    let received:number[]=[];
-    try{const r=await fetch(`/files/chunk/${uploadId}/status`,{headers:{Accept:'application/json'}});if(r.ok)received=(await r.json()).received||[];}catch{}
-    let restored=0; for(const i of received){restored+=Math.min(chunkSize,Math.max(0,item.file.size-i*chunkSize));} onProgress(Math.min(restored,item.file.size));
-    for(let i=0;i<totalChunks;i++){
-        const start=i*chunkSize,end=Math.min(start+chunkSize,item.file.size),blob=item.file.slice(start,end),isLast=i===totalChunks-1;
-        if(received.includes(i)&&!isLast){onProgress(end);continue;}
-        const fd=new FormData(); fd.append('upload_id',uploadId);fd.append('chunk_index',String(i));fd.append('total_chunks',String(totalChunks));fd.append('total_size',String(item.file.size));fd.append('chunk',blob,item.name);fd.append('is_last_chunk',isLast?'true':'false');fd.append('filename',item.name);
-        if(isLast){fd.append('category_id',cat);if(sub)fd.append('subcategory_id',sub);if(tags)fd.append('tags',tags);fd.append('access_policy',accessPolicy);fd.append('download_allowed',downloadAllowed?'1':'0');roleIds.forEach(id=>fd.append('visible_role_ids[]',String(id)));appendMetadata(fd,meta);}
-        let lastError:unknown;
-        for(let attempt=1;attempt<=retryCount;attempt++){
-            try { await xhrUpload('/files/chunk',fd,(loaded,total)=>{const chunkLoaded=total?Math.min(blob.size,Math.round((loaded/total)*blob.size)):Math.min(blob.size,loaded);onProgress(start+chunkLoaded);},activeRef); lastError=undefined; break; }
-            catch(e){ lastError=e; if(e instanceof DOMException&&e.name==='AbortError') throw e; if(attempt<retryCount) await new Promise(r=>setTimeout(r,600*attempt)); }
-        }
-        if(lastError)throw lastError; onProgress(end);
-    }
-    localStorage.removeItem(resumeKey); uploadIdRef.current=null;
+/** The upload form still asks for metadata, so it is sent with every file. */
+function fieldsFor(cat:string,sub:string,tags:string,accessPolicy:AccessPolicy,downloadAllowed:boolean,meta:MetadataForm,roleIds:number[]):UploadFields{
+    return {category_id:cat,subcategory_id:sub||null,tags,access_policy:accessPolicy,download_allowed:downloadAllowed,visible_role_ids:roleIds,metadata:meta as unknown as Record<string,string>};
 }
 
 export default function UploadPanel({active,categories,simulatedRole,visibilityRoles,masterData,metadataSettings,uploadSettings,onSuccess,onError}:Props){
@@ -82,7 +41,8 @@ export default function UploadPanel({active,categories,simulatedRole,visibilityR
             setQueue(prev=>prev.map(q=>q.id===item.id?{...q,status:'uploading',uploadedBytes:0,uploadProgress:0,isChunked}:q));
             try{
                 const onBytes=(bytes:number)=>setQueue(prev=>prev.map(q=>q.id===item.id?{...q,uploadedBytes:bytes,uploadProgress:Math.min(100,Math.round(bytes/item.size*100))}:q));
-                if(isChunked)await uploadChunked(item,selectedCat,selectedSub,tags,accessPolicy,downloadAllowed,meta,visibleRoleIds,onBytes,activeXhr,activeUploadId,chunkSize,retryCount);else await uploadSimple(item,selectedCat,selectedSub,tags,accessPolicy,downloadAllowed,meta,visibleRoleIds,onBytes,activeXhr);
+                const fields=fieldsFor(selectedCat,selectedSub,tags,accessPolicy,downloadAllowed,meta,visibleRoleIds);
+                if(isChunked)await uploadChunked(item,fields,onBytes,activeXhr,activeUploadId,chunkSize,retryCount);else await uploadSimple(item,fields,onBytes,activeXhr);
                 setQueue(prev=>prev.map(q=>q.id===item.id?{...q,status:'success',uploadedBytes:item.size,uploadProgress:100}:q));success++;
             }catch(e){const cancelled=e instanceof DOMException&&e.name==='AbortError';setQueue(prev=>prev.map(q=>q.id===item.id?{...q,status:cancelled?'cancelled':'error'}:q));if(!cancelled)onError(`${item.name}: ${e instanceof Error?e.message:'Upload failed'}`);if(cancelled)break;}
         }
