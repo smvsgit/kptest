@@ -83,8 +83,14 @@ class BulkMediaController extends Controller
                 if(array_key_exists('country_id',$updates) && !$updates['country_id']) {$updates['state_id']=null;$updates['city_id']=null;$updates['mandir_id']=null;}
                 if(array_key_exists('state_id',$updates) && !$updates['state_id']) {$updates['city_id']=null;$updates['mandir_id']=null;}
                 if(array_key_exists('city_id',$updates) && !$updates['city_id']) $updates['mandir_id']=null;
-                $next=array_merge($file->only(['country_id','state_id','city_id','mandir_id']),array_intersect_key($updates,array_flip(['country_id','state_id','city_id','mandir_id'])));
-                $this->validateHierarchy($next);
+                // Only re-check the hierarchy when this edit actually touches a
+                // location field. Re-validating stored values on an unrelated
+                // change (an ownership transfer, say) stranded records.
+                $location=app(\App\Services\LocationHierarchyService::class);
+                if($location->touches($updates)){
+                    $next=array_merge($file->only(\App\Services\LocationHierarchyService::FIELDS),array_intersect_key($updates,array_flip(\App\Services\LocationHierarchyService::FIELDS)));
+                    $location->assertValid($next);
+                }
                 if(!empty($data['tags_mode'])){
                     $incoming=array_values(array_unique(array_filter(array_map('trim',$data['tags']??[]))));
                     $current=$file->tags??[];
@@ -104,14 +110,5 @@ class BulkMediaController extends Controller
         });
         if($changed){MediaFile::with(['category','subcategory','department','uploader','country','state','city','mandir','event','person','language','mediaType'])->whereIn('id',$changed)->get()->each(fn(MediaFile $media)=>$searchIndex->upsert($media));}
         return response()->json(['message'=>count($changed).' file(s) updated.','updated_ids'=>$changed]);
-    }
-
-    private function validateHierarchy(array $ids): void
-    {
-        foreach([['state_id','country_id'],['city_id','state_id'],['mandir_id','city_id']] as [$child,$parent]){
-            if(empty($ids[$child])) continue;
-            $row=MasterDataValue::find($ids[$child]);
-            abort_unless($row && (int)$row->parent_id===(int)($ids[$parent]??0),422,ucfirst(str_replace('_id','',$child)).' does not belong to selected '.str_replace('_id','',$parent).'.');
-        }
     }
 }

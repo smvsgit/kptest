@@ -61,6 +61,16 @@ class MediaVersionService
         }
     }
 
+    /** Image dimensions read straight from the stored bytes; null when unavailable. */
+    private function measureResolution(?string $type, string $path): ?string
+    {
+        if ($type !== 'image') return null;
+        $disk = Storage::disk('media');
+        if (!$disk->exists($path)) return null;
+        $size = @getimagesize($disk->path($path));
+        return $size && !empty($size[0]) && !empty($size[1]) ? $size[0].'x'.$size[1] : null;
+    }
+
     private function promotePath(MediaFile $media, string $path, string $originalName, int $size, ?string $mime, User $user, string $changeNote, ?int $restoredFrom = null): MediaFileVersion
     {
         $oldThumbnail = $media->thumbnail_path;
@@ -82,12 +92,19 @@ class MediaVersionService
 
             $locked->forceFill([
                 'current_version' => $next,
+                // The asset now *is* the new file, so it carries the new file's
+                // name. Keeping the superseded name made the library disagree
+                // with what a download actually produced.
+                'name' => $originalName ?: $locked->name,
                 'file_path' => $path,
                 'size' => $size,
                 'thumbnail_path' => null,
                 'checksum_sha256' => null,
                 'duplicate_of_id' => null,
-                'resolution' => null,
+                // Measure the picture now rather than blanking it and waiting
+                // for the queue. Where no worker runs, the old code left every
+                // replaced asset reading "N/A" for good.
+                'resolution' => $this->measureResolution($locked->type, $path),
                 'technical_metadata' => null,
                 'processing_status' => 'pending',
             ])->save();

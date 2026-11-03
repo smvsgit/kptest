@@ -99,20 +99,32 @@ class DashboardController extends Controller
                     $query->orderByRaw("FIELD(media_files.id, {$safeIds})");
                 }
             } else {
-                // Database fallback still searches core structured metadata when Meilisearch is unavailable.
-                $query->where(function (Builder $q) use ($search) {
-                    $like = '%'.$search.'%';
-                    $q->where('name', 'like', $like)
-                        ->orWhere('tags', 'like', $like)
-                        ->orWhere('description', 'like', $like)
-                        ->orWhereHas('category', fn ($r) => $r->where('name', 'like', $like))
-                        ->orWhereHas('subcategory', fn ($r) => $r->where('name', 'like', $like))
-                        ->orWhereHas('event', fn ($r) => $r->where('name', 'like', $like))
-                        ->orWhereHas('person', fn ($r) => $r->where('name', 'like', $like))
-                        ->orWhereHas('city', fn ($r) => $r->where('name', 'like', $like))
-                        ->orWhereHas('mandir', fn ($r) => $r->where('name', 'like', $like))
-                        ->orWhereHas('language', fn ($r) => $r->where('name', 'like', $like))
-                        ->orWhereHas('uploader', fn ($r) => $r->where('name', 'like', $like));
+                // Database fallback. It applies the administrator's configured
+                // synonyms, aliases and typo tolerance itself, so an engine
+                // outage narrows the result set but does not silently change
+                // which search settings are in force.
+                $fallback = app(\App\Services\SearchFallbackService::class);
+                $terms = $fallback->expandTerms($search, $searchSettings);
+                $fuzzyIds = $fallback->fuzzyEnabled($searchSettings)
+                    ? $fallback->fuzzyIds($query, $terms)
+                    : [];
+
+                $query->where(function (Builder $q) use ($terms, $fuzzyIds) {
+                    foreach ($terms as $term) {
+                        $like = '%'.$term.'%';
+                        $q->orWhere('name', 'like', $like)
+                            ->orWhere('tags', 'like', $like)
+                            ->orWhere('description', 'like', $like)
+                            ->orWhereHas('category', fn ($r) => $r->where('name', 'like', $like))
+                            ->orWhereHas('subcategory', fn ($r) => $r->where('name', 'like', $like))
+                            ->orWhereHas('event', fn ($r) => $r->where('name', 'like', $like))
+                            ->orWhereHas('person', fn ($r) => $r->where('name', 'like', $like))
+                            ->orWhereHas('city', fn ($r) => $r->where('name', 'like', $like))
+                            ->orWhereHas('mandir', fn ($r) => $r->where('name', 'like', $like))
+                            ->orWhereHas('language', fn ($r) => $r->where('name', 'like', $like))
+                            ->orWhereHas('uploader', fn ($r) => $r->where('name', 'like', $like));
+                    }
+                    if ($fuzzyIds) $q->orWhereIn('media_files.id', $fuzzyIds);
                 });
             }
         }

@@ -158,7 +158,21 @@ class ScheduledReportController extends Controller
             ]);
             $report->update(['last_run_at' => now(), 'next_run_at' => $this->nextRun($report->frequency)]);
         } catch (\Throwable $exception) {
-            $run->update(['status' => 'failed', 'error' => $exception->getMessage(), 'finished_at' => now()]);
+            // The raw exception text was shown in the portal, exposing SQL and
+            // schema detail. Log the detail with a reference the operator can
+            // quote, and show them something they can act on.
+            $reference = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+            \Illuminate\Support\Facades\Log::error("Scheduled report run failed [{$reference}]", [
+                'reference' => $reference,
+                'scheduled_report_id' => $report->id,
+                'run_id' => $run->id,
+                'exception' => $exception,
+            ]);
+            $run->update([
+                'status' => 'failed',
+                'error' => "This report could not be generated. Quote reference {$reference} when asking an administrator to look into it.",
+                'finished_at' => now(),
+            ]);
         }
         return $run;
     }
@@ -191,13 +205,32 @@ class ScheduledReportController extends Controller
         return $frequency === 'weekly' ? now()->addWeek() : now()->addMonth();
     }
 
+    /**
+     * Audit rows for a schedule.
+     *
+     * The audit table records the actor as user_id and carries no department
+     * column; the department comes from the actor. Querying actor_user_id /
+     * actor_department_id made every scheduled run fail with an SQL error.
+     */
     private function rows(ScheduledReport $report, User $user): array
     {
-        $query = \App\Models\AuditLog::query()->latest('id')->limit(5000);
-        if ($user->role !== 'super-admin') $query->where('actor_user_id', $user->id);
-        if ($report->department_id) $query->where('actor_department_id', $report->department_id);
+        $query = \App\Models\AuditLog::query()->with('user:id,name,department_id')->latest('id')->limit(5000);
+
+        if ($user->role !== 'super-admin') $query->where('user_id', $user->id);
+        if ($report->department_id) {
+            $query->whereIn('user_id', User::where('department_id', $report->department_id)->select('id'));
+        }
         if ($report->report_type === 'access') $query->where('event', 'like', '%access%');
         if ($report->report_type === 'notifications') $query->where('event', 'like', '%notification%');
-        return $query->get(['id', 'event', 'description', 'actor_user_id', 'actor_department_id', 'created_at'])->map(fn ($row) => $row->toArray())->all();
+
+        return $query->get(['id', 'event', 'description', 'user_id', 'created_at'])
+            ->map(fn ($row) => [
+                'id' => $row->id,
+                'event' => $row->event,
+                'description' => $row->description,
+                'user' => $row->user?->name ?? 'System',
+                'department_id' => $row->user?->department_id,
+                'created_at' => optional($row->created_at)->toDateTimeString(),
+            ])->all();
     }
 }

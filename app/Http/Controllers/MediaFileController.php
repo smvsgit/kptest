@@ -40,6 +40,13 @@ class MediaFileController extends Controller
             'source_type' => 'nullable|in:local,nas,google-drive,youtube',
             'asset_status' => 'nullable|in:draft,active',
             'folder_id' => 'nullable|exists:media_folders,id',
+            // A folder upload sends the path the browser saw, so the folder
+            // chain is recreated instead of flattening into one bucket.
+            'folder_path' => 'nullable|string|max:1000',
+            // Deferred metadata: store the bytes now, describe them afterwards.
+            // The asset stays a draft, and the lifecycle still refuses to
+            // approve or publish it until the required fields are filled.
+            'defer_metadata' => 'nullable|boolean',
             'watermark_enabled' => 'nullable|boolean',
             // Roles explicitly granted sight of this asset, on top of the policy.
             'visible_role_ids' => 'nullable|array|max:20',
@@ -56,6 +63,18 @@ class MediaFileController extends Controller
         $departmentId = $request->user()?->department_id ?? Department::where('is_system', true)->value('id');
         if ($departmentId) $quota->assertCanStore((int)$departmentId,(int)$size);
         $path = $file->store("uploads/{$type}s", 'media');
+
+        // A folder upload names its own destination; a plain upload keeps
+        // whatever folder the screen had open.
+        $folderId = $request->folder_id ? (int) $request->folder_id : null;
+        if ($departmentId && $request->filled('folder_path')) {
+            $folderId = app(\App\Services\FolderPathService::class)->resolveForUpload(
+                (string) $request->input('folder_path'),
+                (int) $departmentId,
+                (int) $request->user()->id,
+                $folderId
+            );
+        }
 
         $thumbnailPath = null;
         $resolution    = null;
@@ -76,13 +95,13 @@ class MediaFileController extends Controller
             'category_id'    => $request->category_id,
             'subcategory_id' => $request->subcategory_id,
             'department_id'  => $departmentId,
-            'folder_id' => $request->folder_id,
+            'folder_id' => $folderId,
             'watermark_enabled' => $request->has('watermark_enabled') ? $request->boolean('watermark_enabled') : null,
             'year' => $request->integer('year') ?: null,
             'country_id' => $request->country_id, 'state_id' => $request->state_id, 'city_id' => $request->city_id, 'mandir_id' => $request->mandir_id,
             'event_id' => $request->event_id, 'person_id' => $request->person_id, 'language_id' => $request->language_id, 'media_type_id' => $request->media_type_id,
             'description' => $request->description, 'internal_remarks' => $request->internal_remarks,
-            'source_type' => $request->input('source_type','local'), 'asset_status' => $request->input('asset_status','draft'),
+            'source_type' => $request->input('source_type','local'), 'asset_status' => $request->boolean('defer_metadata') ? 'draft' : $request->input('asset_status','draft'),
             'access_policy'  => $request->access_policy,
             'download_allowed' => $request->boolean('download_allowed', true),
             'tags'           => $tags,
@@ -163,16 +182,17 @@ class MediaFileController extends Controller
     private function enforceMetadataRequirements(Request $request): void
     {
         $settings = SystemSetting::valueFor('metadata.settings', []);
-        $required = $settings['required_fields'] ?? [];
-        if (($settings['person_required'] ?? false) && !in_array('person_id', $required, true)) $required[] = 'person_id';
-        $labels = ['year'=>'Year','country_id'=>'Country','state_id'=>'State','city_id'=>'City','mandir_id'=>'Mandir','event_id'=>'Event / Prasang','person_id'=>'Guruji / Person','language_id'=>'Language','media_type_id'=>'Media Type','description'=>'Description'];
-        $missing=[];
-        foreach ($required as $field) if (!$request->filled($field)) $missing[]=$labels[$field] ?? $field;
-        if ($missing) abort(422, 'Required metadata missing: '.implode(', ', $missing));
+        // A deferred upload skips the required-field gate only. Whatever values
+        // it does send are still checked, and the asset cannot leave draft
+        // until it is fully described.
+        if (! $request->boolean('defer_metadata')) {
+            $missing = app(\App\Services\MetadataRequirementService::class)
+                ->missingFromValues($request->all(), $settings);
+            if ($missing) abort(422, 'Required metadata missing: '.implode(', ', $missing));
+        }
         $min=(int)($settings['years_min'] ?? 1950); $max=(int)($settings['years_max'] ?? ((int)date('Y')+2));
         if ($request->filled('year') && ($request->integer('year')<$min || $request->integer('year')>$max)) abort(422, "Year must be between {$min} and {$max}.");
-        $pairs=[['state_id','country_id'],['city_id','state_id'],['mandir_id','city_id']];
-        foreach($pairs as [$childField,$parentField]) { if($request->filled($childField) && $request->filled($parentField)) { $child=\App\Models\MasterDataValue::find($request->input($childField)); if(!$child || (int)$child->parent_id !== (int)$request->input($parentField)) abort(422, ucfirst(str_replace('_id','',$childField)).' does not belong to selected '.str_replace('_id','',$parentField).'.'); } }
+        app(\App\Services\LocationHierarchyService::class)->assertValid($request->only(\App\Services\LocationHierarchyService::FIELDS));
     }
 
     const ALLOWED_MIMES = [

@@ -25,8 +25,23 @@ class ProcessMediaFile implements ShouldQueue
         if (!$media || !$media->file_path || str_starts_with($media->file_path, 'http')) return;
 
         $disk = Storage::disk('media');
-        if (!$disk->exists($media->file_path)) return;
+        if (!$disk->exists($media->file_path)) {
+            $this->markUnreadable($media, 'The stored bytes for this asset are missing.');
+            return;
+        }
         $absolute = $disk->path($media->file_path);
+
+        // Bytes that cannot be read are not an asset. Older records uploaded
+        // before the upload guard existed are caught here and flagged, so the
+        // library stops presenting them as usable.
+        if (@filesize($absolute) === 0) {
+            $this->markUnreadable($media, 'This asset is empty (0 bytes).');
+            return;
+        }
+        if ($media->type === 'image' && !@getimagesize($absolute)) {
+            $this->markUnreadable($media, 'This image could not be decoded. It may be truncated or renamed from another format.');
+            return;
+        }
 
         $metadata = $media->technical_metadata ?? [];
         $media->processing_status = 'processing';
@@ -85,6 +100,7 @@ class ProcessMediaFile implements ShouldQueue
             if ($thumb) $media->thumbnail_path = $thumb;
         }
 
+        unset($metadata['unreadable'], $metadata['unreadable_reason']);
         $metadata['processed_at'] = now()->toIso8601String();
         $media->technical_metadata = $metadata;
         $media->processing_status = 'ready';
@@ -94,6 +110,18 @@ class ProcessMediaFile implements ShouldQueue
             'size' => $media->size,
         ]);
         $searchIndex->upsert($media->fresh(['category','subcategory','department']));
+    }
+
+    /** Flag an asset whose bytes are missing or undecodable without deleting it. */
+    private function markUnreadable(MediaFile $media, string $reason): void
+    {
+        $metadata = $media->technical_metadata ?? [];
+        $metadata['unreadable'] = true;
+        $metadata['unreadable_reason'] = $reason;
+        $metadata['checked_at'] = now()->toIso8601String();
+        $media->technical_metadata = $metadata;
+        $media->processing_status = 'failed';
+        $media->saveQuietly();
     }
 
     private function createImageThumbnail(string $source, string $base): ?string

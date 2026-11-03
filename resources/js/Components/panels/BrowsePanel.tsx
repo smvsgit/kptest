@@ -62,7 +62,9 @@ const byParent=(items:MasterDataValue[]|undefined,parent:number|null|undefined)=
 export default function BrowsePanel(p:Props){
     const {active,files,stats,filters,departments,currentUser,filterOwners,masterData,metadataSettings,savedSearches,quickViewCounts,searchSettings,simulatedRole,selectedFiles}=p;
     const [advancedOpen,setAdvancedOpen]=useState(false); const [saveName,setSaveName]=useState('');
-    if(!active)return null;
+    // The inactive guard sits below every hook. Returning early between hooks
+    // made this component run two hooks when hidden and three when shown, so
+    // moving between panels tripped React's hook-order check (#300/#310).
     const activeType=filters.type||'all';
     const filterTypes=[{key:'all',label:'All Files',icon:null},{key:'image',label:'Images',icon:<Image size={14}/>},{key:'video',label:'Videos',icon:<Video size={14}/>},{key:'audio',label:'Audio',icon:<Music size={14}/>},{key:'document',label:'Sheets/Docs',icon:<FileText size={14}/>}];
     const typeLabel=filterTypes.find(ft=>ft.key===activeType)?.label||'All Files';
@@ -84,6 +86,7 @@ export default function BrowsePanel(p:Props){
         add('source_type','Source'); add('asset_status','Status'); add('uploaded_by','Uploader',filterOwners.find(x=>x.id===Number(filters.uploaded_by))?.name); add('date_from','From'); add('date_to','To');
         return entries;
     },[filters,departments,masterData,filterOwners]);
+    if(!active)return null;
     const clearKeys={department_id:undefined,access_policy:undefined,year:undefined,country_id:undefined,state_id:undefined,city_id:undefined,mandir_id:undefined,event_id:undefined,person_id:undefined,language_id:undefined,media_type_id:undefined,source_type:undefined,asset_status:undefined,uploaded_by:undefined,date_from:undefined,date_to:undefined,quick_view:undefined};
 
     return <section className="module-panel active" id="browse-panel">

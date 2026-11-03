@@ -194,6 +194,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/folders', [ContentOrganizationController::class, 'folderStore'])->name('folders.store')->middleware('role:super-admin,department-admin');
     Route::patch('/folders/{folder}', [ContentOrganizationController::class, 'folderUpdate'])->name('folders.update')->middleware('role:super-admin,department-admin');
     Route::delete('/folders/{folder}', [ContentOrganizationController::class, 'folderDelete'])->name('folders.destroy')->middleware('role:super-admin,department-admin');
+    // Folder workspace: a Windows / Drive style tree over the same folders.
+    // Reading the tree and moving assets is open to operators, since both are
+    // ordinary librarian work; publishing a folder stays with the admins.
+    Route::get('/folders', [\App\Http\Controllers\FolderWorkspaceController::class, 'index'])->name('folders.index');
+    Route::post('/folders/move-files', [\App\Http\Controllers\FolderWorkspaceController::class, 'moveFiles'])
+        ->name('folders.move-files')->middleware('role:super-admin,department-admin,department-operator');
+    Route::post('/folders/{folder}/metadata', [\App\Http\Controllers\FolderWorkspaceController::class, 'applyMetadata'])
+        ->name('folders.metadata')->middleware('role:super-admin,department-admin,department-operator');
+    Route::post('/folders/{folder}/publish', [\App\Http\Controllers\FolderWorkspaceController::class, 'publish'])
+        ->name('folders.publish')->middleware('role:super-admin,department-admin');
+
     Route::post('/collections', [ContentOrganizationController::class, 'collectionStore'])->name('collections.store')->middleware('role:super-admin,department-admin');
     Route::patch('/collections/{collection}', [ContentOrganizationController::class, 'collectionUpdate'])->name('collections.update')->middleware('role:super-admin,department-admin');
     Route::delete('/collections/{collection}', [ContentOrganizationController::class, 'collectionDelete'])->name('collections.destroy')->middleware('role:super-admin,department-admin');
