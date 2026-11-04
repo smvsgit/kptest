@@ -7,6 +7,7 @@ import {
 import type { AccessPolicy, Category, MasterDataMap, MetadataSettings, UploadSettings, User, VisibilityRole } from '../../types';
 import { formatBytes } from '../../format';
 import { getCsrf } from '../../upload';
+import { useTx } from '../../i18n';
 import FolderUploadTray, { type TrayHandle } from '../media/FolderUploadTray';
 import FolderInspector from '../media/FolderInspector';
 
@@ -72,6 +73,7 @@ export default function FoldersPanel(p:Props){
     const fileInput=useRef<HTMLInputElement>(null);
     const folderInput=useRef<HTMLInputElement>(null);
 
+    const {t,tc}=useTx();
     const isAdmin=canAdminFolders(p.currentUser.role);
 
     const load=useCallback(async(target:number|null,department:number|null)=>{
@@ -86,7 +88,7 @@ export default function FoldersPanel(p:Props){
             setDepartments(data.departments||[]);
             // The server decides which department a Super Admin lands in.
             setDepartmentId(data.department_id??null);
-        }catch(e){p.onError(e instanceof Error?e.message:'Could not read the folder.');}
+        }catch(e){p.onError(e instanceof Error?e.message:t('folders.read_failed'));}
         finally{setLoading(false);}
     },[p]);
 
@@ -185,34 +187,34 @@ export default function FoldersPanel(p:Props){
     };
 
     const createFolder=async()=>{
-        const name=window.prompt('Name of the new folder');
+        const name=window.prompt(t('folders.prompt_new_folder'));
         if(!name?.trim())return;
         try{
             await json('/folders','POST',{name:name.trim(),parent_id:folderId,department_id:departmentId});
-            p.onSuccess('Folder created.');
+            p.onSuccess(t('folders.created'));
             await reload();
-        }catch(e){p.onError(e instanceof Error?e.message:'Could not create the folder.');}
+        }catch(e){p.onError(e instanceof Error?e.message:t('folders.create_failed'));}
     };
 
     const renameFolder=async(id:number)=>{
         const node=byId.get(id);
-        const name=window.prompt('New name',node?.name||'');
+        const name=window.prompt(t('folders.prompt_rename'),node?.name||'');
         if(!name?.trim()||name===node?.name)return;
         try{
             await json(`/folders/${id}`,'PATCH',{name:name.trim()});
-            p.onSuccess('Folder renamed.');
+            p.onSuccess(t('folders.renamed'));
             await reload();
-        }catch(e){p.onError(e instanceof Error?e.message:'Could not rename the folder.');}
+        }catch(e){p.onError(e instanceof Error?e.message:t('folders.rename_failed'));}
     };
 
     const deleteFolder=async(id:number)=>{
         const node=byId.get(id);
-        if(!window.confirm(`Delete “${node?.name}”? It must already be empty.`))return;
+        if(!window.confirm(t('folders.prompt_delete',{name:node?.name||''})))return;
         try{
             await json(`/folders/${id}`,'DELETE');
-            p.onSuccess('Folder deleted.');
+            p.onSuccess(t('folders.deleted'));
             await reload();
-        }catch(e){p.onError(e instanceof Error?e.message:'Could not delete the folder. It may still hold files.');}
+        }catch(e){p.onError(e instanceof Error?e.message:t('folders.delete_failed'));}
     };
 
     const moveSelection=async(target:number|null)=>{
@@ -222,15 +224,15 @@ export default function FoldersPanel(p:Props){
             p.onSuccess(data.message);
             setSelected(new Set());
             await reload();
-        }catch(e){p.onError(e instanceof Error?e.message:'Could not move the assets.');}
+        }catch(e){p.onError(e instanceof Error?e.message:t('folders.move_failed'));}
     };
 
     const moveViaPrompt=()=>{
         const options=folders.map(f=>`${f.id} — ${'  '.repeat(f.depth)}${f.name}`).join('\n');
-        const answer=window.prompt(`Move ${selected.size} item(s) to which folder?\nType the number, or 0 for the library root.\n\n${options}`);
+        const answer=window.prompt(`${t('folders.prompt_move',{count:selected.size})}\n${t('folders.prompt_move_hint')}\n\n${options}`);
         if(answer===null)return;
         const id=Number(answer.trim());
-        if(Number.isNaN(id))return p.onError('That is not a folder number.');
+        if(Number.isNaN(id))return p.onError(t('folders.not_a_number'));
         void moveSelection(id===0?null:id);
     };
 
@@ -280,8 +282,8 @@ export default function FoldersPanel(p:Props){
         <section className="module-panel active" id="folders-panel">
             <div className="page-title-section">
                 <div>
-                    <h1 className="page-title"><Folder size={28} style={{color:'var(--color-primary)'}}/><span>Folders</span></h1>
-                    <p className="page-subtitle">Upload a file or a whole folder, then describe what you uploaded — one asset, a selection, or the whole folder.</p>
+                    <h1 className="page-title"><Folder size={28} style={{color:'var(--color-primary)'}}/><span>{t('folders.title')}</span></h1>
+                    <p className="page-subtitle">{t('folders.subtitle')}</p>
                 </div>
             </div>
 
@@ -290,28 +292,28 @@ export default function FoldersPanel(p:Props){
 
                     {/* command bar */}
                     <div className="exp-command">
-                        {isAdmin&&<button className="exp-cmd primary" onClick={createFolder}><FolderPlus size={15}/> New folder</button>}
+                        {isAdmin&&<button className="exp-cmd primary" onClick={createFolder}><FolderPlus size={15}/> {t('folders.new_folder')}</button>}
                         {p.canUpload&&<>
-                            <button className="exp-cmd" onClick={()=>pickFiles('files')}><UploadCloud size={15}/> Upload files</button>
-                            <button className="exp-cmd" onClick={()=>pickFiles('folder')}><FolderInput size={15}/> Upload folder</button>
+                            <button className="exp-cmd" onClick={()=>pickFiles('files')}><UploadCloud size={15}/> {t('folders.upload_files')}</button>
+                            <button className="exp-cmd" onClick={()=>pickFiles('folder')}><FolderInput size={15}/> {t('folders.upload_folder')}</button>
                         </>}
                         <span className="exp-sep"/>
-                        <button className="exp-cmd" disabled={!selected.size} onClick={moveViaPrompt}><FolderInput size={15}/> Move to…</button>
-                        <button className="exp-cmd" disabled={!selected.size} onClick={()=>setInspector('metadata')}><Tag size={15}/> Describe</button>
-                        {isAdmin&&<button className="exp-cmd" disabled={!current} onClick={()=>setInspector('publish')}><Globe2 size={15}/> Publish folder</button>}
+                        <button className="exp-cmd" disabled={!selected.size} onClick={moveViaPrompt}><FolderInput size={15}/> {t('folders.move_to')}</button>
+                        <button className="exp-cmd" disabled={!selected.size} onClick={()=>setInspector('metadata')}><Tag size={15}/> {t('folders.describe')}</button>
+                        {isAdmin&&<button className="exp-cmd" disabled={!current} onClick={()=>setInspector('publish')}><Globe2 size={15}/> {t('folders.publish_folder')}</button>}
                         <span className="exp-grow"/>
-                        <button className="exp-cmd icon" title="Refresh" onClick={()=>void load(folderId)}>
+                        <button className="exp-cmd icon" title={t('folders.refresh')} onClick={()=>void load(folderId)}>
                             {loading?<Loader2 size={15} className="spin"/>:<RotateCw size={15}/>}
                         </button>
                     </div>
 
                     {/* address bar */}
                     <div className="exp-address">
-                        <button className="exp-nav-btn" title="Back" disabled={historyAt===0} onClick={()=>goHistory(-1)}><ArrowLeft size={16}/></button>
-                        <button className="exp-nav-btn" title="Forward" disabled={historyAt>=history.length-1} onClick={()=>goHistory(1)}><ArrowRight size={16}/></button>
-                        <button className="exp-nav-btn" title="Up one level" disabled={!current} onClick={()=>navigate(current?.parent_id??null)}><ArrowUp size={16}/></button>
+                        <button className="exp-nav-btn" title={t('folders.back')} disabled={historyAt===0} onClick={()=>goHistory(-1)}><ArrowLeft size={16}/></button>
+                        <button className="exp-nav-btn" title={t('folders.forward')} disabled={historyAt>=history.length-1} onClick={()=>goHistory(1)}><ArrowRight size={16}/></button>
+                        <button className="exp-nav-btn" title={t('folders.up_one_level')} disabled={!current} onClick={()=>navigate(current?.parent_id??null)}><ArrowUp size={16}/></button>
                         <div className="exp-crumbs">
-                            <button className={`exp-crumb${!current?' current':''}`} onClick={()=>navigate(null)}>Library</button>
+                            <button className={`exp-crumb${!current?' current':''}`} onClick={()=>navigate(null)}>{t('folders.library')}</button>
                             {trail.map((node,i)=>(
                                 <span key={node.id} style={{display:'inline-flex',alignItems:'center'}}>
                                     <ChevronRight size={12} className="exp-crumb-sep"/>
@@ -327,10 +329,10 @@ export default function FoldersPanel(p:Props){
                             <input
                                 id="folder-filter"
                                 value={filter}
-                                placeholder={current?`Search ${current.name}`:'Search this folder'}
+                                placeholder={current?t('folders.search_named_folder',{name:current.name}):t('folders.search_this_folder')}
                                 onChange={e=>setFilter(e.target.value)}
                             />
-                            {filter&&<button onClick={()=>setFilter('')} title="Clear"><X size={13}/></button>}
+                            {filter&&<button onClick={()=>setFilter('')} title={t('folders.clear')}><X size={13}/></button>}
                         </label>
                     </div>
 
@@ -339,7 +341,7 @@ export default function FoldersPanel(p:Props){
                         <div className="exp-tree">
                             {departments.length>1&&(
                                 <div className="form-group" style={{padding:'2px 4px 8px'}}>
-                                    <label className="form-label" htmlFor="folder-department">Department</label>
+                                    <label className="form-label" htmlFor="folder-department">{t('folders.department')}</label>
                                     <select
                                         id="folder-department"
                                         className="form-select"
@@ -357,7 +359,7 @@ export default function FoldersPanel(p:Props){
                                     </select>
                                 </div>
                             )}
-                            <div className="exp-tree-group">Folders</div>
+                            <div className="exp-tree-group">{t('folders.group_folders')}</div>
                             <button
                                 className={`exp-node${!folderId?' active':''}`}
                                 onClick={()=>navigate(null)}
@@ -366,7 +368,7 @@ export default function FoldersPanel(p:Props){
                             >
                                 <span className="twisty"/>
                                 <Folder size={15}/>
-                                <span className="label">Library root</span>
+                                <span className="label">{t('folders.library_root')}</span>
                             </button>
                             {childrenOf(null).map(treeNode)}
                         </div>
@@ -377,7 +379,7 @@ export default function FoldersPanel(p:Props){
                             onClick={e=>{if(e.target===e.currentTarget){setSelected(new Set());setSelectedFolder(null);}}}
                         >
                             {visibleFolders.length>0&&<>
-                                <div className="exp-group-head"><ChevronDown size={12} className="caret"/> Folders <span className="count">({visibleFolders.length})</span></div>
+                                <div className="exp-group-head"><ChevronDown size={12} className="caret"/> {t('folders.group_folders')} <span className="count">({visibleFolders.length})</span></div>
                                 {view==='icons'?(
                                     <div className="exp-tiles">
                                         {visibleFolders.map(f=>(
@@ -392,7 +394,7 @@ export default function FoldersPanel(p:Props){
                                             >
                                                 <span className="glyph"><Folder size={44}/></span>
                                                 <span className="name">{f.name}</span>
-                                                <span className="sub">{f.file_count} item{f.file_count===1?'':'s'}</span>
+                                                <span className="sub">{tc('folders.items',f.file_count)}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -408,7 +410,7 @@ export default function FoldersPanel(p:Props){
                                             >
                                                 <span className="name"><Folder size={15} style={{color:'var(--color-primary)'}}/><span>{f.name}</span></span>
                                                 {view==='details'&&<>
-                                                    <span className="muted col-hide">File folder</span>
+                                                    <span className="muted col-hide">{t('folders.file_folder')}</span>
                                                     <span className="muted col-hide">—</span>
                                                     <span className="muted col-hide">{f.file_count}</span>
                                                     <span className="muted col-hide"/>
@@ -419,11 +421,11 @@ export default function FoldersPanel(p:Props){
                                 )}
                             </>}
 
-                            <div className="exp-group-head"><ChevronDown size={12} className="caret"/> Files <span className="count">({visibleFiles.length})</span></div>
+                            <div className="exp-group-head"><ChevronDown size={12} className="caret"/> {t('folders.group_files')} <span className="count">({visibleFiles.length})</span></div>
 
                             {visibleFiles.length===0&&!loading&&(
                                 <p className="setting-help" style={{padding:'14px 2px'}}>
-                                    {filter?'Nothing here matches that.':'This folder is empty. Upload files or a folder, or drag a selection onto it from another folder.'}
+                                    {filter?t('folders.no_match'):t('folders.empty_folder')}
                                 </p>
                             )}
 
@@ -463,11 +465,11 @@ export default function FoldersPanel(p:Props){
                                 <div className="exp-rows">
                                     {view==='details'&&(
                                         <div className="exp-row header exp-cols-details">
-                                            <span>Name</span>
-                                            <span className="col-hide">Type</span>
-                                            <span className="col-hide">Added</span>
-                                            <span className="col-hide">Size</span>
-                                            <span>Status</span>
+                                            <span>{t('folders.col_name')}</span>
+                                            <span className="col-hide">{t('folders.col_type')}</span>
+                                            <span className="col-hide">{t('folders.col_added')}</span>
+                                            <span className="col-hide">{t('folders.col_size')}</span>
+                                            <span>{t('folders.col_status')}</span>
                                         </div>
                                     )}
                                     {visibleFiles.map(f=>{
@@ -498,13 +500,13 @@ export default function FoldersPanel(p:Props){
 
                     {/* status bar */}
                     <div className="exp-status">
-                        <span>{visibleFolders.length+visibleFiles.length} item{visibleFolders.length+visibleFiles.length===1?'':'s'}</span>
-                        {selected.size>0&&<span>{selected.size} selected</span>}
-                        {draftCount>0&&<span style={{color:'var(--color-warning)'}}>{draftCount} still need describing</span>}
+                        <span>{tc('folders.items',visibleFolders.length+visibleFiles.length)}</span>
+                        {selected.size>0&&<span>{t('folders.selected',{count:selected.size})}</span>}
+                        {draftCount>0&&<span style={{color:'var(--color-warning)'}}>{t('folders.need_describing',{count:draftCount})}</span>}
                         <span className="view-toggle">
-                            <button className={view==='icons'?'on':''} title="Large icons" onClick={()=>setView('icons')}><LayoutGrid size={14}/></button>
-                            <button className={view==='list'?'on':''} title="List" onClick={()=>setView('list')}><List size={14}/></button>
-                            <button className={view==='details'?'on':''} title="Details" onClick={()=>setView('details')}><Columns3 size={14}/></button>
+                            <button className={view==='icons'?'on':''} title={t('folders.view_icons')} onClick={()=>setView('icons')}><LayoutGrid size={14}/></button>
+                            <button className={view==='list'?'on':''} title={t('folders.view_list')} onClick={()=>setView('list')}><List size={14}/></button>
+                            <button className={view==='details'?'on':''} title={t('folders.view_details')} onClick={()=>setView('details')}><Columns3 size={14}/></button>
                         </span>
                     </div>
                 </div>
@@ -553,29 +555,29 @@ export default function FoldersPanel(p:Props){
                     onClick={e=>e.stopPropagation()}
                 >
                     {menu.kind==='folder'&&menu.folderId&&<>
-                        <button onClick={()=>{navigate(menu.folderId!);setMenu(null);}}><FolderOpen size={14}/> Open</button>
-                        {isAdmin&&<button onClick={()=>{setMenu(null);void renameFolder(menu.folderId!);}}><Pencil size={14}/> Rename</button>}
+                        <button onClick={()=>{navigate(menu.folderId!);setMenu(null);}}><FolderOpen size={14}/> {t('folders.open')}</button>
+                        {isAdmin&&<button onClick={()=>{setMenu(null);void renameFolder(menu.folderId!);}}><Pencil size={14}/> {t('folders.rename')}</button>}
                         <hr/>
-                        <button onClick={()=>{navigate(menu.folderId!);setInspector('metadata');setMenu(null);}}><Tag size={14}/> Describe folder…</button>
-                        {isAdmin&&<button onClick={()=>{navigate(menu.folderId!);setInspector('publish');setMenu(null);}}><Globe2 size={14}/> Publish folder…</button>}
+                        <button onClick={()=>{navigate(menu.folderId!);setInspector('metadata');setMenu(null);}}><Tag size={14}/> {t('folders.describe_folder')}</button>
+                        {isAdmin&&<button onClick={()=>{navigate(menu.folderId!);setInspector('publish');setMenu(null);}}><Globe2 size={14}/> {t('folders.publish_folder_menu')}</button>}
                         <hr/>
-                        {p.canUpload&&<button onClick={()=>{navigate(menu.folderId!);setMenu(null);pickFiles('files');}}><UploadCloud size={14}/> Upload into this folder</button>}
-                        {isAdmin&&<button className="danger" onClick={()=>{setMenu(null);void deleteFolder(menu.folderId!);}}><Trash2 size={14}/> Delete</button>}
+                        {p.canUpload&&<button onClick={()=>{navigate(menu.folderId!);setMenu(null);pickFiles('files');}}><UploadCloud size={14}/> {t('folders.upload_into')}</button>}
+                        {isAdmin&&<button className="danger" onClick={()=>{setMenu(null);void deleteFolder(menu.folderId!);}}><Trash2 size={14}/> {t('folders.delete')}</button>}
                     </>}
                     {menu.kind==='file'&&<>
-                        <button onClick={()=>{setMenu(null);moveViaPrompt();}}><FolderInput size={14}/> Move to…</button>
-                        <button onClick={()=>{setInspector('metadata');setMenu(null);}}><Tag size={14}/> Describe {selected.size>1?`${selected.size} items`:'this asset'}…</button>
+                        <button onClick={()=>{setMenu(null);moveViaPrompt();}}><FolderInput size={14}/> {t('folders.move_to')}</button>
+                        <button onClick={()=>{setInspector('metadata');setMenu(null);}}><Tag size={14}/> {selected.size>1?t('folders.describe_selection',{count:selected.size}):t('folders.describe_one')}</button>
                         <hr/>
-                        <button onClick={()=>{setMenu(null);void moveSelection(null);}}><ArrowUp size={14}/> Move to library root</button>
+                        <button onClick={()=>{setMenu(null);void moveSelection(null);}}><ArrowUp size={14}/> {t('folders.move_to_root')}</button>
                     </>}
                     {menu.kind==='blank'&&<>
-                        {isAdmin&&<button onClick={()=>{setMenu(null);void createFolder();}}><FolderPlus size={14}/> New folder</button>}
+                        {isAdmin&&<button onClick={()=>{setMenu(null);void createFolder();}}><FolderPlus size={14}/> {t('folders.new_folder')}</button>}
                         {p.canUpload&&<>
-                            <button onClick={()=>{setMenu(null);pickFiles('files');}}><UploadCloud size={14}/> Upload files</button>
-                            <button onClick={()=>{setMenu(null);pickFiles('folder');}}><FolderInput size={14}/> Upload folder</button>
+                            <button onClick={()=>{setMenu(null);pickFiles('files');}}><UploadCloud size={14}/> {t('folders.upload_files')}</button>
+                            <button onClick={()=>{setMenu(null);pickFiles('folder');}}><FolderInput size={14}/> {t('folders.upload_folder')}</button>
                         </>}
                         <hr/>
-                        <button onClick={()=>{setMenu(null);void reload();}}><RotateCw size={14}/> Refresh</button>
+                        <button onClick={()=>{setMenu(null);void reload();}}><RotateCw size={14}/> {t('folders.refresh')}</button>
                     </>}
                 </div>
             )}
