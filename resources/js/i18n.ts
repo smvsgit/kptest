@@ -36,6 +36,19 @@ export function translate(
     return fill(line ?? key, replace);
 }
 
+/**
+ * Pick a line from a "one|many" pair.
+ *
+ * Laravel writes plurals as "1 file|:count files" in the same string, so the
+ * catalogue stays one entry per idea. Gujarati, like English, needs only the
+ * two branches.
+ */
+export function choose(line: string, count: number): string {
+    const parts = line.split('|');
+    if (parts.length < 2) return line;
+    return count === 1 ? parts[0] : parts[1];
+}
+
 export function useTranslation() {
     const page = usePage<SharedProps>();
     const catalogue = page.props.translations || {};
@@ -44,6 +57,9 @@ export function useTranslation() {
     return {
         /** t('nav.browse'), or t('sidebar.rename', { name: 'Utsav' }). */
         t: (key: string, replace?: Replacements) => translate(catalogue, key, replace),
+        /** tc('folders.items', 3) → "3 items"; :count is filled for you. */
+        tc: (key: string, count: number, replace?: Replacements) =>
+            fill(choose(catalogue[key] ?? key, count), { count, ...(replace || {}) }),
         locale,
         isGujarati: locale === 'gu',
     };
@@ -52,4 +68,10 @@ export function useTranslation() {
 /** Just the lookup, for components that do not need the locale itself. */
 export function useT() {
     return useTranslation().t;
+}
+
+/** The lookup plus the plural picker, as a pair. */
+export function useTx() {
+    const { t, tc } = useTranslation();
+    return { t, tc };
 }

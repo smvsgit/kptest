@@ -2,6 +2,7 @@ import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, UploadCloud, X, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { UploadSettings } from '../../types';
 import { formatBytes } from '../../format';
+import { useTx } from '../../i18n';
 import { fileKind, uploadChunked, uploadSimple, type UploadFields, type UploadItem } from '../../upload';
 
 export interface TrayHandle {
@@ -29,6 +30,7 @@ function relativePathOf(file:File):string|undefined{
  * reports a refusal (an empty file, a quota) in the words the server used.
  */
 const FolderUploadTray=forwardRef<TrayHandle,Props>(function FolderUploadTray(p,ref){
+    const {t,tc}=useTx();
     const [queue,setQueue]=useState<UploadItem[]>([]);
     const [running,setRunning]=useState(false);
     const [collapsed,setCollapsed]=useState(false);
@@ -84,13 +86,13 @@ const FolderUploadTray=forwardRef<TrayHandle,Props>(function FolderUploadTray(p,
                     break;
                 }
                 failed++;
-                patch(item.id,{status:'error',error:e instanceof Error?e.message:'Upload failed.'});
+                patch(item.id,{status:'error',error:e instanceof Error?e.message:t('upload.failed')});
             }
         }
 
         setRunning(false);
-        if(done)p.onFinished(`${done} file${done===1?'':'s'} uploaded as draft${done===1?'':'s'}. Select them and use Describe to fill in the metadata.`);
-        if(failed)p.onError(`${failed} file${failed===1?'':'s'} could not be uploaded. The reason is shown beside each one.`);
+        if(done)p.onFinished(tc('tray.done_message',done));
+        if(failed)p.onError(tc('tray.failed_message',failed));
     };
 
     useImperativeHandle(ref,()=>({
@@ -137,14 +139,14 @@ const FolderUploadTray=forwardRef<TrayHandle,Props>(function FolderUploadTray(p,
             <div className="exp-tray-head">
                 <UploadCloud size={16} style={{color:'var(--color-primary)'}}/>
                 <b>
-                    {running?`Uploading ${finished} of ${queue.length}`:`${finished} of ${queue.length} uploaded`}
-                    {folderCount>0&&` · ${folderCount} folder${folderCount===1?'':'s'}`}
+                    {running?t('tray.uploading',{done:finished,total:queue.length}):t('tray.uploaded',{done:finished,total:queue.length})}
+                    {folderCount>0&&` · ${tc('tray.folders',folderCount)}`}
                 </b>
                 <span style={{fontSize:11,color:'var(--text-muted)',fontVariantNumeric:'tabular-nums'}}>{percent}%</span>
-                <button className="icon-btn" onClick={()=>setCollapsed(c=>!c)} title={collapsed?'Show':'Hide'}>
+                <button className="icon-btn" onClick={()=>setCollapsed(c=>!c)} title={collapsed?t('tray.show'):t('tray.hide')}>
                     {collapsed?<ChevronUp size={14}/>:<ChevronDown size={14}/>}
                 </button>
-                {!running&&<button className="icon-btn" onClick={()=>setQueue([])} title="Close"><X size={14}/></button>}
+                {!running&&<button className="icon-btn" onClick={()=>setQueue([])} title={t('common.close')}><X size={14}/></button>}
             </div>
 
             {!collapsed&&(
@@ -158,7 +160,7 @@ const FolderUploadTray=forwardRef<TrayHandle,Props>(function FolderUploadTray(p,
                                 {item.status==='uploading'&&<Loader2 size={12} className="spin"/>}
                                 {item.status==='uploading'
                                     ? `${formatBytes(item.uploadedBytes||0)} / ${formatBytes(item.size)}`
-                                    : item.status==='error'?'failed':item.status==='cancelled'?'cancelled':formatBytes(item.size)}
+                                    : item.status==='error'?t('tray.failed'):item.status==='cancelled'?t('tray.cancelled'):formatBytes(item.size)}
                             </span>
                             {(item.relativePath||item.error)&&(
                                 <span className={`pth${item.error?' failed':''}`}>
@@ -176,15 +178,15 @@ const FolderUploadTray=forwardRef<TrayHandle,Props>(function FolderUploadTray(p,
             <div className="exp-tray-foot">
                 {running?<>
                     <button className="btn btn-secondary" onClick={()=>{paused.current=!paused.current;setQueue(q=>[...q]);}}>
-                        {paused.current?'Resume':'Pause'}
+                        {paused.current?t('tray.resume'):t('tray.pause')}
                     </button>
-                    <button className="btn btn-secondary" onClick={cancelAll}>Cancel</button>
+                    <button className="btn btn-secondary" onClick={cancelAll}>{t('tray.cancel')}</button>
                     <span style={{fontSize:11,color:'var(--text-muted)'}}>
-                        {formatBytes(moved)} of {formatBytes(total)}
+                        {t('tray.moved_of',{moved:formatBytes(moved),total:formatBytes(total)})}
                     </span>
                 </>:(
                     <span style={{fontSize:11,color:'var(--text-muted)'}}>
-                        Everything landed as a draft. Select the files and choose Describe.
+                        {t('tray.all_drafts')}
                     </span>
                 )}
             </div>
