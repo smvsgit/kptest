@@ -38,13 +38,13 @@ class UploadPolicyService
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         $allowed = array_values(array_unique(array_map('strtolower', $settings['allowed_extensions'] ?? [])));
         if ($ext === '' || !in_array($ext, $allowed, true)) {
-            throw ValidationException::withMessages(['file' => 'File type .'.$ext.' is not allowed by Central Admin upload policy.']);
+            throw ValidationException::withMessages(['file' => __('messages.upload.extension_not_allowed', ['extension' => $ext])]);
         }
         // An empty file carries no asset. Storing it produced a record that
         // looked active in every listing but could never be previewed or
         // downloaded, so it is refused at the door.
         if ($size <= 0) {
-            throw ValidationException::withMessages(['file' => 'This file is empty (0 bytes) and cannot be stored.']);
+            throw ValidationException::withMessages(['file' => __('messages.upload.empty_file')]);
         }
         $maxMb = max(0, (int)($settings['max_file_size_mb'] ?? 0));
         if ($maxMb > 0 && $size > $maxMb * 1024 * 1024) {
@@ -76,7 +76,7 @@ class UploadPolicyService
         if (!in_array($ext, self::DECODABLE_IMAGE_EXTENSIONS, true)) return;
         $real = $file->getRealPath();
         if (!$real || !is_readable($real)) {
-            throw ValidationException::withMessages(['file' => 'The uploaded file could not be read.']);
+            throw ValidationException::withMessages(['file' => __('messages.font.unreadable')]);
         }
         $info = @getimagesize($real);
         if (!$info || empty($info[0]) || empty($info[1])) {

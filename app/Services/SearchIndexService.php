@@ -94,7 +94,7 @@ class SearchIndexService
                 $docs=$rows->map(fn($m)=>$this->document($m))->all();
                 $this->request()->post($this->url('indexes/'.config('search.index').'/documents?primaryKey=id'),$docs);
             });
-            return ['ok'=>true,'message'=>'Search re-index requested for all media files.'];
-        } catch (Throwable $e) { report($e); return ['ok'=>false,'message'=>'Re-index failed: '.$e->getMessage()]; }
+            return ['ok'=>true,'message'=>__('messages.search.reindex_requested')];
+        } catch (Throwable $e) { report($e); return ['ok'=>false,'message'=>__('messages.search.reindex_failed', ['error' => $e->getMessage()])]; }
     }
 }

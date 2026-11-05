@@ -15,6 +15,6 @@ class AppearanceSettingsController extends Controller
         foreach($data as $slug)abort_unless(FontFamily::query()->where('slug',$slug)->where('is_active',true)->exists(),422,'Selected font is inactive.');
         $before=SystemSetting::valueFor('appearance.fonts',[]);SystemSetting::put('appearance.fonts',$data);
         $audit->log($request,'settings.appearance.updated',null,'Font assignments updated.',['before'=>$before,'after'=>$data]);
-        return back()->with('success','Font assignments applied.');
+        return back()->with('success',__('messages.font.assignments_applied'));
     }
 }

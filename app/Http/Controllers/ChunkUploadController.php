@@ -114,7 +114,7 @@ class ChunkUploadController extends Controller
             'name'=>$media->name,'size'=>$media->size,'type'=>$media->type,'department_id'=>$media->department_id,
             'chunks'=>$totalChunks,'chunk_size_bytes'=>$chunkSizeBytes,'access_policy'=>$media->access_policy,
         ]);
-        return response()->json(['message'=>'Upload complete','id'=>$media->id],201);
+        return response()->json(['message'=>__('messages.upload.complete'),'id'=>$media->id],201);
     }
 
     public function status(Request $request,string $uploadId)
@@ -130,7 +130,7 @@ class ChunkUploadController extends Controller
     {
         abort_unless(preg_match('/^[a-zA-Z0-9\-]+$/',$uploadId),422,'Invalid upload id.');
         Storage::disk('local')->deleteDirectory("chunks/{$request->user()->id}/{$uploadId}");
-        return response()->json(['message'=>'Upload chunks cleared.']);
+        return response()->json(['message'=>__('messages.upload.chunks_cleared')]);
     }
 
     private function enforceMetadataRequirements(Request $request): void
@@ -140,9 +140,9 @@ class ChunkUploadController extends Controller
         // stays a draft until it is described.
         if(!$request->boolean('defer_metadata')){
             $missing=app(\App\Services\MetadataRequirementService::class)->missingFromValues($request->all(),$settings);
-            if($missing)abort(422,'Required metadata missing: '.implode(', ',$missing));
+            if($missing)abort(422,__('messages.upload.metadata_missing',['fields'=>implode(', ',$missing)]));
         }
-        $min=(int)($settings['years_min']??1950);$max=(int)($settings['years_max']??((int)date('Y')+2));if($request->filled('year')&&($request->integer('year')<$min||$request->integer('year')>$max))abort(422,"Year must be between {$min} and {$max}.");
+        $min=(int)($settings['years_min']??1950);$max=(int)($settings['years_max']??((int)date('Y')+2));if($request->filled('year')&&($request->integer('year')<$min||$request->integer('year')>$max))abort(422,__('messages.upload.year_range',['min'=>$min,'max'=>$max]));
     }
 
     private function validateHierarchy(Request $request): void

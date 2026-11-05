@@ -214,6 +214,117 @@ class LocalePreferenceTest extends TestCase
     }
 
     /** lang files are nested; the front end reads them as dot keys. */
+    public function test_the_message_catalogue_exists_for_both_languages(): void
+    {
+        $this->assertFileExists(base_path('lang/en/messages.php'));
+        $this->assertFileExists(base_path('lang/gu/messages.php'));
+    }
+
+    public function test_every_english_message_has_a_gujarati_translation(): void
+    {
+        $english = $this->flatten(require base_path('lang/en/messages.php'));
+        $gujarati = $this->flatten(require base_path('lang/gu/messages.php'));
+
+        $missing = array_diff(array_keys($english), array_keys($gujarati));
+        $this->assertSame([], array_values($missing), 'Untranslated messages: '.implode(', ', $missing));
+
+        $extra = array_diff(array_keys($gujarati), array_keys($english));
+        $this->assertSame([], array_values($extra), 'Messages with no English source: '.implode(', ', $extra));
+    }
+
+    public function test_message_placeholders_survive_translation(): void
+    {
+        $english = $this->flatten(require base_path('lang/en/messages.php'));
+        $gujarati = $this->flatten(require base_path('lang/gu/messages.php'));
+
+        foreach ($english as $key => $line) {
+            preg_match_all('/:([a-z_]+)/', $line, $matches);
+            foreach ($matches[1] as $placeholder) {
+                $this->assertStringContainsString(
+                    ':'.$placeholder,
+                    $gujarati[$key] ?? '',
+                    "The Gujarati message for {$key} has lost the :{$placeholder} placeholder.",
+                );
+            }
+        }
+    }
+
+    /**
+     * Every messages.* key a controller, middleware or service asks for has to
+     * exist, because __() returns the key itself when it does not — and unlike
+     * an interface label, that string is what a user is told went wrong.
+     */
+    public function test_every_message_key_the_backend_asks_for_exists(): void
+    {
+        // The backend draws on both files: messages.* for what it says back,
+        // and a few ui.* lines where a refusal names a field the forms also
+        // label, so the two read the same way.
+        $catalogue = [
+            'messages' => $this->flatten(require base_path('lang/en/messages.php')),
+            'ui' => $this->flatten(require base_path('lang/en/ui.php')),
+        ];
+        $unknown = [];
+
+        $tree = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path(), \FilesystemIterator::SKIP_DOTS));
+        foreach ($tree as $entry) {
+            if (! $entry->isFile() || $entry->getExtension() !== 'php') {
+                continue;
+            }
+
+            preg_match_all("/'((?:messages|ui)\.[a-z0-9_.]+)'/", (string) file_get_contents($entry->getPathname()), $matches);
+            foreach ($matches[1] as $reference) {
+                [$file, $key] = explode('.', $reference, 2);
+                if (! array_key_exists($key, $catalogue[$file])) {
+                    $unknown[] = $entry->getBasename().': '.$reference;
+                }
+            }
+        }
+
+        $this->assertSame([], array_values(array_unique($unknown)),
+            'Keys asked for by the backend but not in the catalogue: '.implode(', ', array_unique($unknown)));
+    }
+
+    /**
+     * A JSON endpoint renders no Inertia response, so the locale cannot be a
+     * by-product of building shared props — it has to be set by its own
+     * middleware, early. This asserts the behaviour that depends on it rather
+     * than the middleware order itself.
+     */
+    public function test_a_json_endpoint_answers_in_the_users_language(): void
+    {
+        $gujarati = trans('messages.notify.all_marked_read', [], 'gu');
+        $english = trans('messages.notify.all_marked_read', [], 'en');
+        $this->assertNotSame($gujarati, $english, 'This test needs a line that actually differs.');
+
+        $this->actingAs($this->user(['preferred_language' => 'gu']))
+            ->postJson('/notifications/read-all')
+            ->assertOk()
+            ->assertJson(['message' => $gujarati]);
+    }
+
+    public function test_an_english_reader_still_gets_english_from_that_endpoint(): void
+    {
+        $this->actingAs($this->user(['preferred_language' => 'en']))
+            ->postJson('/notifications/read-all')
+            ->assertOk()
+            ->assertJson(['message' => trans('messages.notify.all_marked_read', [], 'en')]);
+    }
+
+    /**
+     * A refusal is raised by middleware, before any controller and without an
+     * Inertia response ever being built. It is the case the old arrangement
+     * could not have served, so it is the one worth pinning down.
+     */
+    public function test_a_refusal_from_middleware_follows_the_users_language(): void
+    {
+        $viewer = $this->user(['preferred_language' => 'gu', 'role' => 'viewer']);
+
+        $this->actingAs($viewer)
+            ->postJson('/departments', ['name' => 'Attempted'])
+            ->assertForbidden()
+            ->assertJson(['message' => trans('messages.access.denied', [], 'gu')]);
+    }
+
     /**
      * A key the front end asks for but the catalogue does not carry renders as
      * the key itself — "settings.tab_backup" in the middle of a tab strip. That

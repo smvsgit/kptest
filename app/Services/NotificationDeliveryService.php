@@ -86,19 +86,19 @@ class NotificationDeliveryService
         if ($channel === 'portal') {
             $notification = PortalNotification::create([
                 'user_id'=>$actor->id,'type'=>'test_notification','title'=>'Notification channel test',
-                'message'=>'Portal notification test from Central Admin.','data'=>['test'=>true],
+                'message'=>__('messages.notify.portal_test'),'data'=>['test'=>true],
             ]);
             return NotificationDelivery::create([
                 'portal_notification_id'=>$notification->id,'user_id'=>$actor->id,'event'=>'test_notification','category'=>'security',
                 'channel'=>'portal','provider'=>'built-in','recipient'=>'user:'.$actor->id,'status'=>'sent','attempts'=>1,
-                'last_attempt_at'=>now(),'sent_at'=>now(),'response_meta'=>['title'=>'Notification channel test','message'=>'Portal notification test from Central Admin.'],
+                'last_attempt_at'=>now(),'sent_at'=>now(),'response_meta'=>['title'=>'Notification channel test','message'=>__('messages.notify.portal_test')],
             ]);
         }
         if (!(bool)($settings[$channel]['enabled'] ?? false)) throw new RuntimeException(ucfirst($channel).' channel is disabled.');
         $delivery = NotificationDelivery::create([
             'user_id'=>$actor->id,'event'=>'test_notification','category'=>'security','channel'=>$channel,
             'provider'=>$this->providerName($settings,$channel),'recipient'=>trim($recipient),'status'=>'queued',
-            'response_meta'=>['title'=>'SMVS Karyalay Portal notification test','message'=>'This is a provider test from SMVS Karyalay Portal.','data'=>['test'=>true]],
+            'response_meta'=>['title'=>'SMVS Karyalay Portal notification test','message'=>__('messages.notify.provider_test'),'data'=>['test'=>true]],
         ]);
         DeliverNotificationChannel::dispatch($delivery->id);
         return $delivery;

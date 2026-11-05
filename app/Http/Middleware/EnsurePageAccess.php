@@ -12,7 +12,7 @@ class EnsurePageAccess
         $user = $request->user();
 
         if (!$user || ($user->status ?? 'active') !== 'active' || !$user->canAccessPage($page)) {
-            abort(403, 'Your assigned portal role does not allow access to this page.');
+            abort(403, __('messages.access.page_denied'));
         }
 
         return $next($request);

@@ -27,7 +27,7 @@ class UploadSettingsController extends Controller
         $before = $policy->settings();
         SystemSetting::put('upload.settings', $data);
         $audit->log($request, 'settings.upload.updated', null, 'Upload and integrity settings updated.', ['before'=>$before,'after'=>$data]);
-        return back()->with('success', 'Upload & Integrity settings saved.');
+        return back()->with('success', __('messages.settings.upload_saved'));
     }
 
     public function preflight(Request $request, UploadPolicyService $policy, MediaAccessService $access)

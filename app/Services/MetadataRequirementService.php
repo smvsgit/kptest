@@ -17,17 +17,22 @@ use App\Models\SystemSetting;
  */
 class MetadataRequirementService
 {
+    /**
+     * Catalogue keys, not English. These names are read back to a user when an
+     * asset is refused or held as a draft, so they follow the request locale.
+     * ui.fields.* is the same list the React forms label their inputs with.
+     */
     public const LABELS = [
-        'year' => 'Year',
-        'country_id' => 'Country',
-        'state_id' => 'State',
-        'city_id' => 'City',
-        'mandir_id' => 'Mandir',
-        'event_id' => 'Event / Prasang',
-        'person_id' => 'Guruji / Person',
-        'language_id' => 'Language',
-        'media_type_id' => 'Media Type',
-        'description' => 'Description',
+        'year' => 'ui.fields.year',
+        'country_id' => 'ui.fields.country',
+        'state_id' => 'ui.fields.state',
+        'city_id' => 'ui.fields.city',
+        'mandir_id' => 'ui.fields.mandir',
+        'event_id' => 'ui.fields.event',
+        'person_id' => 'ui.fields.person',
+        'language_id' => 'ui.fields.language',
+        'media_type_id' => 'ui.fields.media_type',
+        'description' => 'ui.access.description',
     ];
 
     public function settings(): array
@@ -51,7 +56,7 @@ class MetadataRequirementService
     {
         $missing = [];
         foreach ($this->requiredFields($settings) as $field) {
-            if (blank($values[$field] ?? null)) $missing[] = self::LABELS[$field] ?? $field;
+            if (blank($values[$field] ?? null)) $missing[] = isset(self::LABELS[$field]) ? __(self::LABELS[$field]) : $field;
         }
         return $missing;
     }

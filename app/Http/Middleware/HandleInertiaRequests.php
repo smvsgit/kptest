@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\FontFamily;
 use App\Models\SystemSetting;
+use App\Services\LocaleResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -58,24 +59,17 @@ class HandleInertiaRequests extends Middleware
             $selected = FontFamily::with('files')->whereIn('slug', $slugs)->get();
         }
 
-        $brandingDefaults = [
-            'portal_name' => 'Karyalay Portal',
-            'login_text' => 'Secure office media and document portal',
-            'default_language' => 'en',
-            'logo_path' => null,
-        ];
-        $branding = $hasSettings
-            ? array_replace($brandingDefaults, SystemSetting::valueFor('branding.settings', $brandingDefaults))
-            : $brandingDefaults;
+        // Branding and the locale are decided by LocaleResolver, which the
+        // SetLocale middleware has already applied by the time we get here.
+        // Reading it back keeps one answer to "what language is this request",
+        // which plain JSON endpoints and middleware rely on just as much.
+        $locales = app(LocaleResolver::class);
+        $branding = $locales->branding();
 
         $portalName = trim((string) ($branding['portal_name'] ?? '')) ?: 'Karyalay Portal';
         $loginText = trim((string) ($branding['login_text'] ?? '')) ?: 'Secure office media and document portal';
-        $defaultLanguage = in_array(($branding['default_language'] ?? 'en'), ['en', 'gu'], true)
-            ? $branding['default_language']
-            : 'en';
-        $preferredLanguage = $request->user()?->preferred_language;
-        $locale = in_array($preferredLanguage, ['en', 'gu'], true) ? $preferredLanguage : $defaultLanguage;
-        app()->setLocale($locale);
+        $defaultLanguage = $locales->defaultLanguage();
+        $locale = app()->getLocale();
 
         $logoPath = is_string($branding['logo_path'] ?? null) ? trim($branding['logo_path']) : '';
         $branding = [

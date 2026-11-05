@@ -119,7 +119,7 @@ class MediaFileController extends Controller
             'category_id'=>$media->category_id,'access_policy'=>$media->access_policy,'source_type'=>$media->source_type,'visible_role_ids'=>$media->visibleToRoles()->pluck('portal_roles.id')->all(),
         ]);
 
-        return response()->json(['message' => 'Uploaded successfully', 'id' => $media->id], 201);
+        return response()->json(['message' => __('messages.upload.succeeded'), 'id' => $media->id], 201);
     }
 
     public function updateAccessPolicy(Request $request, MediaFile $mediaFile, MediaAccessService $access, AuditService $audit, SearchIndexService $searchIndex)
@@ -136,7 +136,7 @@ class MediaFileController extends Controller
             'before' => $before,
             'after' => $data,
         ]);
-        return response()->json(['message' => 'Access policy updated.']);
+        return response()->json(['message' => __('messages.file.policy_updated')]);
     }
 
     public function bulkDelete(Request $request, SearchIndexService $searchIndex, AuditService $audit)
@@ -147,7 +147,7 @@ class MediaFileController extends Controller
         if ($request->user()?->role === 'department-admin') {
             $allowedCount = (clone $query)->where('department_id', $request->user()->department_id)->count();
             if ($allowedCount !== count($request->ids)) {
-                abort(403, 'You can only move files owned by your department to Recycle Bin.');
+                abort(403, __('messages.file.own_department_only'));
             }
             $query->where('department_id', $request->user()->department_id);
         }
@@ -188,10 +188,10 @@ class MediaFileController extends Controller
         if (! $request->boolean('defer_metadata')) {
             $missing = app(\App\Services\MetadataRequirementService::class)
                 ->missingFromValues($request->all(), $settings);
-            if ($missing) abort(422, 'Required metadata missing: '.implode(', ', $missing));
+            if ($missing) abort(422, __('messages.upload.metadata_missing', ['fields' => implode(', ', $missing)]));
         }
         $min=(int)($settings['years_min'] ?? 1950); $max=(int)($settings['years_max'] ?? ((int)date('Y')+2));
-        if ($request->filled('year') && ($request->integer('year')<$min || $request->integer('year')>$max)) abort(422, "Year must be between {$min} and {$max}.");
+        if ($request->filled('year') && ($request->integer('year')<$min || $request->integer('year')>$max)) abort(422, __('messages.upload.year_range', ['min' => $min, 'max' => $max]));
         app(\App\Services\LocationHierarchyService::class)->assertValid($request->only(\App\Services\LocationHierarchyService::FIELDS));
     }
 

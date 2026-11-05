@@ -25,10 +25,10 @@ class UserGroupController extends Controller
             if(!empty($data['portal_role_id'])) $this->assertDepartmentAssignableRole((int)$data['portal_role_id']);
         }
         $exists=UserGroup::where('department_id',$data['department_id']??null)->where('name',$data['name'])->exists();
-        if($exists) throw ValidationException::withMessages(['name'=>'A group with this name already exists in the selected department.']);
+        if($exists) throw ValidationException::withMessages(['name'=>__('messages.group.duplicate_name')]);
         $group=UserGroup::create($data+['is_active'=>true,'created_by'=>$actor->id]);
         $audit->log($request,'user-group.created',$group,'User group created.',$group->toArray());
-        return response()->json(['message'=>'Group created.']);
+        return response()->json(['message'=>__('messages.group.created')]);
     }
 
     public function update(Request $request, UserGroup $userGroup, AuditService $audit)
@@ -45,7 +45,7 @@ class UserGroupController extends Controller
         $before=$userGroup->toArray();
         $userGroup->update($data);
         $audit->log($request,'user-group.updated',$userGroup,'User group updated.',['before'=>$before,'after'=>$data]);
-        return response()->json(['message'=>'Group updated.']);
+        return response()->json(['message'=>__('messages.group.updated')]);
     }
 
     public function addMember(Request $request, UserGroup $userGroup, AuditService $audit)
@@ -54,7 +54,7 @@ class UserGroupController extends Controller
         $data=$request->validate(['user_id'=>'required|integer|exists:users,id','apply_group_role'=>'nullable|boolean']);
         $user=User::findOrFail($data['user_id']);
         if($userGroup->department_id && (int)$user->department_id !== (int)$userGroup->department_id) {
-            throw ValidationException::withMessages(['user_id'=>'User must belong to the same department as this group.']);
+            throw ValidationException::withMessages(['user_id'=>__('messages.group.member_department')]);
         }
         if($request->user()->role==='department-admin') {
             abort_unless((int)$user->department_id === (int)$request->user()->department_id, 403);
@@ -69,10 +69,10 @@ class UserGroupController extends Controller
                 $user->update(['role'=>$role->base_role,'portal_role_id'=>$role->id]);
             }
         }
-        $audit->log($request,'user-group.member-added',$userGroup,'User added to group.',[
+        $audit->log($request,'user-group.member-added',$userGroup,__('messages.group.member_added'),[
             'user_id'=>$user->id,'user_email'=>$user->email,'group_role_applied'=>(bool)($data['apply_group_role']??true),
         ]);
-        return response()->json(['message'=>'User added to group.']);
+        return response()->json(['message'=>__('messages.group.member_added')]);
     }
 
     public function removeMember(Request $request, UserGroup $userGroup, User $user, AuditService $audit)
@@ -82,8 +82,8 @@ class UserGroupController extends Controller
             abort_if(in_array($user->role, ['super-admin','department-admin'], true), 403, 'Department Admin cannot manage administrator accounts through groups.');
         }
         $userGroup->members()->detach($user->id);
-        $audit->log($request,'user-group.member-removed',$userGroup,'User removed from group.',['user_id'=>$user->id]);
-        return response()->json(['message'=>'User removed from group.']);
+        $audit->log($request,'user-group.member-removed',$userGroup,__('messages.group.member_removed'),['user_id'=>$user->id]);
+        return response()->json(['message'=>__('messages.group.member_removed')]);
     }
 
     public function applyRole(Request $request, UserGroup $userGroup, AuditService $audit)
@@ -114,7 +114,7 @@ class UserGroupController extends Controller
         $this->authorizeScope($request,$userGroup);
         $audit->log($request,'user-group.deleted',$userGroup,'User group deleted.');
         $userGroup->delete();
-        return response()->json(['message'=>'Group deleted.']);
+        return response()->json(['message'=>__('messages.group.deleted')]);
     }
 
     private function authorizeScope(Request $request, UserGroup $group): void
@@ -128,7 +128,7 @@ class UserGroupController extends Controller
     {
         $role=PortalRole::whereKey($roleId)->where('is_active',true)->firstOrFail();
         if(in_array($role->base_role,['super-admin','department-admin'],true)) {
-            throw ValidationException::withMessages(['portal_role_id'=>'Department Admin can assign only Department Operator/Viewer based roles.']);
+            throw ValidationException::withMessages(['portal_role_id'=>__('messages.user.dept_admin_roles')]);
         }
     }
 }

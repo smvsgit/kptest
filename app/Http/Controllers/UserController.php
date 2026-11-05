@@ -39,12 +39,12 @@ class UserController extends Controller
         $role=PortalRole::whereKey($data['portal_role_id'])->where('is_active',true)->firstOrFail();
         if($actor->role==='department-admin'){
             $data['department_id']=$actor->department_id;
-            if(in_array($role->base_role,['super-admin','department-admin'],true)) throw ValidationException::withMessages(['portal_role_id'=>'Department Admin can create only Department Operator/Viewer based users.']);
+            if(in_array($role->base_role,['super-admin','department-admin'],true)) throw ValidationException::withMessages(['portal_role_id'=>__('messages.user.dept_admin_users')]);
         }
-        if($role->base_role!=='super-admin' && empty($data['department_id'])) throw ValidationException::withMessages(['department_id'=>'Department is required for this role.']);
+        if($role->base_role!=='super-admin' && empty($data['department_id'])) throw ValidationException::withMessages(['department_id'=>__('messages.role.department_required')]);
         if(!empty($data['organization_unit_id'])){
             $unit=OrganizationUnit::findOrFail($data['organization_unit_id']);
-            if((int)$unit->department_id !== (int)($data['department_id']??0)) throw ValidationException::withMessages(['organization_unit_id'=>'Organization unit does not belong to selected department.']);
+            if((int)$unit->department_id !== (int)($data['department_id']??0)) throw ValidationException::withMessages(['organization_unit_id'=>__('messages.user.unit_mismatch')]);
         }
         $user=User::create([
             'name'=>$data['name'], 'email'=>strtolower(trim($data['email'])), 'phone'=>$data['phone']??null,
@@ -63,15 +63,15 @@ class UserController extends Controller
     public function updateRole(Request $request, User $user, AuditService $audit)
     {
         $this->assertUserManageScope($request,$user,true);
-        if ($request->user()->is($user)) throw ValidationException::withMessages(['role'=>'You cannot change your own role from the admin console.']);
+        if ($request->user()->is($user)) throw ValidationException::withMessages(['role'=>__('messages.user.own_role')]);
         $data=$request->validate(['role'=>['required',Rule::in(self::ROLES)]]);
         if($request->user()->role==='department-admin' && in_array($data['role'],['super-admin','department-admin'],true)) abort(403);
-        if($data['role']!=='super-admin'&&$user->department_id===null)throw ValidationException::withMessages(['role'=>'Assign a department before granting a department-scoped role.']);
+        if($data['role']!=='super-admin'&&$user->department_id===null)throw ValidationException::withMessages(['role'=>__('messages.user.department_required_for_role')]);
         $builtin=PortalRole::where('slug',$data['role'])->where('is_builtin',true)->first();
         $before=['role'=>$user->role,'portal_role_id'=>$user->portal_role_id];
         $user->update(['role'=>$data['role'],'portal_role_id'=>$builtin?->id]);
         $audit->log($request,'user.role.updated',$user,'User role updated.',['before'=>$before,'after'=>['role'=>$data['role'],'portal_role_id'=>$builtin?->id]]);
-        return back()->with('success','User role updated successfully.');
+        return back()->with('success',__('messages.user.role_updated'));
     }
 
     public function updateDepartment(Request $request, User $user, AuditService $audit, UserLifecycleService $lifecycle)
@@ -79,12 +79,12 @@ class UserController extends Controller
         $this->assertUserManageScope($request,$user,true);
         abort_unless($request->user()->role==='super-admin',403,'Department transfer is Super Admin only.');
         $data=$request->validate(['department_id'=>['nullable','integer','exists:departments,id'],'organization_unit_id'=>['nullable','integer','exists:organization_units,id'],'successor_user_id'=>['nullable','integer','exists:users,id']]);
-        if($user->role!=='super-admin'&&empty($data['department_id']))throw ValidationException::withMessages(['department_id'=>'A department is required for non-Super Admin users.']);
-        if(!empty($data['organization_unit_id'])){$unit=OrganizationUnit::findOrFail($data['organization_unit_id']);if($unit->department_id!==(int)$data['department_id'])throw ValidationException::withMessages(['organization_unit_id'=>'Organization unit does not belong to selected department.']);}
+        if($user->role!=='super-admin'&&empty($data['department_id']))throw ValidationException::withMessages(['department_id'=>__('messages.user.department_required')]);
+        if(!empty($data['organization_unit_id'])){$unit=OrganizationUnit::findOrFail($data['organization_unit_id']);if($unit->department_id!==(int)$data['department_id'])throw ValidationException::withMessages(['organization_unit_id'=>__('messages.user.unit_mismatch')]);}
         $before=['department_id'=>$user->department_id,'organization_unit_id'=>$user->organization_unit_id];
         $lifecycle->transferDepartment($user,$data['department_id']??null,$data['organization_unit_id']??null,$request->user(),$data['successor_user_id']??null);
         $audit->log($request,'user.department.updated',$user,'User department/organization unit updated with controlled access transition.',['before'=>$before,'after'=>['department_id'=>$data['department_id']??null,'organization_unit_id'=>$data['organization_unit_id']??null]]);
-        return back()->with('success','User organization assignment updated; old protected entitlements/requests were transitioned safely.');
+        return back()->with('success',__('messages.user.organization_updated'));
     }
 
     public function updateStatus(Request $request, User $user, AuditService $audit, UserLifecycleService $lifecycle)
@@ -92,7 +92,7 @@ class UserController extends Controller
         abort_unless($request->user()->role==='super-admin',403);
         abort_if($request->user()->is($user),422,'You cannot disable/inactivate your own account.');
         $data=$request->validate(['status'=>['required',Rule::in(['active','disabled','inactive'])],'reason'=>'nullable|string|max:2000','successor_user_id'=>'nullable|integer|exists:users,id']);
-        if($data['status']!=='active'&&blank($data['reason']??null))throw ValidationException::withMessages(['reason'=>'Reason is required for Disabled/Inactive.']);
+        if($data['status']!=='active'&&blank($data['reason']??null))throw ValidationException::withMessages(['reason'=>__('messages.user.status_reason_required')]);
         $before=$user->status??'active';$lifecycle->changeStatus($user,$data['status'],$data['reason']??null,$request->user(),$data['successor_user_id']??null);
         $audit->log($request,'user.status.updated',$user,'User lifecycle status updated.',['before'=>$before,'after'=>$data['status'],'reason'=>$data['reason']??null]);
         return response()->json(['message'=>"{$user->name} is now {$data['status']}."]);
@@ -101,13 +101,13 @@ class UserController extends Controller
     public function updatePermissionSet(Request $request, User $user, AuditService $audit)
     {
         abort_unless($request->user()->role==='super-admin',403);
-        $data=$request->validate(['permission_set_id'=>'nullable|integer|exists:permission_sets,id']);$before=$user->permission_set_id;$user->update(['permission_set_id'=>$data['permission_set_id']??null]);$audit->log($request,'user.permission-set.updated',$user,'User permission set updated.',['before'=>$before,'after'=>$user->permission_set_id]);return back()->with('success','Permission set updated.');
+        $data=$request->validate(['permission_set_id'=>'nullable|integer|exists:permission_sets,id']);$before=$user->permission_set_id;$user->update(['permission_set_id'=>$data['permission_set_id']??null]);$audit->log($request,'user.permission-set.updated',$user,'User permission set updated.',['before'=>$before,'after'=>$user->permission_set_id]);return back()->with('success',__('messages.permission_set.updated'));
     }
 
     public function temporaryPassword(Request $request, User $user, AuditService $audit, UserLifecycleService $lifecycle)
     {
         abort_unless($request->user()->role==='super-admin',403);
-        abort_if($request->user()->is($user),422,'Use Change Password for your own account.');$password=$lifecycle->temporaryPassword($user);$audit->log($request,'user.temporary-password.issued',$user,'Administrator issued a one-time temporary password and revoked sessions.');return response()->json(['message'=>'Temporary password issued. User must change it after login.','temporary_password'=>$password]);
+        abort_if($request->user()->is($user),422,'Use Change Password for your own account.');$password=$lifecycle->temporaryPassword($user);$audit->log($request,'user.temporary-password.issued',$user,'Administrator issued a one-time temporary password and revoked sessions.');return response()->json(['message'=>__('messages.auth.temporary_password'),'temporary_password'=>$password]);
     }
 
     public function sendPasswordReset(Request $request, User $user, AuditService $audit)
@@ -145,11 +145,11 @@ class UserController extends Controller
             'expires_at'=>'nullable|date',
             'reason'=>'nullable|string|max:2000',
         ]);
-        if($data['allowed'] && blank($data['reason']??null)) throw ValidationException::withMessages(['reason'=>'Reason is required when external Internet access is allowed.']);
+        if($data['allowed'] && blank($data['reason']??null)) throw ValidationException::withMessages(['reason'=>__('messages.user.external_reason_required')]);
         $effectiveStart = $data['allowed'] ? (!empty($data['starts_at']) ? \Illuminate\Support\Carbon::parse($data['starts_at']) : now()) : null;
         $effectiveExpiry = $data['allowed'] && !empty($data['expires_at']) ? \Illuminate\Support\Carbon::parse($data['expires_at']) : null;
         if ($effectiveExpiry && $effectiveStart && $effectiveExpiry->lte($effectiveStart)) {
-            throw ValidationException::withMessages(['expires_at'=>'Expiry must be later than the External Internet Access start time.']);
+            throw ValidationException::withMessages(['expires_at'=>__('messages.user.external_expiry_order')]);
         }
         $before=$user->only(['external_access_allowed','external_access_starts_at','external_access_expires_at','external_access_reason','external_access_approved_by']);
         $user->update([
@@ -176,7 +176,7 @@ class UserController extends Controller
     public function importCsv(Request $request, AuditService $audit)
     {
         abort_unless($request->user()->role==='super-admin',403);
-        $request->validate(['file'=>'required|file|max:5120']);$fh=fopen($request->file('file')->getRealPath(),'rb');$headers=fgetcsv($fh);if(!$headers)throw ValidationException::withMessages(['file'=>'CSV header is missing.']);$headers=array_map(fn($h)=>strtolower(trim((string)$h)),$headers);$required=['name','email','department','role'];foreach($required as $h)if(!in_array($h,$headers,true))throw ValidationException::withMessages(['file'=>"Missing CSV column: {$h}"]);
+        $request->validate(['file'=>'required|file|max:5120']);$fh=fopen($request->file('file')->getRealPath(),'rb');$headers=fgetcsv($fh);if(!$headers)throw ValidationException::withMessages(['file'=>__('messages.import.missing_header')]);$headers=array_map(fn($h)=>strtolower(trim((string)$h)),$headers);$required=['name','email','department','role'];foreach($required as $h)if(!in_array($h,$headers,true))throw ValidationException::withMessages(['file'=>"Missing CSV column: {$h}"]);
         $created=0;$updated=0;$errors=[];$rowNo=1;
         while(($row=fgetcsv($fh))!==false){$rowNo++;$row=array_slice(array_pad($row,count($headers),''),0,count($headers));$data=array_combine($headers,$row);try{$dept=Department::where('name',trim($data['department']??''))->first();if(!$dept)throw new \RuntimeException('Unknown department.');$role=trim($data['role']??'viewer');if(!in_array($role,self::ROLES,true))throw new \RuntimeException('Invalid role.');$email=strtolower(trim($data['email']??''));if(!filter_var($email,FILTER_VALIDATE_EMAIL))throw new \RuntimeException('Invalid email.');$unit=null;if(trim($data['organization_unit']??'')!=='')$unit=OrganizationUnit::where('department_id',$dept->id)->where('name',trim($data['organization_unit']))->first();$set=null;if(trim($data['permission_set']??'')!=='')$set=PermissionSet::where('name',trim($data['permission_set']))->where('is_active',true)->first();$builtin=PortalRole::where('slug',$role)->where('is_builtin',true)->first();$user=User::where('email',$email)->first();$status=in_array(trim($data['status']??'active'),['active','disabled','inactive'],true)?trim($data['status']??'active'):'active';$attrs=['name'=>trim($data['name']),'phone'=>trim($data['phone']??'')?:null,'department_id'=>$dept->id,'organization_unit_id'=>$unit?->id,'role'=>$role,'portal_role_id'=>$builtin?->id,'permission_set_id'=>$set?->id,'status'=>$status];if($user){if((int)$user->department_id!==$dept->id)throw new \RuntimeException('Existing user department transfer must use controlled UI with successor/access transition.');if(($user->status??'active')!==$status)throw new \RuntimeException('Existing user lifecycle status change must use controlled UI.');$user->update($attrs);$updated++;}else{$attrs['email']=$email;$attrs['password']=Hash::make(Str::random(48));$attrs['must_change_password']=false;$user=User::create($attrs);$created++;}}catch(\Throwable $e){$errors[]="Row {$rowNo}: {$e->getMessage()}";}}
         fclose($fh);$audit->log($request,'user.imported',null,'User CSV import completed.',['created'=>$created,'updated'=>$updated,'errors'=>count($errors)]);return response()->json(['message'=>"Import complete: {$created} created, {$updated} updated, ".count($errors).' error(s).','errors'=>array_slice($errors,0,25)]);

@@ -153,7 +153,7 @@ class BackupService
         if($status==='passed') {
             $latestChecksum=$run->verifications()->where('verification_type','checksum')->latest('verified_at')->latest('id')->first();
             if($run->status!=='success'||!$run->verified_at||!$latestChecksum||$latestChecksum->status!=='passed') {
-                throw ValidationException::withMessages(['status'=>'A Passed restore test requires a successful backup whose latest checksum verification is Passed. Verify the backup first.']);
+                throw ValidationException::withMessages(['status'=>__('messages.backup.restore_needs_verified')]);
             }
         }
         $verification=RestoreVerification::create([

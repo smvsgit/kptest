@@ -83,7 +83,7 @@ class LifecycleWorkflowController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Lifecycle status updated.');
+        return back()->with('success', __('messages.file.lifecycle_updated'));
     }
 
     private function validateMetadata(MediaFile $media, string $to): void

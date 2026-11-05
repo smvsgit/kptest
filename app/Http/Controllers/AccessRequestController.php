@@ -25,10 +25,10 @@ class AccessRequestController extends Controller
         ]);
 
         if ($data['access_level'] === 'download' && !$mediaFile->download_allowed) {
-            return response()->json(['message' => 'Download requests are disabled for this file. Request view-only access instead.'], 422);
+            return response()->json(['message' => __('messages.request.download_disabled_view_only')], 422);
         }
         if ($access->canPreview($mediaFile, $request->user()) && !($data['access_level'] === 'download' && !$access->canDownload($mediaFile, $request->user()))) {
-            return response()->json(['message' => 'You already have the requested access to this file.'], 422);
+            return response()->json(['message' => __('messages.request.already_have')], 422);
         }
 
         $existing = $mediaFile->accessRequests()
@@ -37,10 +37,10 @@ class AccessRequestController extends Controller
             ->where(function($q){$q->where('status','pending')->orWhere(function($a){$a->where('status','approved')->whereNull('revoked_at')->where(function($e){$e->whereNull('expires_at')->orWhere('expires_at','>',now());});});})
             ->latest('id')->first();
         if ($existing && $existing->status === 'pending') {
-            return response()->json(['message' => 'An access request is already pending.'], 422);
+            return response()->json(['message' => __('messages.request.already_pending')], 422);
         }
         if ($existing && $existing->status === 'approved' && !($existing->access_level === 'view' && $data['access_level'] === 'download')) {
-            return response()->json(['message' => 'Access is already approved.'], 422);
+            return response()->json(['message' => __('messages.request.already_approved')], 422);
         }
 
         $accessRequest = MediaAccessRequest::create([
@@ -69,7 +69,7 @@ class AccessRequestController extends Controller
             'reason' => trim($data['reason']),
         ]);
 
-        return response()->json(['message' => 'Access request submitted.', 'request_id' => $accessRequest->id], 201);
+        return response()->json(['message' => __('messages.request.submitted'), 'request_id' => $accessRequest->id], 201);
     }
 
     public function update(Request $request, MediaAccessRequest $accessRequest, MediaAccessService $access, AuditService $audit, NotificationDeliveryService $notifications)
@@ -86,12 +86,12 @@ class AccessRequestController extends Controller
         ]);
 
         if ($data['status'] !== 'approved' && blank($data['decision_note'] ?? null)) {
-            return response()->json(['message' => 'A reason/note is required for Reject or More Information.'], 422);
+            return response()->json(['message' => __('messages.request.note_required')], 422);
         }
 
         $level = $data['access_level'] ?? $accessRequest->access_level;
         if ($level === 'download' && !$accessRequest->mediaFile->download_allowed) {
-            return response()->json(['message' => 'Download access is disabled for this file.'], 422);
+            return response()->json(['message' => __('messages.file.download_disabled')], 422);
         }
 
         $before = ['status'=>$accessRequest->status,'access_level'=>$accessRequest->access_level,'expires_at'=>$accessRequest->expires_at?->toIso8601String()];
@@ -125,7 +125,7 @@ class AccessRequestController extends Controller
             'decision_note' => $data['decision_note'] ?? null,
         ]);
 
-        return response()->json(['message' => 'Access request updated.']);
+        return response()->json(['message' => __('messages.request.updated')]);
     }
 
     public function storeBulk(Request $request, MediaAccessService $access, AuditService $audit, NotificationDeliveryService $notifications)
@@ -137,7 +137,7 @@ class AccessRequestController extends Controller
         elseif(!empty($data['event_id']))$query->where('event_id',$data['event_id']);
         elseif(!empty($data['subcategory_id']))$query->where('subcategory_id',$data['subcategory_id']);
         elseif(!empty($data['category_id']))$query->where('category_id',$data['category_id']);
-        else return response()->json(['message'=>'Select files, Event, Category or Sub-category for the bulk request.'],422);
+        else return response()->json(['message'=>__('messages.request.bulk_selection')],422);
         $files=$query->limit($max+1)->get(); if($files->count()>$max)return response()->json(['message'=>"Bulk request exceeds configured maximum of {$max} files."],422);
         $created=0;$skipped=0;
         foreach($files as $media){
@@ -161,7 +161,7 @@ class AccessRequestController extends Controller
             'access_level' => 'required|in:view,download',
         ]);
         if ($data['access_level'] === 'download' && !$accessRequest->mediaFile->download_allowed) {
-            return response()->json(['message' => 'Download requests are disabled for this file.'], 422);
+            return response()->json(['message' => __('messages.request.download_disabled')], 422);
         }
 
         $accessRequest->update([
@@ -179,7 +179,7 @@ class AccessRequestController extends Controller
         }
 
         $audit->log($request, 'access.resubmitted', $accessRequest, 'Access request resubmitted with additional information.');
-        return response()->json(['message' => 'Access request resubmitted.']);
+        return response()->json(['message' => __('messages.request.resubmitted')]);
     }
     private function reviewersFor(MediaFile $media): \Illuminate\Support\Collection
     {

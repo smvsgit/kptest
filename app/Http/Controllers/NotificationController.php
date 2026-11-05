@@ -13,13 +13,13 @@ class NotificationController extends Controller
     {
         abort_unless($notification->user_id === $request->user()->id, 403);
         $notification->update(['read_at' => now()]);
-        return response()->json(['message' => 'Notification marked as read.']);
+        return response()->json(['message' => __('messages.notify.marked_read')]);
     }
 
     public function markAllRead(Request $request)
     {
         PortalNotification::query()->where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
-        return response()->json(['message' => 'Notifications marked as read.']);
+        return response()->json(['message' => __('messages.notify.all_marked_read')]);
     }
 
     public function preferences(Request $request, AuditService $audit)
@@ -32,6 +32,6 @@ class NotificationController extends Controller
         $before=$pref->only(array_keys($data));
         $pref->fill($data)->save();
         $audit->log($request,'notification.preferences.updated',$pref,'User notification preferences updated.',['before'=>$before,'after'=>$data]);
-        return response()->json(['message'=>'Notification preferences saved.','preferences'=>$pref->fresh()]);
+        return response()->json(['message'=>__('messages.notify.preferences_saved'),'preferences'=>$pref->fresh()]);
     }
 }

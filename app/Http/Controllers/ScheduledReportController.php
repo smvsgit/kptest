@@ -60,12 +60,12 @@ class ScheduledReportController extends Controller
             'created_by' => $request->user()->id,
             'next_run_at' => $this->nextRun($data['frequency']),
         ]);
-        $audit->log($request, 'report.schedule.created', $report, 'Scheduled report created.');
+        $audit->log($request, 'report.schedule.created', $report, __('messages.report.created'));
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Scheduled report created.', 'id' => $report->id], 201);
+            return response()->json(['message' => __('messages.report.created'), 'id' => $report->id], 201);
         }
-        return back()->with('success', 'Scheduled report created.');
+        return back()->with('success', __('messages.report.created'));
     }
 
     public function update(Request $request, ScheduledReport $scheduledReport, AuditService $audit)
@@ -87,20 +87,20 @@ class ScheduledReportController extends Controller
             $data['next_run_at'] = $this->nextRun($data['frequency']);
         }
         $scheduledReport->update($data);
-        $audit->log($request, 'report.schedule.updated', $scheduledReport, 'Scheduled report updated.');
+        $audit->log($request, 'report.schedule.updated', $scheduledReport, __('messages.report.updated'));
 
         return $request->expectsJson()
-            ? response()->json(['message' => 'Scheduled report updated.'])
-            : back()->with('success', 'Scheduled report updated.');
+            ? response()->json(['message' => __('messages.report.updated')])
+            : back()->with('success', __('messages.report.updated'));
     }
 
     public function destroy(Request $request, ScheduledReport $scheduledReport, AuditService $audit)
     {
-        $audit->log($request, 'report.schedule.deleted', $scheduledReport, 'Scheduled report deleted.');
+        $audit->log($request, 'report.schedule.deleted', $scheduledReport, __('messages.report.deleted'));
         $scheduledReport->delete();
         return $request->expectsJson()
-            ? response()->json(['message' => 'Scheduled report deleted.'])
-            : back()->with('success', 'Scheduled report deleted.');
+            ? response()->json(['message' => __('messages.report.deleted')])
+            : back()->with('success', __('messages.report.deleted'));
     }
 
     public function run(Request $request, ScheduledReport $scheduledReport, AuditService $audit)
@@ -193,10 +193,10 @@ class ScheduledReportController extends Controller
     private function assertRecipientScope(User $recipient, ?int $departmentId): void
     {
         if (! $recipient->isActive()) {
-            throw ValidationException::withMessages(['recipient_user_id' => 'Recipient must be active.']);
+            throw ValidationException::withMessages(['recipient_user_id' => __('messages.report.recipient_active')]);
         }
         if ($departmentId && $recipient->role !== 'super-admin' && (int) $recipient->department_id !== (int) $departmentId) {
-            throw ValidationException::withMessages(['department_id' => 'Recipient must belong to the selected department or be a Super Admin.']);
+            throw ValidationException::withMessages(['department_id' => __('messages.report.recipient_department')]);
         }
     }
 

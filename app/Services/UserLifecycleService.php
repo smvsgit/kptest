@@ -9,15 +9,15 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 class UserLifecycleService {
  public function changeStatus(User $user,string $status,?string $reason,User $actor,?int $successorId=null): void {
-  if($user->id===$actor->id) throw ValidationException::withMessages(['status'=>'You cannot change your own lifecycle status.']);
-  if(!in_array($status,['active','disabled','inactive'],true)) throw ValidationException::withMessages(['status'=>'Invalid lifecycle status.']);
+  if($user->id===$actor->id) throw ValidationException::withMessages(['status'=>__('messages.user.own_status')]);
+  if(!in_array($status,['active','disabled','inactive'],true)) throw ValidationException::withMessages(['status'=>__('messages.file.invalid_lifecycle')]);
   DB::transaction(function()use($user,$status,$reason,$actor,$successorId){
    $before=$user->status??'active';
    if($status!=='active'){
     $owned=$user->ownedFiles()->count();
     if($owned>0){
       $successor=$successorId?User::whereKey($successorId)->where('status','active')->first():null;
-      if(!$successor || $successor->department_id!==$user->department_id) throw ValidationException::withMessages(['successor_user_id'=>'Choose an active successor in the same department before disabling/inactivating this user.']);
+      if(!$successor || $successor->department_id!==$user->department_id) throw ValidationException::withMessages(['successor_user_id'=>__('messages.user.successor_required')]);
       $user->ownedFiles()->update(['owner_user_id'=>$successor->id]);
     }
     MediaAccessRequest::where('user_id',$user->id)->where('status','approved')->update(['status'=>'revoked','revoked_at'=>now(),'revoke_reason'=>'User '.$status.': '.($reason?:'administrative lifecycle change')]);
@@ -33,7 +33,7 @@ class UserLifecycleService {
    $old=$user->department_id;
    if($old!==$departmentId && $user->ownedFiles()->exists()){
     $successor=$successorId?User::whereKey($successorId)->where('status','active')->first():null;
-    if(!$successor || $successor->department_id!==$old) throw ValidationException::withMessages(['successor_user_id'=>'Choose an active successor in the old department for owned assets before transfer.']);
+    if(!$successor || $successor->department_id!==$old) throw ValidationException::withMessages(['successor_user_id'=>__('messages.user.successor_required_transfer')]);
     $user->ownedFiles()->update(['owner_user_id'=>$successor->id]);
    }
    if($old!==$departmentId){

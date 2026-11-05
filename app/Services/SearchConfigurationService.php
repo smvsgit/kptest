@@ -31,7 +31,7 @@ class SearchConfigurationService
             foreach (($s['synonyms']??true)?($s['synonym_groups']??[]):[] as $g){$g=array_values(array_filter(array_map('trim',$g)));foreach($g as $w)$syn[$w]=array_values(array_diff($g,[$w]));}
             foreach (($s['aliases']??true)?($s['alias_groups']??[]):[] as $g){$g=array_values(array_filter(array_map('trim',$g)));foreach($g as $w)$syn[$w]=array_values(array_unique(array_merge($syn[$w]??[],array_diff($g,[$w]))));}
             $this->request()->put($this->url($base.'synonyms'),$syn)->throw();
-            return ['ok'=>true,'message'=>'Meilisearch settings synchronized.'];
-        } catch(Throwable $e){report($e);return ['ok'=>false,'message'=>'Settings saved; Meilisearch sync could not be completed: '.$e->getMessage()];}
+            return ['ok'=>true,'message'=>__('messages.search.synchronized')];
+        } catch(Throwable $e){report($e);return ['ok'=>false,'message'=>__('messages.search.sync_incomplete', ['error' => $e->getMessage()])];}
     }
 }

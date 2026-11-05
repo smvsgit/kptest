@@ -41,13 +41,13 @@ class EnsureTwoFactor
 
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Two-factor authentication enrollment is required before continuing.',
+                    'message' => __('messages.two_factor.enrollment_required'),
                     'redirect' => route('profile'),
                 ], 423);
             }
 
             return redirect()->route('profile')
-                ->with('warning', 'Two-factor authentication enrollment is required before continuing.');
+                ->with('warning', __('messages.two_factor.enrollment_required'));
         }
 
         // Users who have not enabled 2FA and are not policy-required continue normally.
@@ -67,7 +67,7 @@ class EnsureTwoFactor
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Two-factor authentication challenge required.',
+                'message' => __('messages.two_factor.challenge_required'),
                 'redirect' => route('security.2fa.challenge-page'),
             ], 423);
         }

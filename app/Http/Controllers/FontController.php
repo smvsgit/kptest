@@ -24,17 +24,17 @@ class FontController extends Controller
         $fontUpload = $request->file('font');
         $ext = strtolower($fontUpload->getClientOriginalExtension());
         if (!in_array($ext, ['woff2', 'woff', 'ttf', 'otf'], true)) {
-            return back()->withErrors(['font' => 'Only WOFF2, WOFF, TTF and OTF font files are allowed.']);
+            return back()->withErrors(['font' => __('messages.font.extension')]);
         }
         $head = file_get_contents($fontUpload->getRealPath(), false, null, 0, 4) ?: '';
         $validMagic = in_array($head, ["wOFF", "wOF2", "OTTO"], true) || $head === "\x00\x01\x00\x00";
         if (!$validMagic) {
-            return back()->withErrors(['font' => 'The uploaded file does not have a recognized font signature.']);
+            return back()->withErrors(['font' => __('messages.font.signature')]);
         }
 
         $family = FontFamily::query()->whereRaw('LOWER(name) = ?', [strtolower($data['family_name'])])->first();
         if ($family?->is_system) {
-            return back()->withErrors(['family_name' => 'System font families cannot be overwritten. Use a different custom family name.']);
+            return back()->withErrors(['family_name' => __('messages.font.system_overwrite')]);
         }
         if (!$family) {
             $family = FontFamily::create([
@@ -66,7 +66,7 @@ class FontController extends Controller
         }
 
         $audit->log($request,'font.uploaded',$family,'Custom font uploaded.',['family'=>$family->name,'weight'=>$data['weight'],'style'=>$data['style'],'original_name'=>$file->getClientOriginalName()]);
-        return back()->with('success', 'Custom font uploaded successfully.');
+        return back()->with('success', __('messages.font.uploaded'));
     }
 
 
@@ -76,7 +76,7 @@ class FontController extends Controller
         if (!$data['is_active']) {
             $assignments = \App\Models\SystemSetting::valueFor('appearance.fonts', []);
             if (in_array($fontFamily->slug, array_values($assignments), true)) {
-                return back()->withErrors(['font' => 'This font is currently assigned. Select another font before deactivating it.']);
+                return back()->withErrors(['font' => __('messages.font.in_use')]);
             }
         }
         $before=$fontFamily->is_active;$fontFamily->update(['is_active' => $data['is_active']]);

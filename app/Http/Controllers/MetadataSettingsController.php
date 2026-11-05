@@ -11,6 +11,6 @@ class MetadataSettingsController extends Controller
         abort_if($data['years_max']<$data['years_min'],422,'Maximum year must be greater than or equal to minimum year.');
         $before=SystemSetting::valueFor('metadata.settings',[]);SystemSetting::put('metadata.settings',$data);
         $audit->log($request,'settings.metadata.updated',null,'Metadata rules updated.',['before'=>$before,'after'=>$data]);
-        return back()->with('success','Metadata settings updated.');
+        return back()->with('success',__('messages.settings.metadata_saved'));
     }
 }
