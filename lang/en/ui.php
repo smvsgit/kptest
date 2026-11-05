@@ -28,6 +28,18 @@ return [
     ],
 
     'auth' => [
+        'create_account' => 'Create account',
+        'register_role_note' => 'New accounts are assigned the :role role',
+        'full_name' => 'Full name',
+        'name_placeholder' => 'e.g. Ramesh Patel',
+        'phone' => 'Phone',
+        'phone_placeholder' => '+91 98765 43210',
+        'password_min' => 'At least 8 characters',
+        'repeat_password' => 'Repeat password',
+        'creating_account' => 'Creating account…',
+        'have_account' => 'Already have an account?',
+        'show_password' => 'Show password',
+        'hide_password' => 'Hide password',
         'welcome_back' => 'Welcome back',
         'email_address' => 'Email address',
         'email' => 'Email',
@@ -381,6 +393,7 @@ return [
     ],
 
     'profile' => [
+        'updating' => 'Updating…',
         'back_to_dashboard' => 'Back to Dashboard',
         'personal_information' => 'Personal Information',
         'full_name' => 'Full name',
