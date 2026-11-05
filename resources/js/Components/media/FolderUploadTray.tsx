@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, UploadCloud, X, Loader2, CheckCircle2, AlertTri
 import type { UploadSettings } from '../../types';
 import { formatBytes } from '../../format';
 import { useTx } from '../../i18n';
-import { fileKind, uploadChunked, uploadSimple, type UploadFields, type UploadItem } from '../../upload';
+import { fileKind, getCsrf, uploadChunked, uploadSimple, type UploadFields, type UploadItem } from '../../upload';
 
 export interface TrayHandle {
     /** Queue a batch and start transferring. `folderId` is the folder that was open. */
@@ -44,6 +44,38 @@ const FolderUploadTray=forwardRef<TrayHandle,Props>(function FolderUploadTray(p,
     const retryCount=Math.max(1,Math.min(10,p.uploadSettings.retry_count||3));
 
     const patch=(id:string,next:Partial<UploadItem>)=>setQueue(q=>q.map(i=>i.id===id?{...i,...next}:i));
+
+    /**
+     * Ask about the whole batch before a single byte moves: the upload policy
+     * (extension, size, how many files at once) and whether anything looks
+     * like something already in the library.
+     *
+     * This used to sit on the Batch Upload screen. The folder workspace is the
+     * only way in now, so the check moved here rather than retiring with it —
+     * otherwise the "possible duplicate warning" setting would govern nothing.
+     */
+    const preflight=async(items:UploadItem[]):Promise<boolean>=>{
+        try{
+            const r=await fetch('/files/upload-preflight',{
+                method:'POST',
+                headers:{'X-CSRF-TOKEN':getCsrf(),'Content-Type':'application/json','Accept':'application/json'},
+                body:JSON.stringify({files:items.map(i=>({name:i.name,size:i.size}))}),
+            });
+            const data=await r.json().catch(()=>({}));
+            if(!r.ok||!data.ok){
+                // The server names the first file it objected to, which is more
+                // use than a count.
+                const refusals=(data.files||[]).flatMap((f:{errors?:string[]})=>f.errors||[]).filter(Boolean);
+                throw new Error(data.message||refusals[0]||t('tray.preflight_failed'));
+            }
+            const dupes=(data.files||[]).filter((f:{possible_duplicates?:unknown[]})=>(f.possible_duplicates||[]).length);
+            if(dupes.length&&!confirm(tc('tray.possible_duplicates',dupes.length)))return false;
+            return true;
+        }catch(e){
+            p.onError(e instanceof Error?e.message:t('tray.preflight_failed'));
+            return false;
+        }
+    };
 
     const run=async(items:UploadItem[],folderId:number|null)=>{
         setRunning(true);
@@ -109,7 +141,12 @@ const FolderUploadTray=forwardRef<TrayHandle,Props>(function FolderUploadTray(p,
             if(!items.length)return;
             setQueue(items);
             setCollapsed(false);
-            void run(items,folderId);
+            void (async()=>{
+                // A refusal here means nothing was sent, so clear the tray
+                // rather than leave a queue that will never move.
+                if(!await preflight(items)){setQueue([]);return;}
+                await run(items,folderId);
+            })();
         },
     }),[chunkSize,chunkThreshold,retryCount]);
 

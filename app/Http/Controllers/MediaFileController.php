@@ -21,7 +21,10 @@ class MediaFileController extends Controller
     {
         $request->validate([
             'file'           => 'required|file',
-            'category_id'    => 'required|exists:categories,id',
+            // A deferred upload is describing nothing yet, so it has no category
+            // to send. It is forced to draft below and cannot leave draft until
+            // the inspector fills the required fields in, category included.
+            'category_id'    => [$request->boolean('defer_metadata') ? 'nullable' : 'required', 'exists:categories,id'],
             'subcategory_id' => 'nullable|exists:subcategories,id',
             'tags'           => 'nullable|string',
             'access_policy'  => 'required|in:public,protected,private',

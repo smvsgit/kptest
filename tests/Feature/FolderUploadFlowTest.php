@@ -140,4 +140,70 @@ class FolderUploadFlowTest extends TestCase
         $this->sendSingleChunk($this->operator(), 'Big.mp4')->assertStatus(422);
         $this->assertSame(0, MediaFile::count());
     }
+
+    /*
+     * The two below send exactly what the folder workspace's tray sends, and
+     * nothing more. The tests above all passed a category because their helper
+     * supplies one, which is why a deferred upload could be refused for
+     * "The category id field is required." without the suite noticing.
+     */
+
+    public function test_the_tray_payload_uploads_without_a_category(): void
+    {
+        Storage::fake('media');
+
+        $this->actingAs($this->operator())->post('/files', [
+            'file' => UploadedFile::fake()->image('TrayProbe.jpg'),
+            'access_policy' => 'protected',
+            'download_allowed' => '1',
+            'defer_metadata' => '1',
+        ])->assertSuccessful();
+
+        $media = MediaFile::firstOrFail();
+        $this->assertNull($media->category_id, 'A deferred upload has no category until it is described.');
+        $this->assertSame('draft', $media->asset_status);
+    }
+
+    public function test_the_tray_payload_uploads_in_chunks_without_a_category(): void
+    {
+        Storage::fake('media');
+
+        $this->actingAs($this->operator())->post('/files/chunk', [
+            'upload_id' => (string) \Illuminate\Support\Str::uuid(),
+            'chunk_index' => 0,
+            'total_chunks' => 1,
+            'total_size' => 11,
+            'chunk' => UploadedFile::fake()->createWithContent('part', 'hello world'),
+            'is_last_chunk' => 'true',
+            'filename' => 'TrayProbe.mp4',
+            'access_policy' => 'protected',
+            'download_allowed' => '1',
+            'defer_metadata' => '1',
+        ])->assertSuccessful();
+
+        $media = MediaFile::firstOrFail();
+        $this->assertNull($media->category_id);
+        $this->assertSame('draft', $media->asset_status);
+    }
+
+    /**
+     * Without the defer flag a category is still demanded, as before.
+     *
+     * Posted as JSON because that is how the portal uploads: both paths go
+     * through XHR, never an HTML form submit.
+     */
+    public function test_a_plain_upload_without_a_category_is_still_refused(): void
+    {
+        Storage::fake('media');
+
+        $this->actingAs($this->operator())
+            ->postJson('/files', [
+                'file' => UploadedFile::fake()->image('NoCategory.jpg'),
+                'access_policy' => 'protected',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('category_id');
+
+        $this->assertSame(0, MediaFile::count());
+    }
 }
