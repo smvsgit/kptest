@@ -28,10 +28,10 @@ class FileDeliveryController extends Controller
 
     public function approvedDownload(Request $request, MediaFile $mediaFile, MediaAccessService $access, AuditService $audit)
     {
-        abort_unless($request->hasValidSignature(), 403, 'This protected download link has expired or is invalid.');
+        abort_unless($request->hasValidSignature(), 403, __('messages.file.link_expired'));
         abort_unless((int)$request->query('request_id') > 0, 403);
         $approved=$access->approvedRequest($mediaFile,$request->user());
-        abort_unless($approved && $approved->id === (int)$request->query('request_id') && $approved->access_level === 'download', 403, 'Protected download entitlement is no longer active.');
+        abort_unless($approved && $approved->id === (int)$request->query('request_id') && $approved->access_level === 'download', 403, __('messages.file.entitlement_inactive'));
         return $this->deliver($request,$mediaFile,true,$audit);
     }
 
@@ -50,11 +50,11 @@ class FileDeliveryController extends Controller
         $data = $request->validate(['ids' => 'required|array|min:1|max:100', 'ids.*' => 'integer']);
         $files = MediaFile::query()->whereIn('id', $data['ids'])->get();
         abort_if($files->isEmpty(), 404);
-        abort_if($files->count() !== count(array_unique($data['ids'])), 404, 'One or more files were not found.');
+        abort_if($files->count() !== count(array_unique($data['ids'])), 404, __('messages.file.not_found'));
         foreach ($files as $file) {
             abort_unless($access->canSeeMetadata($file, $request->user()) && $access->canDownload($file, $request->user()), 403, 'One or more selected files are not downloadable with your current access.');
         }
-        abort_unless(class_exists(ZipArchive::class), 503, 'Server ZIP support is unavailable. Enable php-zip.');
+        abort_unless(class_exists(ZipArchive::class), 503, __('messages.file.zip_unavailable'));
 
         $tmp = tempnam(sys_get_temp_dir(), 'karyalay_zip_');
         $zip = new ZipArchive();

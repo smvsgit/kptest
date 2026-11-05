@@ -40,7 +40,7 @@ class UploadSettingsController extends Controller
         $settings = $policy->settings();
         $maxBatch = max(0, (int)($settings['max_batch_count'] ?? 0));
         if ($maxBatch > 0 && count($data['files']) > $maxBatch) {
-            return response()->json(['ok'=>false,'message'=>"Batch exceeds the configured {$maxBatch}-file limit.",'files'=>[]], 422);
+            return response()->json(['ok'=>false,'message'=>__('messages.upload.batch_limit', ['max' => $maxBatch]),'files'=>[]], 422);
         }
         $results=[]; $hasError=false;
         foreach($data['files'] as $file){

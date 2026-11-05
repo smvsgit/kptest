@@ -37,7 +37,7 @@ class BackupController extends Controller
 
     public function verify(Request $request, BackupRun $backupRun, BackupService $backups)
     {
-        abort_unless($backupRun->status==='success',422,'Only successful backup files can be verified.');
+        abort_unless($backupRun->status==='success',422,__('messages.backup.verify_successful_only'));
         $v=$backups->verifyBackup($backupRun,$request->user(),trim((string)$request->input('notes')));
         return back()->with('success',$v->status==='passed'?'Backup integrity verification passed.':'Backup verification failed.');
     }

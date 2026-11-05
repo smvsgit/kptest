@@ -89,7 +89,7 @@ class UserGroupController extends Controller
     public function applyRole(Request $request, UserGroup $userGroup, AuditService $audit)
     {
         $this->authorizeScope($request,$userGroup);
-        abort_unless($userGroup->portal_role_id, 422, 'Assign a role to the group first.');
+        abort_unless($userGroup->portal_role_id, 422, __('messages.group.role_first'));
         $role=PortalRole::whereKey($userGroup->portal_role_id)->where('is_active',true)->firstOrFail();
         if($request->user()->role==='department-admin') {
             $this->assertDepartmentAssignableRole($role->id);
@@ -106,7 +106,7 @@ class UserGroupController extends Controller
             $count++;
         }
         $audit->log($request,'user-group.role-applied',$userGroup,'Group role applied to active members.',['portal_role_id'=>$role->id,'count'=>$count]);
-        return response()->json(['message'=>"Role applied to {$count} active group member(s)."]);
+        return response()->json(['message'=>__('messages.group.role_applied', ['count' => $count])]);
     }
 
     public function destroy(Request $request, UserGroup $userGroup, AuditService $audit)

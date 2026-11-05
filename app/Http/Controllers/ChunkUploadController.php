@@ -52,11 +52,11 @@ class ChunkUploadController extends Controller
 
         $uploadPolicy->validateFile($request->filename,(int)$request->total_size);
         $uploadId=$request->upload_id; $index=(int)$request->chunk_index; $totalChunks=(int)$request->total_chunks; $totalSize=(int)$request->total_size;
-        abort_unless($index < $totalChunks,422,'Chunk index is outside expected sequence.');
+        abort_unless($index < $totalChunks,422,__('messages.upload.chunk_index'));
         $expectedChunks=(int)ceil($totalSize/$chunkSizeBytes);
-        abort_unless($totalChunks===$expectedChunks,422,'Chunk count does not match configured chunk size and total file size. Restart the upload.');
+        abort_unless($totalChunks===$expectedChunks,422,__('messages.upload.chunk_count'));
         $isLast=in_array($request->is_last_chunk,['true','1',true,1],true);
-        abort_unless($isLast===($index===$totalChunks-1),422,'Last-chunk marker does not match chunk sequence.');
+        abort_unless($isLast===($index===$totalChunks-1),422,__('messages.upload.chunk_last_marker'));
 
         $dir="chunks/{$request->user()->id}/{$uploadId}";
         $manifestPath="{$dir}/manifest.json";
@@ -64,7 +64,7 @@ class ChunkUploadController extends Controller
         $manifest=Storage::disk('local')->exists($manifestPath)?json_decode(Storage::disk('local')->get($manifestPath),true):null;
         $expected=['filename'=>$request->filename,'total_size'=>$totalSize,'total_chunks'=>$totalChunks,'chunk_size'=>$chunkSizeBytes,'settings_fingerprint'=>$fingerprint];
         if($manifest){
-            foreach($expected as $key=>$value) abort_unless(($manifest[$key]??null)===$value,409,'Upload settings or file details changed during resume. Cancel and restart this upload.');
+            foreach($expected as $key=>$value) abort_unless(($manifest[$key]??null)===$value,409,__('messages.upload.resume_changed'));
         }else{
             Storage::disk('local')->put($manifestPath,json_encode($expected,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));
         }
@@ -83,14 +83,14 @@ class ChunkUploadController extends Controller
 
         $ext=strtolower(pathinfo($request->filename,PATHINFO_EXTENSION)); $type=$this->resolveType($ext); $uuid=Str::uuid();
         $finalRel="uploads/{$type}s/{$uuid}.{$ext}"; $finalAbs=Storage::disk('media')->path($finalRel); if(!is_dir(dirname($finalAbs)))mkdir(dirname($finalAbs),0755,true);
-        $out=fopen($finalAbs,'wb'); abort_unless($out!==false,500,'Could not create final upload file.');
+        $out=fopen($finalAbs,'wb'); abort_unless($out!==false,500,__('messages.upload.final_write_failed'));
         for($i=0;$i<$totalChunks;$i++){
             $chunk=Storage::disk('local')->path("{$dir}/chunk_{$i}"); $in=fopen($chunk,'rb');
-            if(!$in){fclose($out);@unlink($finalAbs);abort(422,"Could not read chunk {$i}.");} stream_copy_to_stream($in,$out);fclose($in);
+            if(!$in){fclose($out);@unlink($finalAbs);abort(422,__('messages.upload.chunk_read_failed', ['index' => $i]));} stream_copy_to_stream($in,$out);fclose($in);
         }
         fclose($out);
         $assembled=(int)filesize($finalAbs);
-        if($assembled!==$totalSize){@unlink($finalAbs);abort(422,"Assembled file size mismatch ({$assembled} vs {$totalSize}). Upload was not finalized.");}
+        if($assembled!==$totalSize){@unlink($finalAbs);abort(422,__('messages.upload.size_mismatch', ['assembled' => $assembled, 'expected' => $totalSize]));}
         Storage::disk('local')->deleteDirectory($dir);
 
         $departmentId=$request->user()?->department_id??Department::where('is_system',true)->value('id'); if($departmentId)$quota->assertCanStore((int)$departmentId,$assembled);

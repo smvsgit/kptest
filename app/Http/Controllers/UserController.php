@@ -77,7 +77,7 @@ class UserController extends Controller
     public function updateDepartment(Request $request, User $user, AuditService $audit, UserLifecycleService $lifecycle)
     {
         $this->assertUserManageScope($request,$user,true);
-        abort_unless($request->user()->role==='super-admin',403,'Department transfer is Super Admin only.');
+        abort_unless($request->user()->role==='super-admin',403,__('messages.user.transfer_super_only'));
         $data=$request->validate(['department_id'=>['nullable','integer','exists:departments,id'],'organization_unit_id'=>['nullable','integer','exists:organization_units,id'],'successor_user_id'=>['nullable','integer','exists:users,id']]);
         if($user->role!=='super-admin'&&empty($data['department_id']))throw ValidationException::withMessages(['department_id'=>__('messages.user.department_required')]);
         if(!empty($data['organization_unit_id'])){$unit=OrganizationUnit::findOrFail($data['organization_unit_id']);if($unit->department_id!==(int)$data['department_id'])throw ValidationException::withMessages(['organization_unit_id'=>__('messages.user.unit_mismatch')]);}
@@ -90,12 +90,12 @@ class UserController extends Controller
     public function updateStatus(Request $request, User $user, AuditService $audit, UserLifecycleService $lifecycle)
     {
         abort_unless($request->user()->role==='super-admin',403);
-        abort_if($request->user()->is($user),422,'You cannot disable/inactivate your own account.');
+        abort_if($request->user()->is($user),422,__('messages.user.own_account_status'));
         $data=$request->validate(['status'=>['required',Rule::in(['active','disabled','inactive'])],'reason'=>'nullable|string|max:2000','successor_user_id'=>'nullable|integer|exists:users,id']);
         if($data['status']!=='active'&&blank($data['reason']??null))throw ValidationException::withMessages(['reason'=>__('messages.user.status_reason_required')]);
         $before=$user->status??'active';$lifecycle->changeStatus($user,$data['status'],$data['reason']??null,$request->user(),$data['successor_user_id']??null);
         $audit->log($request,'user.status.updated',$user,'User lifecycle status updated.',['before'=>$before,'after'=>$data['status'],'reason'=>$data['reason']??null]);
-        return response()->json(['message'=>"{$user->name} is now {$data['status']}."]);
+        return response()->json(['message'=>__('messages.user.status_changed', ['name' => $user->name, 'status' => $data['status']])]);
     }
 
     public function updatePermissionSet(Request $request, User $user, AuditService $audit)
@@ -107,13 +107,13 @@ class UserController extends Controller
     public function temporaryPassword(Request $request, User $user, AuditService $audit, UserLifecycleService $lifecycle)
     {
         abort_unless($request->user()->role==='super-admin',403);
-        abort_if($request->user()->is($user),422,'Use Change Password for your own account.');$password=$lifecycle->temporaryPassword($user);$audit->log($request,'user.temporary-password.issued',$user,'Administrator issued a one-time temporary password and revoked sessions.');return response()->json(['message'=>__('messages.auth.temporary_password'),'temporary_password'=>$password]);
+        abort_if($request->user()->is($user),422,__('messages.user.own_password'));$password=$lifecycle->temporaryPassword($user);$audit->log($request,'user.temporary-password.issued',$user,'Administrator issued a one-time temporary password and revoked sessions.');return response()->json(['message'=>__('messages.auth.temporary_password'),'temporary_password'=>$password]);
     }
 
     public function sendPasswordReset(Request $request, User $user, AuditService $audit)
     {
         $this->assertUserManageScope($request,$user,false);
-        abort_unless($user->isActive(),422,'Password reset email can only be sent to an active user.');
+        abort_unless($user->isActive(),422,__('messages.user.reset_active_only'));
         $sent=$this->sendResetLink($user);
         $audit->log($request,'user.password-reset.requested',$user,'Administrator requested password reset email.',['mail_sent'=>$sent]);
         return response()->json(['message'=>$sent?'Password reset email sent.':'Password reset token created, but mail delivery failed. Check Notification/SMTP settings and retry.']);
@@ -126,7 +126,7 @@ class UserController extends Controller
         $sent=0;$failed=0;
         User::where('status','active')->where('id','<>',$request->user()->id)->orderBy('id')->chunkById(100,function($users)use(&$sent,&$failed){foreach($users as $u){$this->sendResetLink($u)?$sent++:$failed++;}});
         $audit->log($request,'users.password-reset.bulk-requested',null,'Super Admin requested password reset emails for all active users.',['sent'=>$sent,'failed'=>$failed]);
-        return response()->json(['message'=>"Password reset email run complete: {$sent} sent, {$failed} failed."]);
+        return response()->json(['message'=>__('messages.user.reset_run_complete', ['sent' => $sent, 'failed' => $failed])]);
     }
 
     public function updateExternalAccess(Request $request, User $user, AuditService $audit)
@@ -134,7 +134,7 @@ class UserController extends Controller
         $actor=$request->user();
         $network=SystemSetting::valueFor('security.network',['department_admin_can_manage_external_access'=>false]);
         if($actor->role==='department-admin'){
-            abort_unless((bool)($network['department_admin_can_manage_external_access']??false),403,'Department Admin external-access management is disabled by Super Admin.');
+            abort_unless((bool)($network['department_admin_can_manage_external_access']??false),403,__('messages.user.external_disabled'));
             abort_unless((int)$user->department_id===(int)$actor->department_id,403);
             abort_if(in_array($user->role,['super-admin','department-admin'],true),403,'Department Admin cannot grant external access to administrator accounts.');
         } else abort_unless($actor->role==='super-admin',403);
@@ -178,8 +178,8 @@ class UserController extends Controller
         abort_unless($request->user()->role==='super-admin',403);
         $request->validate(['file'=>'required|file|max:5120']);$fh=fopen($request->file('file')->getRealPath(),'rb');$headers=fgetcsv($fh);if(!$headers)throw ValidationException::withMessages(['file'=>__('messages.import.missing_header')]);$headers=array_map(fn($h)=>strtolower(trim((string)$h)),$headers);$required=['name','email','department','role'];foreach($required as $h)if(!in_array($h,$headers,true))throw ValidationException::withMessages(['file'=>"Missing CSV column: {$h}"]);
         $created=0;$updated=0;$errors=[];$rowNo=1;
-        while(($row=fgetcsv($fh))!==false){$rowNo++;$row=array_slice(array_pad($row,count($headers),''),0,count($headers));$data=array_combine($headers,$row);try{$dept=Department::where('name',trim($data['department']??''))->first();if(!$dept)throw new \RuntimeException('Unknown department.');$role=trim($data['role']??'viewer');if(!in_array($role,self::ROLES,true))throw new \RuntimeException('Invalid role.');$email=strtolower(trim($data['email']??''));if(!filter_var($email,FILTER_VALIDATE_EMAIL))throw new \RuntimeException('Invalid email.');$unit=null;if(trim($data['organization_unit']??'')!=='')$unit=OrganizationUnit::where('department_id',$dept->id)->where('name',trim($data['organization_unit']))->first();$set=null;if(trim($data['permission_set']??'')!=='')$set=PermissionSet::where('name',trim($data['permission_set']))->where('is_active',true)->first();$builtin=PortalRole::where('slug',$role)->where('is_builtin',true)->first();$user=User::where('email',$email)->first();$status=in_array(trim($data['status']??'active'),['active','disabled','inactive'],true)?trim($data['status']??'active'):'active';$attrs=['name'=>trim($data['name']),'phone'=>trim($data['phone']??'')?:null,'department_id'=>$dept->id,'organization_unit_id'=>$unit?->id,'role'=>$role,'portal_role_id'=>$builtin?->id,'permission_set_id'=>$set?->id,'status'=>$status];if($user){if((int)$user->department_id!==$dept->id)throw new \RuntimeException('Existing user department transfer must use controlled UI with successor/access transition.');if(($user->status??'active')!==$status)throw new \RuntimeException('Existing user lifecycle status change must use controlled UI.');$user->update($attrs);$updated++;}else{$attrs['email']=$email;$attrs['password']=Hash::make(Str::random(48));$attrs['must_change_password']=false;$user=User::create($attrs);$created++;}}catch(\Throwable $e){$errors[]="Row {$rowNo}: {$e->getMessage()}";}}
-        fclose($fh);$audit->log($request,'user.imported',null,'User CSV import completed.',['created'=>$created,'updated'=>$updated,'errors'=>count($errors)]);return response()->json(['message'=>"Import complete: {$created} created, {$updated} updated, ".count($errors).' error(s).','errors'=>array_slice($errors,0,25)]);
+        while(($row=fgetcsv($fh))!==false){$rowNo++;$row=array_slice(array_pad($row,count($headers),''),0,count($headers));$data=array_combine($headers,$row);try{$dept=Department::where('name',trim($data['department']??''))->first();if(!$dept)throw new \RuntimeException(__('messages.import.unknown_department'));$role=trim($data['role']??'viewer');if(!in_array($role,self::ROLES,true))throw new \RuntimeException(__('messages.import.invalid_role'));$email=strtolower(trim($data['email']??''));if(!filter_var($email,FILTER_VALIDATE_EMAIL))throw new \RuntimeException(__('messages.import.invalid_email'));$unit=null;if(trim($data['organization_unit']??'')!=='')$unit=OrganizationUnit::where('department_id',$dept->id)->where('name',trim($data['organization_unit']))->first();$set=null;if(trim($data['permission_set']??'')!=='')$set=PermissionSet::where('name',trim($data['permission_set']))->where('is_active',true)->first();$builtin=PortalRole::where('slug',$role)->where('is_builtin',true)->first();$user=User::where('email',$email)->first();$status=in_array(trim($data['status']??'active'),['active','disabled','inactive'],true)?trim($data['status']??'active'):'active';$attrs=['name'=>trim($data['name']),'phone'=>trim($data['phone']??'')?:null,'department_id'=>$dept->id,'organization_unit_id'=>$unit?->id,'role'=>$role,'portal_role_id'=>$builtin?->id,'permission_set_id'=>$set?->id,'status'=>$status];if($user){if((int)$user->department_id!==$dept->id)throw new \RuntimeException(__('messages.import.transfer_via_ui'));if(($user->status??'active')!==$status)throw new \RuntimeException(__('messages.import.status_via_ui'));$user->update($attrs);$updated++;}else{$attrs['email']=$email;$attrs['password']=Hash::make(Str::random(48));$attrs['must_change_password']=false;$user=User::create($attrs);$created++;}}catch(\Throwable $e){$errors[]="Row {$rowNo}: {$e->getMessage()}";}}
+        fclose($fh);$audit->log($request,'user.imported',null,'User CSV import completed.',['created'=>$created,'updated'=>$updated,'errors'=>count($errors)]);return response()->json(['message'=>__('messages.user.import_complete', ['created' => $created, 'updated' => $updated, 'errors' => count($errors)]),'errors'=>array_slice($errors,0,25)]);
     }
 
     private function assertUserManageScope(Request $request, User $target, bool $roleChange): void

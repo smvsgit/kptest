@@ -76,9 +76,9 @@ class RoleManagementController extends Controller
 
     public function destroy(Request $request, PortalRole $portalRole, AuditService $audit)
     {
-        abort_if($portalRole->is_builtin, 422, 'Built-in roles cannot be deleted.');
-        abort_if($portalRole->users()->exists(), 422, 'Reassign users before deleting this role.');
-        abort_if($portalRole->groups()->exists(), 422, 'Reassign or delete groups before deleting this role.');
+        abort_if($portalRole->is_builtin, 422, __('messages.role.builtin_no_delete'));
+        abort_if($portalRole->users()->exists(), 422, __('messages.role.reassign_users'));
+        abort_if($portalRole->groups()->exists(), 422, __('messages.role.reassign_groups'));
         $audit->log($request,'portal-role.deleted',$portalRole,'Custom portal role deleted.');
         $portalRole->delete();
         return response()->json(['message'=>__('messages.role.deleted')]);
@@ -86,12 +86,12 @@ class RoleManagementController extends Controller
 
     public function assign(Request $request, User $user, AuditService $audit)
     {
-        abort_if($request->user()->is($user), 422, 'You cannot change your own role assignment here.');
+        abort_if($request->user()->is($user), 422, __('messages.role.own_assignment'));
         $data = $request->validate(['portal_role_id'=>'required|integer|exists:portal_roles,id']);
         $role = PortalRole::whereKey($data['portal_role_id'])->where('is_active',true)->firstOrFail();
         $actor = $request->user();
         if ($actor->role === 'department-admin') {
-            abort_if(!$actor->department_id || $user->department_id !== $actor->department_id, 403, 'You may manage users only in your own department.');
+            abort_if(!$actor->department_id || $user->department_id !== $actor->department_id, 403, __('messages.role.own_department_users'));
             abort_if(in_array($user->role, ['super-admin','department-admin'], true), 403, 'Department Admin cannot change administrator role assignments.');
             abort_if(!in_array($role->base_role, ['department-operator','viewer'], true), 403, 'Department Admin may assign only Operator/Viewer based roles.');
         }
