@@ -78,7 +78,7 @@ class LifecycleWorkflowController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => "Lifecycle status changed from {$from} to {$to}.",
+                'message' => __('messages.file.lifecycle_changed', ['from' => $from, 'to' => $to]),
                 'asset_status' => $to,
             ]);
         }

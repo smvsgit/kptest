@@ -54,7 +54,7 @@ class MediaLifecycleController extends Controller
         $uploadPolicy->validateUploadedFile($file);
         $ext = strtolower($file->getClientOriginalExtension());
         abort_unless(in_array($ext, \App\Http\Controllers\MediaFileController::ALLOWED_MIMES, true), 422, 'File type not allowed.');
-        abort_unless($this->resolveType($ext) === $mediaFile->type, 422, 'New version must use the same media type as the logical asset.');
+        abort_unless($this->resolveType($ext) === $mediaFile->type, 422, __('messages.file.version_type_mismatch'));
 
         $version = $versions->replaceWithUpload($mediaFile, $file, $request->user(), $data['change_note']);
         $audit->log($request, 'media.version.created', $mediaFile, 'New media version uploaded.', [
@@ -63,7 +63,7 @@ class MediaLifecycleController extends Controller
         ]);
         $mediaFile->loadMissing('uploader');
         if ($mediaFile->uploader && !$mediaFile->uploader->is($request->user())) $notifications->sendEvent($mediaFile->uploader,'file_updated','File version updated',$mediaFile->name.' has a new version '.$version->version_number.'.',['media_file_id'=>$mediaFile->id,'version'=>$version->version_number]);
-        return response()->json(['message' => "Version {$version->version_number} uploaded.", 'version_number' => $version->version_number], 201);
+        return response()->json(['message' => __('messages.file.version_uploaded', ['number' => $version->version_number]), 'version_number' => $version->version_number], 201);
     }
 
     public function restoreVersion(Request $request, MediaFile $mediaFile, MediaFileVersion $version, MediaAccessService $access, MediaVersionService $versions, AuditService $audit, NotificationDeliveryService $notifications)
@@ -78,7 +78,7 @@ class MediaLifecycleController extends Controller
         ]);
         $mediaFile->loadMissing('uploader');
         if ($mediaFile->uploader && !$mediaFile->uploader->is($request->user())) $notifications->sendEvent($mediaFile->uploader,'file_updated','File version restored',$mediaFile->name.' restored an older version as current version '.$new->version_number.'.',['media_file_id'=>$mediaFile->id,'version'=>$new->version_number]);
-        return response()->json(['message' => "Version {$version->version_number} restored as new version {$new->version_number}."]);
+        return response()->json(['message' => __('messages.file.version_restored', ['number' => $version->version_number, 'new' => $new->version_number])]);
     }
 
     public function downloadVersion(Request $request, MediaFile $mediaFile, MediaFileVersion $version, MediaAccessService $access)
@@ -86,7 +86,7 @@ class MediaLifecycleController extends Controller
         abort_unless($version->media_file_id === $mediaFile->id, 404);
         abort_unless($access->canManageLifecycle($mediaFile, $request->user()), 403);
         $disk = Storage::disk('media');
-        abort_unless($disk->exists($version->file_path), 404, 'Version file is missing.');
+        abort_unless($disk->exists($version->file_path), 404, __('messages.file.version_missing'));
         return $disk->download($version->file_path, $version->original_name);
     }
 
@@ -156,9 +156,9 @@ class MediaLifecycleController extends Controller
 
     public function forceDelete(Request $request, int $mediaFile, AuditService $audit, SearchIndexService $search)
     {
-        abort_unless($request->user()->role === 'super-admin', 403, 'Permanent deletion is restricted to Super Admin.');
+        abort_unless($request->user()->role === 'super-admin', 403, __('messages.file.purge_super_only'));
         $media = MediaFile::withTrashed()->with('versions')->findOrFail($mediaFile);
-        abort_unless($media->trashed(), 422, 'Move the file to Recycle Bin before permanent deletion.');
+        abort_unless($media->trashed(), 422, __('messages.file.recycle_first'));
 
         $paths = $media->versions->pluck('file_path')->filter()->unique()->values()->all();
         if ($media->thumbnail_path) $paths[] = $media->thumbnail_path;

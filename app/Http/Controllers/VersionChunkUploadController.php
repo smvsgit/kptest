@@ -30,7 +30,7 @@ class VersionChunkUploadController extends Controller
         $ext=strtolower(pathinfo($request->filename, PATHINFO_EXTENSION));
         $uploadPolicy->validateFile($request->filename, (int)$request->total_size);
         abort_unless(in_array($ext, MediaFileController::ALLOWED_MIMES, true), 422, 'File type not allowed.');
-        abort_unless($this->resolveType($ext)===$mediaFile->type, 422, 'New version must use the same media type as the logical asset.');
+        abort_unless($this->resolveType($ext)===$mediaFile->type, 422, __('messages.file.version_type_mismatch'));
 
         $isLast=in_array($request->is_last_chunk,['true','1',true,1],true);
         if ($isLast && mb_strlen(trim((string)$request->change_note)) < 3) abort(422, __('messages.upload.version_note_required'));
@@ -50,8 +50,8 @@ class VersionChunkUploadController extends Controller
         if(!$out) abort(500,__('messages.upload.version_write_failed'));
         for($i=0;$i<(int)$request->total_chunks;$i++){
             $chunk=Storage::disk('local')->path("{$dir}/chunk_{$i}");
-            if(!file_exists($chunk)){fclose($out);@unlink($finalAbs);Storage::disk('local')->deleteDirectory($dir);return response()->json(['message'=>"Missing chunk {$i}. Please retry."],422);}
-            $in=fopen($chunk,'rb'); if(!$in){fclose($out);@unlink($finalAbs);return response()->json(['message'=>"Could not read chunk {$i}."],422);} stream_copy_to_stream($in,$out); fclose($in);
+            if(!file_exists($chunk)){fclose($out);@unlink($finalAbs);Storage::disk('local')->deleteDirectory($dir);return response()->json(['message'=>__('messages.upload.chunk_missing', ['index' => $i])],422);}
+            $in=fopen($chunk,'rb'); if(!$in){fclose($out);@unlink($finalAbs);return response()->json(['message'=>__('messages.upload.chunk_read_failed', ['index' => $i])],422);} stream_copy_to_stream($in,$out); fclose($in);
         }
         fclose($out); Storage::disk('local')->deleteDirectory($dir);
         $assembled=(int)filesize($finalAbs);
@@ -60,7 +60,7 @@ class VersionChunkUploadController extends Controller
         try {
             $version=$versions->promoteExistingPath($mediaFile,$finalRel,$request->filename,$assembled,null,$request->user(),trim($request->change_note));
             $audit->log($request,'media.version.created',$mediaFile,'New media version uploaded with chunked transfer.',['version_number'=>$version->version_number,'change_note'=>$version->change_note]);
-            return response()->json(['message'=>"Version {$version->version_number} uploaded.",'version_number'=>$version->version_number],201);
+            return response()->json(['message'=>__('messages.file.version_uploaded', ['number' => $version->version_number]),'version_number'=>$version->version_number],201);
         } catch(\Throwable $e){@unlink($finalAbs);throw $e;}
     }
 

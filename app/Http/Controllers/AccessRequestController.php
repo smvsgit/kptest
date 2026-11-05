@@ -17,7 +17,7 @@ class AccessRequestController extends Controller
     public function store(Request $request, MediaFile $mediaFile, MediaAccessService $access, AuditService $audit, NotificationDeliveryService $notifications)
     {
         abort_unless($access->canSeeMetadata($mediaFile, $request->user()), 404);
-        abort_unless($mediaFile->access_policy === 'protected', 422, 'Access requests are only available for protected files.');
+        abort_unless($mediaFile->access_policy === 'protected', 422, __('messages.request.protected_only'));
 
         $data = $request->validate([
             'reason' => 'required|string|min:5|max:2000',
@@ -76,7 +76,7 @@ class AccessRequestController extends Controller
     {
         $accessRequest->loadMissing(['mediaFile.department', 'user']);
         abort_unless($access->canReviewRequest($accessRequest, $request->user()), 403);
-        abort_unless($accessRequest->status === 'pending', 422, 'Only pending requests can be reviewed.');
+        abort_unless($accessRequest->status === 'pending', 422, __('messages.request.only_pending'));
 
         $data = $request->validate([
             'status' => 'required|in:approved,rejected,more-info',
@@ -138,7 +138,7 @@ class AccessRequestController extends Controller
         elseif(!empty($data['subcategory_id']))$query->where('subcategory_id',$data['subcategory_id']);
         elseif(!empty($data['category_id']))$query->where('category_id',$data['category_id']);
         else return response()->json(['message'=>__('messages.request.bulk_selection')],422);
-        $files=$query->limit($max+1)->get(); if($files->count()>$max)return response()->json(['message'=>"Bulk request exceeds configured maximum of {$max} files."],422);
+        $files=$query->limit($max+1)->get(); if($files->count()>$max)return response()->json(['message'=>__('messages.request.bulk_limit', ['max' => $max])],422);
         $created=0;$skipped=0;
         foreach($files as $media){
             if(!$access->canRequest($media,$request->user())||($data['access_level']==='download'&&!$media->download_allowed)){$skipped++;continue;}
@@ -147,7 +147,7 @@ class AccessRequestController extends Controller
             foreach($admins as $admin)$notifications->sendEvent($admin,'access_request_created','Bulk protected access requested',$request->user()->name.' requested access to '.$media->name.'.',['access_request_id'=>$ar->id,'media_file_id'=>$media->id]);
             $audit->log($request,'access.bulk-requested',$ar,'Bulk protected media access requested.',['media_file_id'=>$media->id]);
         }
-        return response()->json(['message'=>"Created {$created} access request(s); skipped {$skipped}.",'created'=>$created,'skipped'=>$skipped],201);
+        return response()->json(['message'=>__('messages.request.bulk_result', ['created' => $created, 'skipped' => $skipped]),'created'=>$created,'skipped'=>$skipped],201);
     }
 
     public function resubmit(Request $request, MediaAccessRequest $accessRequest, AuditService $audit, NotificationDeliveryService $notifications)

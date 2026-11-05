@@ -12,7 +12,7 @@ class UserGuideController extends Controller
     public function index(Request $request, UserGuideService $guide)
     {
         $allowed = $guide->allowedPageCount($request->user());
-        abort_if($allowed <= 0, 403, 'User Guide Manual is not enabled for your account.');
+        abort_if($allowed <= 0, 403, __('messages.guide.not_enabled'));
 
         return response()->json([
             'allowed_pages' => $allowed,
@@ -26,7 +26,7 @@ class UserGuideController extends Controller
     public function html(Request $request, UserGuideService $guide, AuditService $audit)
     {
         $allowed = $guide->allowedPageCount($request->user());
-        abort_if($allowed <= 0, 403, 'User Guide Manual is not enabled for your account.');
+        abort_if($allowed <= 0, 403, __('messages.guide.not_enabled'));
         $audit->log($request, 'user-guide.html.viewed', null, 'Authorized User Guide HTML view opened.', ['allowed_pages' => $allowed]);
 
         return response($guide->printableHtml($request->user()), 200, [
@@ -41,15 +41,15 @@ class UserGuideController extends Controller
     public function document(Request $request, UserGuideService $guide, AuditService $audit): BinaryFileResponse
     {
         $allowed = $guide->allowedPageCount($request->user());
-        abort_if($allowed <= 0, 403, 'User Guide Manual is not enabled for your account.');
+        abort_if($allowed <= 0, 403, __('messages.guide.not_enabled'));
 
         // The DOCX contains the complete manual and therefore is available only when the
         // current user is entitled to every logical page. Partial-page users use the
         // server-filtered HTML/portal view, preventing rights bypass through a full DOCX.
-        abort_if($allowed < UserGuideService::TOTAL_PAGES, 403, 'Full Word manual download requires access to all User Guide pages.');
+        abort_if($allowed < UserGuideService::TOTAL_PAGES, 403, __('messages.guide.all_pages_required'));
 
         $path = $guide->documentPath();
-        abort_unless(is_file($path) && is_readable($path), 404, 'User Guide Word document is not available in this release.');
+        abort_unless(is_file($path) && is_readable($path), 404, __('messages.guide.document_unavailable'));
         $audit->log($request, 'user-guide.document.downloaded', null, 'Full User Guide Word document downloaded.', ['allowed_pages' => $allowed]);
 
         return response()->download($path, 'Karyalay_Portal_User_Guide_v16.00.docx', [

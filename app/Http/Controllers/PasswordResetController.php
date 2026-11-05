@@ -58,7 +58,7 @@ class PasswordResetController extends Controller
         $min = max(8, (int) (SystemSetting::valueFor('security.auth', [])['password_min_length'] ?? 12));
         $data = $request->validate(['email' => 'required|email', 'password' => ['required', 'confirmed', Password::min($min)]]);
         $user = User::whereRaw('LOWER(email)=?', [strtolower(trim($data['email']))])->firstOrFail();
-        abort_unless($user->isActive(), 422, 'Account is not active.');
+        abort_unless($user->isActive(), 422, __('messages.auth.account_not_active'));
         $row = DB::table('password_reset_tokens')->where('email', $user->email)->first();
         $expiry = (int) (SystemSetting::valueFor('security.auth', [])['password_reset_expiry_minutes'] ?? 60);
         abort_unless($row && $row->created_at && now()->diffInMinutes($row->created_at) <= max(5, $expiry) && Hash::check($token, $row->token), 422, 'Reset link is invalid or expired.');

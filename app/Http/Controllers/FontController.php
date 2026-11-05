@@ -86,7 +86,7 @@ class FontController extends Controller
 
     public function destroy(Request $request, FontFamily $fontFamily, AuditService $audit)
     {
-        abort_if($fontFamily->is_system, 422, 'System fonts cannot be deleted.');
+        abort_if($fontFamily->is_system, 422, __('messages.font.system_no_delete'));
         $assignments = \App\Models\SystemSetting::valueFor('appearance.fonts', []);
         abort_if(in_array($fontFamily->slug, array_values($assignments), true), 422, 'This font is currently assigned. Select another font before deleting it.');
         $audit->log($request,'font.deleted',$fontFamily,'Custom font deleted.',['name'=>$fontFamily->name]);

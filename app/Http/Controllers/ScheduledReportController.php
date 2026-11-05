@@ -130,9 +130,9 @@ class ScheduledReportController extends Controller
         $run = ScheduledReportRun::create(['scheduled_report_id' => $report->id, 'status' => 'running', 'started_at' => now()]);
         try {
             $recipient = $report->recipient()->first();
-            abort_unless($recipient && $recipient->isActive(), 422, 'Recipient is no longer active.');
+            abort_unless($recipient && $recipient->isActive(), 422, __('messages.report.recipient_inactive'));
             if ($report->department_id && $recipient->role !== 'super-admin') {
-                abort_unless($recipient->department_id === $report->department_id, 403, 'Recipient no longer has department scope.');
+                abort_unless($recipient->department_id === $report->department_id, 403, __('messages.report.recipient_scope'));
             }
             $rows = $this->rows($report, $recipient);
             $dir = 'scheduled-reports/'.date('Y/m');
@@ -143,7 +143,7 @@ class ScheduledReportController extends Controller
                 app(XlsxService::class)->write(array_keys($rows[0] ?? ['message' => 'No rows']), array_map('array_values', $rows ?: [['message' => 'No rows']]), $absolute);
             } else {
                 $handle = fopen($absolute, 'wb');
-                abort_unless($handle !== false, 500, 'Could not create scheduled report output.');
+                abort_unless($handle !== false, 500, __('messages.report.output_failed'));
                 $headers = array_keys($rows[0] ?? ['message' => 'No rows']);
                 fputcsv($handle, $headers);
                 foreach ($rows as $row) fputcsv($handle, array_values($row));

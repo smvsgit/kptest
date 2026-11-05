@@ -44,17 +44,17 @@ class BulkMediaController extends Controller
         ]);
         $user=$request->user();
         $files=MediaFile::query()->whereIn('id',$data['ids'])->get();
-        abort_unless($files->count()===count($data['ids']),404,'One or more files were not found.');
+        abort_unless($files->count()===count($data['ids']),404,__('messages.file.not_found'));
         if($user->role!=='super-admin'){
             abort_unless(in_array($user->role,['department-admin','department-operator'],true),403);
-            abort_unless($user->department_id && $files->every(fn($f)=>(int)$f->department_id===(int)$user->department_id),403,'Bulk editing is limited to files owned by your department.');
+            abort_unless($user->department_id && $files->every(fn($f)=>(int)$f->department_id===(int)$user->department_id),403,__('messages.file.bulk_own_department'));
         }
-        if(array_key_exists('department_id',$data) && $data['department_id']!==null) abort_unless($user->role==='super-admin',403,'Only Super Admin can transfer department ownership.');
+        if(array_key_exists('department_id',$data) && $data['department_id']!==null) abort_unless($user->role==='super-admin',403,__('messages.file.transfer_super_only'));
         if(array_key_exists('visible_role_ids',$data)) abort_unless(in_array($user->role,['super-admin','department-admin'],true),403,'Only Super Admin or Department Admin can change role visibility.');
         if(!empty($data['archive_mode'])) abort_unless(in_array($user->role,['super-admin','department-admin'],true),403,'Department Operator cannot bulk archive/unarchive.');
         if(array_key_exists('subcategory_id',$data) && $data['subcategory_id']){
             $sub=Subcategory::findOrFail($data['subcategory_id']);
-            if(!empty($data['category_id'])) abort_unless((int)$sub->category_id===(int)$data['category_id'],422,'Subcategory does not belong to selected category.');
+            if(!empty($data['category_id'])) abort_unless((int)$sub->category_id===(int)$data['category_id'],422,__('messages.file.subcategory_mismatch'));
         }
         $changed=[];
         DB::transaction(function() use($files,$data,$request,$audit,&$changed){
@@ -77,7 +77,7 @@ class BulkMediaController extends Controller
                 if(!empty($updates['subcategory_id'])) {
                     $sub=Subcategory::findOrFail($updates['subcategory_id']);
                     $finalCategory=$updates['category_id'] ?? $file->category_id;
-                    abort_unless((int)$sub->category_id===(int)$finalCategory,422,'Subcategory does not belong to the target category.');
+                    abort_unless((int)$sub->category_id===(int)$finalCategory,422,__('messages.file.subcategory_target_mismatch'));
                 }
                 // Clearing a parent location always clears descendants to prevent invalid hierarchy.
                 if(array_key_exists('country_id',$updates) && !$updates['country_id']) {$updates['state_id']=null;$updates['city_id']=null;$updates['mandir_id']=null;}

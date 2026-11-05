@@ -39,17 +39,17 @@ class ReadinessController extends Controller
             'approved_by'=>null,'approved_at'=>null,'approved_app_version'=>null,
         ])->save();
         $audit->log($request,'uat.case.updated',$uatCase,'UAT case execution result updated.',['before'=>$before,'after'=>$uatCase->only(['status','execution_notes','evidence_reference','executed_app_version'])]);
-        return response()->json(['message'=>"{$uatCase->code} updated for v".config('version.current').'.','case'=>$this->uatRow($uatCase->fresh(['executedBy','approvedBy']))]);
+        return response()->json(['message'=>__('messages.readiness.case_updated', ['code' => $uatCase->code, 'version' => config('version.current')]),'case'=>$this->uatRow($uatCase->fresh(['executedBy','approvedBy']))]);
     }
 
     public function approveUat(Request $request, UatCase $uatCase, AuditService $audit)
     {
-        abort_unless($uatCase->status==='passed',422,'Only a Passed UAT case can be approved.');
-        abort_if(blank($uatCase->execution_notes)&&blank($uatCase->evidence_reference),422,'Evidence/notes are required before approval.');
-        abort_unless($uatCase->executed_app_version===config('version.current'),422,'This UAT result was executed against a different application release. Re-run and save the case for the current release before sign-off.');
+        abort_unless($uatCase->status==='passed',422,__('messages.readiness.passed_only'));
+        abort_if(blank($uatCase->execution_notes)&&blank($uatCase->evidence_reference),422,__('messages.readiness.evidence_before_approval'));
+        abort_unless($uatCase->executed_app_version===config('version.current'),422,__('messages.readiness.different_release'));
         $uatCase->forceFill(['approved_by'=>$request->user()->id,'approved_at'=>now(),'approved_app_version'=>config('version.current')])->save();
         $audit->log($request,'uat.case.approved',$uatCase,'UAT case approved/sign-off recorded.',['code'=>$uatCase->code,'app_version'=>config('version.current')]);
-        return response()->json(['message'=>"{$uatCase->code} approved for v".config('version.current').'.','case'=>$this->uatRow($uatCase->fresh(['executedBy','approvedBy']))]);
+        return response()->json(['message'=>__('messages.readiness.case_approved', ['code' => $uatCase->code, 'version' => config('version.current')]),'case'=>$this->uatRow($uatCase->fresh(['executedBy','approvedBy']))]);
     }
 
     public function updateSettings(Request $request, ReadinessService $readiness, AuditService $audit)

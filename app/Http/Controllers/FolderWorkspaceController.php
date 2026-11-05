@@ -148,7 +148,7 @@ class FolderWorkspaceController extends Controller
         }
 
         $files = MediaFile::query()->whereIn('id', $data['media_ids'])->get();
-        abort_unless($files->count() === count($data['media_ids']), 404, 'One or more assets were not found.');
+        abort_unless($files->count() === count($data['media_ids']), 404, __('messages.folder.assets_not_found'));
         $this->assertSameDepartment($request, $files, $target);
 
         DB::transaction(function () use ($files, $target, $request, $audit) {
@@ -209,7 +209,7 @@ class FolderWorkspaceController extends Controller
         ]);
 
         $updates = array_intersect_key($data['metadata'], array_flip(self::METADATA_FIELDS));
-        abort_if(!$updates && empty($data['tags']), 422, 'Nothing to apply.');
+        abort_if(!$updates && empty($data['tags']), 422, __('messages.folder.nothing_to_apply'));
 
         $location = app(LocationHierarchyService::class);
         if ($location->touches($updates)) $location->assertValid($updates);
@@ -279,7 +279,7 @@ class FolderWorkspaceController extends Controller
             'visible_role_ids.*' => ['integer', Rule::exists('portal_roles', 'id')->where('is_active', true)],
             'include_subfolders' => 'nullable|boolean',
         ]);
-        abort_if(!$data, 422, 'Nothing to publish.');
+        abort_if(!$data, 422, __('messages.folder.nothing_to_publish'));
 
         $folderIds = $request->boolean('include_subfolders', true) ? $paths->descendantIds($folder) : [$folder->id];
         $metadata = app(\App\Services\MetadataRequirementService::class);
@@ -335,12 +335,12 @@ class FolderWorkspaceController extends Controller
     {
         $user = $request->user();
         $departments = $files->pluck('department_id')->unique();
-        abort_if($departments->count() > 1, 422, 'Assets from more than one department cannot be moved together.');
+        abort_if($departments->count() > 1, 422, __('messages.folder.one_department'));
 
         $department = (int) $departments->first();
-        if ($target) abort_unless((int) $target->department_id === $department, 422, 'The destination folder is in another department.');
+        if ($target) abort_unless((int) $target->department_id === $department, 422, __('messages.folder.destination_department'));
         if ($user->role !== 'super-admin') {
-            abort_unless((int) $user->department_id === $department, 403, 'You can only organise your own department.');
+            abort_unless((int) $user->department_id === $department, 403, __('messages.folder.own_department_only'));
         }
     }
 }
