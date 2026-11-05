@@ -26,7 +26,7 @@ class BackupController extends Controller
         ]);
         $before=$backups->settings();$after=$backups->saveSettings($data);
         $audit->log($request,'settings.backup.updated',null,'Backup/DR settings updated.',['before'=>$before,'after'=>$after]);
-        return back()->with('success','Backup & DR settings saved.');
+        return back()->with('success',__('messages.backup.settings_saved'));
     }
 
     public function create(Request $request, BackupService $backups)

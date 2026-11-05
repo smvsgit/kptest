@@ -68,10 +68,10 @@ class FeatureCompletionSettingsController extends Controller
             ]);
             $incoming=$validated['settings'];
             foreach (array_merge($incoming['allowed_cidrs']??[],$incoming['trusted_vpn_proxies']??[]) as $cidr) {
-                if (! $this->validIpOrCidr((string) $cidr)) abort(422, 'Invalid IP/CIDR value: '.$cidr);
+                if (! $this->validIpOrCidr((string) $cidr)) abort(422, __('messages.settings.invalid_cidr', ['value' => $cidr]));
             }
             if (!empty($incoming['emergency_super_admin_email']) && !User::whereRaw('LOWER(email)=?', [strtolower($incoming['emergency_super_admin_email'])])->where('role','super-admin')->exists()) {
-                abort(422, 'Emergency bypass email must belong to an existing Super Admin.');
+                abort(422, __('messages.settings.emergency_email_invalid'));
             }
         }
 
@@ -123,10 +123,10 @@ class FeatureCompletionSettingsController extends Controller
             $departmentIds = array_map('intval', array_keys($incoming['department_pages']));
             $userIds = array_map('intval', array_keys($incoming['user_pages']));
             if ($departmentIds && Department::whereIn('id', $departmentIds)->count() !== count(array_unique($departmentIds))) {
-                abort(422, 'One or more User Guide department overrides reference an invalid department.');
+                abort(422, __('messages.settings.guide_department_invalid'));
             }
             if ($userIds && User::whereIn('id', $userIds)->count() !== count(array_unique($userIds))) {
-                abort(422, 'One or more User Guide user overrides reference an invalid user.');
+                abort(422, __('messages.settings.guide_user_invalid'));
             }
         }
 
@@ -137,7 +137,7 @@ class FeatureCompletionSettingsController extends Controller
             SystemSetting::put($key, $settings);
             if (! $network->allows($request, $request->user())) {
                 SystemSetting::put($key, $before);
-                abort(422, 'Network policy would lock out the current Super Admin. Add this IP/CIDR or configure the emergency Super Admin bypass first.');
+                abort(422, __('messages.settings.network_lockout'));
             }
         } else {
             SystemSetting::put($key, $settings);
@@ -149,7 +149,7 @@ class FeatureCompletionSettingsController extends Controller
             'after' => $settings,
         ]);
 
-        return back()->with('success', 'Settings saved.');
+        return back()->with('success', __('messages.settings.saved'));
     }
 
     public function logo(Request $request, AuditService $audit)
@@ -163,7 +163,7 @@ class FeatureCompletionSettingsController extends Controller
         $settings['logo_path'] = $path;
         SystemSetting::put('branding.settings', $settings);
         $audit->log($request, 'branding.logo.updated', null, 'Portal logo updated.');
-        return back()->with('success', 'Logo updated.');
+        return back()->with('success', __('messages.settings.logo_updated'));
     }
 
     public function resetLogo(Request $request, AuditService $audit)
@@ -175,7 +175,7 @@ class FeatureCompletionSettingsController extends Controller
         $settings['logo_path'] = null;
         SystemSetting::put('branding.settings', $settings);
         $audit->log($request, 'branding.logo.reset', null, 'Portal logo reset.');
-        return back()->with('success', 'Logo reset.');
+        return back()->with('success', __('messages.settings.logo_reset'));
     }
     private function validIpOrCidr(string $value): bool
     {

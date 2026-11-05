@@ -39,7 +39,7 @@ class FolderWorkspaceController extends Controller
             // opens on one and offers the rest rather than refusing to load.
             return (int) ($requested ?: $user->department_id ?: $this->firstBrowsableDepartment());
         }
-        return (int) ($user->department_id ?: abort(422, 'Your account is not attached to a department.'));
+        return (int) ($user->department_id ?: abort(422, __('messages.access.no_department')));
     }
 
     private function firstBrowsableDepartment(): int
@@ -49,7 +49,7 @@ class FolderWorkspaceController extends Controller
             ->orderByRaw('CASE WHEN is_system THEN 1 ELSE 0 END')
             ->orderBy('name')
             ->value('id');
-        return (int) ($id ?: abort(422, 'No department has been set up yet.'));
+        return (int) ($id ?: abort(422, __('messages.access.no_department_configured')));
     }
 
     /** Departments the signed-in user may switch between in the workspace. */

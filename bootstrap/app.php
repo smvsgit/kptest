@@ -30,7 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 Request::HEADER_X_FORWARDED_PROTO,
         );
 
+        // SetLocale comes first of the appended four: the session is started by
+        // then, so the user's language preference is readable, and everything
+        // after it — the guards below, the route-level role/permission
+        // middleware and the controllers — can speak that language.
         $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \App\Http\Middleware\EnforceUserSessionPolicy::class,
             \App\Http\Middleware\EnforcePortalMode::class,

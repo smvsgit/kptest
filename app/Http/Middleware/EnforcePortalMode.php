@@ -47,7 +47,7 @@ class EnforcePortalMode
         }
 
         if ($user && ! app(NetworkPolicyService::class)->allows($request, $user)) {
-            abort(403, 'Access is restricted to the approved internal network or VPN.');
+            abort(403, __('messages.auth.network_only'));
         }
 
         return $next($request);

@@ -151,7 +151,7 @@ class MediaLifecycleController extends Controller
         $media->restore();
         $search->upsert($media->fresh(['category','subcategory','department']));
         $audit->log($request, 'media.recycle-bin.restored', $media, 'Media restored from Recycle Bin.');
-        return response()->json(['message' => 'File restored from Recycle Bin.']);
+        return response()->json(['message' => __('messages.file.restored')]);
     }
 
     public function forceDelete(Request $request, int $mediaFile, AuditService $audit, SearchIndexService $search)
@@ -170,7 +170,7 @@ class MediaLifecycleController extends Controller
         $id = $media->id;
         $media->forceDelete();
         $search->delete($id);
-        return response()->json(['message' => 'File permanently deleted.']);
+        return response()->json(['message' => __('messages.file.permanently_deleted')]);
     }
 
     private function resolveType(string $ext): string

@@ -31,17 +31,17 @@ class NotificationSettingsController extends Controller
             unset($data[$channel][$secret]);
         }
         if (($data['email']['enabled'] ?? false) && (blank($data['email']['host'] ?? null) || blank($data['email']['from_address'] ?? null))) {
-            return back()->withErrors(['email'=>'SMTP Host and From Address are required before enabling Email.']);
+            return back()->withErrors(['email'=>__('messages.notify.email_requirements')]);
         }
         if (($data['whatsapp']['enabled'] ?? false) && (blank($data['whatsapp']['endpoint'] ?? null) || empty($data['whatsapp']['token_encrypted']))) {
-            return back()->withErrors(['whatsapp'=>'WhatsApp endpoint and access token are required before enabling WhatsApp.']);
+            return back()->withErrors(['whatsapp'=>__('messages.notify.whatsapp_requirements')]);
         }
         if (($data['sms']['enabled'] ?? false) && (blank($data['sms']['endpoint'] ?? null) || empty($data['sms']['api_key_encrypted']))) {
-            return back()->withErrors(['sms'=>'SMS endpoint and API key are required before enabling Text SMS.']);
+            return back()->withErrors(['sms'=>__('messages.notify.sms_requirements')]);
         }
         SystemSetting::put('notification.channels',$data);
         $audit->log($request,'settings.notifications.updated',null,'Notification channel settings updated.',['before'=>$before,'after'=>$this->withoutSecrets($data)]);
-        return back()->with('success','Notification channel settings saved.');
+        return back()->with('success',__('messages.notify.channel_settings_saved'));
     }
 
     public function updateEscalation(Request $request, AuditService $audit)
@@ -53,13 +53,13 @@ class NotificationSettingsController extends Controller
         $before=SystemSetting::valueFor('notification.escalation',[]);
         SystemSetting::put('notification.escalation',$data);
         $audit->log($request,'settings.notification-escalation.updated',null,'Notification escalation settings updated.',['before'=>$before,'after'=>$data]);
-        return back()->with('success','Escalation settings saved.');
+        return back()->with('success',__('messages.notify.escalation_saved'));
     }
 
     public function test(Request $request, NotificationDeliveryService $delivery, AuditService $audit)
     {
         $data=$request->validate(['channel'=>'required|in:portal,email,whatsapp,sms','recipient'=>'nullable|string|max:320']);
-        if ($data['channel']!=='portal' && blank($data['recipient'] ?? null)) return response()->json(['message'=>'Recipient is required for external channel test.'],422);
+        if ($data['channel']!=='portal' && blank($data['recipient'] ?? null)) return response()->json(['message'=>__('messages.notify.test_recipient_required')],422);
         try {
             $row=$delivery->queueTest($data['channel'],(string)($data['recipient'] ?? ''),$request->user());
             $audit->log($request,'notification.test.queued',$row,'Notification provider test queued.',['channel'=>$data['channel'],'recipient'=>$data['recipient'] ?? 'self']);

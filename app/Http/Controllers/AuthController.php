@@ -25,15 +25,15 @@ class AuthController extends Controller
         $user=User::whereRaw('LOWER(email)=?',[$email])->first();
         if($user?->locked_until&&$user->locked_until->isPast())$user->forceFill(['locked_until'=>null,'failed_login_count'=>0])->save();
         $settings=SystemSetting::valueFor('security.auth',[]);$limit=max(3,(int)($settings['failed_login_limit']??5));$lock=max(1,(int)($settings['lockout_minutes']??15));
-        if($user && ($user->status??'active')!=='active'){$audit->log($request,'auth.login-blocked',$user,'Login blocked for non-active user.',['status'=>$user->status]);return back()->withErrors(['email'=>'This account is disabled or inactive. Contact an administrator.'])->onlyInput('email');}
-        if($user?->locked_until && $user->locked_until->isFuture()){$audit->log($request,'auth.login-locked',$user,'Login attempted while account lockout is active.');return back()->withErrors(['email'=>'This account is temporarily locked. Try again later or contact an administrator.'])->onlyInput('email');}
+        if($user && ($user->status??'active')!=='active'){$audit->log($request,'auth.login-blocked',$user,'Login blocked for non-active user.',['status'=>$user->status]);return back()->withErrors(['email'=>__('messages.auth.disabled')])->onlyInput('email');}
+        if($user?->locked_until && $user->locked_until->isFuture()){$audit->log($request,'auth.login-locked',$user,'Login attempted while account lockout is active.');return back()->withErrors(['email'=>__('messages.auth.locked_retry')])->onlyInput('email');}
 
         // Authenticate credentials before evaluating a user-specific external-access exception.
         // This avoids exposing whether a known email has an external Internet entitlement.
         if(!Auth::attempt(['email'=>$user?->email ?? $credentials['email'],'password'=>$credentials['password']],$request->boolean('remember'))){
             if($user){$count=(int)$user->failed_login_count+1;$values=['failed_login_count'=>$count];if($count>=$limit)$values['locked_until']=now()->addMinutes($lock);$user->forceFill($values)->save();}
             $audit->log($request,'auth.login-failed',$user,'Invalid login attempt.',['email'=>$email,'attempt_count'=>$user?->failed_login_count]);
-            return back()->withErrors(['email'=>'These credentials do not match our records.'])->onlyInput('email');
+            return back()->withErrors(['email'=>__('messages.auth.failed')])->onlyInput('email');
         }
 
         $user=$request->user();
@@ -41,7 +41,7 @@ class AuthController extends Controller
         if($source===NetworkPolicyService::SOURCE_BLOCKED){
             $audit->log($request,'auth.login-network-blocked',$user,'Login blocked by network/VPN/external-access policy.',['ip'=>$request->ip(),'access_source'=>'blocked']);
             Auth::logout();$request->session()->invalidate();$request->session()->regenerateToken();
-            return back()->withErrors(['email'=>'This account is restricted to the approved internal network or VPN. Ask an administrator to allow External Internet Access if required.'])->onlyInput('email');
+            return back()->withErrors(['email'=>__('messages.auth.network_restricted')])->onlyInput('email');
         }
 
         $request->session()->regenerate();
@@ -59,7 +59,7 @@ class AuthController extends Controller
     public function register(Request $request, NetworkPolicyService $network, AuditService $audit)
     {
         if ($network->accessSource($request, null) === NetworkPolicyService::SOURCE_BLOCKED) {
-            abort(403, 'New account registration is restricted to the approved internal network or VPN.');
+            abort(403, __('messages.auth.registration_restricted'));
         }
         $min=max(8,(int)(SystemSetting::valueFor('security.auth',[])['password_min_length']??12));
         $data=$request->validate(['name'=>'required|string|max:255','email'=>'required|email|unique:users','phone'=>'nullable|string|max:20','password'=>['required','confirmed',Password::min($min)]]);

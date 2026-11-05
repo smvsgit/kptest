@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\AuditService;
+use App\Services\LocaleResolver;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -17,7 +18,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One answer per request to "what language is this?", so the branding
+        // row is read once however many callers ask.
+        $this->app->singleton(LocaleResolver::class);
     }
 
     /**

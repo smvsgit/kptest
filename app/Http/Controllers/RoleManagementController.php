@@ -42,7 +42,7 @@ class RoleManagementController extends Controller
         $audit->log($request,'portal-role.created',$role,'Custom portal role created.',[
             'base_role'=>$role->base_role,'page_access'=>$role->page_access,'permissions'=>$role->permissions,
         ]);
-        return response()->json(['message'=>'Role created successfully.','role'=>$role]);
+        return response()->json(['message'=>__('messages.role.created'),'role'=>$role]);
     }
 
     public function update(Request $request, PortalRole $portalRole, AuditService $audit)
@@ -55,10 +55,10 @@ class RoleManagementController extends Controller
             'is_active'=>'required|boolean',
         ]);
         if ($portalRole->is_builtin && $data['base_role'] !== $portalRole->base_role) {
-            throw ValidationException::withMessages(['base_role'=>'Built-in role base type cannot be changed.']);
+            throw ValidationException::withMessages(['base_role'=>__('messages.role.builtin_base')]);
         }
         if ($portalRole->is_builtin && !$data['is_active']) {
-            throw ValidationException::withMessages(['is_active'=>'Built-in roles cannot be disabled.']);
+            throw ValidationException::withMessages(['is_active'=>__('messages.role.builtin_disable')]);
         }
         $before = $portalRole->toArray();
         $portalRole->update([
@@ -71,7 +71,7 @@ class RoleManagementController extends Controller
         $audit->log($request,'portal-role.updated',$portalRole,'Portal role updated.',[
             'before'=>$before,'after'=>$portalRole->fresh()->toArray(),
         ]);
-        return response()->json(['message'=>'Role settings saved.','role'=>$portalRole->fresh()]);
+        return response()->json(['message'=>__('messages.role.settings_saved'),'role'=>$portalRole->fresh()]);
     }
 
     public function destroy(Request $request, PortalRole $portalRole, AuditService $audit)
@@ -81,7 +81,7 @@ class RoleManagementController extends Controller
         abort_if($portalRole->groups()->exists(), 422, 'Reassign or delete groups before deleting this role.');
         $audit->log($request,'portal-role.deleted',$portalRole,'Custom portal role deleted.');
         $portalRole->delete();
-        return response()->json(['message'=>'Role deleted.']);
+        return response()->json(['message'=>__('messages.role.deleted')]);
     }
 
     public function assign(Request $request, User $user, AuditService $audit)
@@ -96,14 +96,14 @@ class RoleManagementController extends Controller
             abort_if(!in_array($role->base_role, ['department-operator','viewer'], true), 403, 'Department Admin may assign only Operator/Viewer based roles.');
         }
         if ($role->base_role !== 'super-admin' && !$user->department_id) {
-            throw ValidationException::withMessages(['portal_role_id'=>'Assign a department before using a department-scoped role.']);
+            throw ValidationException::withMessages(['portal_role_id'=>__('messages.user.department_required_to_use_role')]);
         }
         $before = ['role'=>$user->role,'portal_role_id'=>$user->portal_role_id];
         $user->update(['role'=>$role->base_role,'portal_role_id'=>$role->id]);
         $audit->log($request,'user.portal-role.assigned',$user,'Portal role assigned to user.',[
             'before'=>$before,'after'=>['role'=>$role->base_role,'portal_role_id'=>$role->id,'portal_role'=>$role->name],
         ]);
-        return response()->json(['message'=>'Role assigned successfully.']);
+        return response()->json(['message'=>__('messages.user.role_assigned')]);
     }
 
     private function normalizePermissions(array $input): array

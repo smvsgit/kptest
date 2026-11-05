@@ -17,7 +17,7 @@ class ReadinessController extends Controller
         $result=$readiness->runSnapshot($request->user()->id);
         $audit->log($request,'readiness.snapshot.created',$result['snapshot'],'Go-live readiness checks executed.',$result['summary']);
         return response()->json([
-            'message'=>'Readiness checks completed.','snapshot'=>$this->snapshotRow($result['snapshot']),'checks'=>$result['checks'],'summary'=>$result['summary'],
+            'message'=>__('messages.readiness.checks_completed'),'snapshot'=>$this->snapshotRow($result['snapshot']),'checks'=>$result['checks'],'summary'=>$result['summary'],
         ]);
     }
 
@@ -29,7 +29,7 @@ class ReadinessController extends Controller
             'evidence_reference'=>['nullable','string','max:1000'],
         ]);
         if($data['status']==='passed' && blank($data['execution_notes']??null) && blank($data['evidence_reference']??null)){
-            return response()->json(['message'=>'Passed UAT requires execution notes or an evidence reference.'],422);
+            return response()->json(['message'=>__('messages.readiness.evidence_required')],422);
         }
         $before=$uatCase->only(['status','execution_notes','evidence_reference','executed_app_version','approved_at','approved_app_version']);
         $uatCase->forceFill([
@@ -62,7 +62,7 @@ class ReadinessController extends Controller
         ]);
         $before=$readiness->settings();$after=$readiness->saveSettings($data);
         $audit->log($request,'settings.go-live.updated',null,'Go-live operational settings updated.',['before'=>$before,'after'=>$after]);
-        return response()->json(['message'=>'Go-live operational settings saved.','settings'=>$after]);
+        return response()->json(['message'=>__('messages.readiness.settings_saved'),'settings'=>$after]);
     }
 
     public function updateDependencies(Request $request, ReadinessService $readiness, AuditService $audit)
@@ -74,7 +74,7 @@ class ReadinessController extends Controller
         ]);
         $before=$readiness->dependencies();$after=$readiness->saveDependencies($data['dependencies']);
         $audit->log($request,'settings.go-live-dependencies.updated',null,'Go-live Management dependency status updated.',['before'=>$before,'after'=>$after]);
-        return response()->json(['message'=>'Management dependency statuses saved.','dependencies'=>$after]);
+        return response()->json(['message'=>__('messages.readiness.dependencies_saved'),'dependencies'=>$after]);
     }
 
     public function review(Request $request, ReadinessService $readiness, AuditService $audit)
@@ -82,14 +82,14 @@ class ReadinessController extends Controller
         $data=$request->validate(['decision'=>['required',Rule::in(['approved','rejected'])],'notes'=>['nullable','string','max:10000']]);
         $result=$readiness->runSnapshot($request->user()->id);
         if($data['decision']==='approved' && !($result['summary']['go_live_allowed']??false)){
-            return response()->json(['message'=>'Go-live approval refused because blocking readiness checks remain. Run/resolve the checklist and try again.','summary'=>$result['summary'],'checks'=>$result['checks']],422);
+            return response()->json(['message'=>__('messages.readiness.approval_refused'),'summary'=>$result['summary'],'checks'=>$result['checks']],422);
         }
         $review=GoLiveReview::create([
             'readiness_snapshot_id'=>$result['snapshot']->id,'decision'=>$data['decision'],'app_version'=>config('version.current'),'notes'=>trim((string)($data['notes']??''))?:null,
             'dependency_snapshot'=>$readiness->dependencies(),'reviewed_by'=>$request->user()->id,'reviewed_at'=>now(),
         ]);
         $audit->log($request,'go-live.review.'.$data['decision'],$review,'Go-live review decision recorded.',['summary'=>$result['summary'],'notes'=>$review->notes,'app_version'=>config('version.current')]);
-        return response()->json(['message'=>'Go-live review recorded as '.$data['decision'].' for v'.config('version.current').'.','review'=>$this->reviewRow($review->fresh('reviewedBy')),'summary'=>$result['summary']]);
+        return response()->json(['message'=>__('messages.readiness.review_recorded', ['decision' => $data['decision'], 'version' => config('version.current')]),'review'=>$this->reviewRow($review->fresh('reviewedBy')),'summary'=>$result['summary']]);
     }
 
     public function export(Request $request, ReadinessService $readiness)

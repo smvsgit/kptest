@@ -33,7 +33,7 @@ class VersionChunkUploadController extends Controller
         abort_unless($this->resolveType($ext)===$mediaFile->type, 422, 'New version must use the same media type as the logical asset.');
 
         $isLast=in_array($request->is_last_chunk,['true','1',true,1],true);
-        if ($isLast && mb_strlen(trim((string)$request->change_note)) < 3) abort(422, 'A change note is required for a new version.');
+        if ($isLast && mb_strlen(trim((string)$request->change_note)) < 3) abort(422, __('messages.upload.version_note_required'));
 
         $dir="version-chunks/{$request->user()->id}/{$mediaFile->id}/{$request->upload_id}";
         $chunkPath="{$dir}/chunk_".(int)$request->chunk_index;
@@ -47,7 +47,7 @@ class VersionChunkUploadController extends Controller
         $finalAbs=Storage::disk('media')->path($finalRel);
         if(!is_dir(dirname($finalAbs))) mkdir(dirname($finalAbs),0755,true);
         $out=fopen($finalAbs,'wb');
-        if(!$out) abort(500,'Could not create final version file.');
+        if(!$out) abort(500,__('messages.upload.version_write_failed'));
         for($i=0;$i<(int)$request->total_chunks;$i++){
             $chunk=Storage::disk('local')->path("{$dir}/chunk_{$i}");
             if(!file_exists($chunk)){fclose($out);@unlink($finalAbs);Storage::disk('local')->deleteDirectory($dir);return response()->json(['message'=>"Missing chunk {$i}. Please retry."],422);}
@@ -55,7 +55,7 @@ class VersionChunkUploadController extends Controller
         }
         fclose($out); Storage::disk('local')->deleteDirectory($dir);
         $assembled=(int)filesize($finalAbs);
-        if($assembled!==(int)$request->total_size){@unlink($finalAbs);abort(422,'Assembled version file size does not match the expected total size.');}
+        if($assembled!==(int)$request->total_size){@unlink($finalAbs);abort(422,__('messages.upload.version_size_mismatch'));}
 
         try {
             $version=$versions->promoteExistingPath($mediaFile,$finalRel,$request->filename,$assembled,null,$request->user(),trim($request->change_note));
@@ -78,7 +78,7 @@ class VersionChunkUploadController extends Controller
         abort_unless($access->canUploadVersion($mediaFile,$request->user()),403);
         abort_unless(preg_match('/^[a-zA-Z0-9\-]+$/',$uploadId),422,'Invalid upload id.');
         Storage::disk('local')->deleteDirectory("version-chunks/{$request->user()->id}/{$mediaFile->id}/{$uploadId}");
-        return response()->json(['message'=>'Version upload chunks cleared.']);
+        return response()->json(['message'=>__('messages.upload.version_chunks_cleared')]);
     }
 
     private function resolveType(string $ext): string

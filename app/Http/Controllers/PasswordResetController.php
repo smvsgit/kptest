@@ -45,7 +45,7 @@ class PasswordResetController extends Controller
             }
         }
 
-        return back()->with('success', 'If an active account exists for that email, a password-reset link has been sent.');
+        return back()->with('success', __('messages.auth.reset_link_sent'));
     }
 
     public function resetForm(Request $request, string $token)
@@ -66,6 +66,6 @@ class PasswordResetController extends Controller
         DB::table('password_reset_tokens')->where('email', $user->email)->delete();
         DB::table('sessions')->where('user_id', $user->id)->delete();
         $audit->log($request, 'auth.password-reset', $user, 'Password reset completed.');
-        return redirect()->route('login')->with('success', 'Password changed. Sign in with your new password.');
+        return redirect()->route('login')->with('success', __('messages.auth.password_changed_sign_in'));
     }
 }

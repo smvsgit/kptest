@@ -16,7 +16,7 @@ class TwoFactorController extends Controller
     {
         $user = $request->user();
         if ($user->two_factor_confirmed_at) {
-            throw ValidationException::withMessages(['code' => 'Two-factor authentication is already enabled.']);
+            throw ValidationException::withMessages(['code' => __('messages.two_factor.already_enabled')]);
         }
 
         $secret = $totp->generateSecret();
@@ -35,7 +35,7 @@ class TwoFactorController extends Controller
         $secret = (string) $request->session()->get('2fa_setup_secret', '');
 
         if (! $secret || ! $totp->verify($secret, $data['code'])) {
-            throw ValidationException::withMessages(['code' => 'Invalid verification code.']);
+            throw ValidationException::withMessages(['code' => __('messages.two_factor.invalid_code')]);
         }
 
         $codes = $totp->recoveryCodes();
@@ -61,13 +61,13 @@ class TwoFactorController extends Controller
             'two_factor_confirmed_at' => null,
         ])->save();
         $request->session()->forget(['2fa_setup_secret', '2fa_passed_at']);
-        $audit->log($request, 'security.2fa.disabled', $request->user(), 'Two-factor authentication disabled.');
+        $audit->log($request, 'security.2fa.disabled', $request->user(), __('messages.two_factor.disabled'));
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Two-factor authentication disabled.']);
+            return response()->json(['message' => __('messages.two_factor.disabled')]);
         }
 
-        return back()->with('success', 'Two-factor authentication disabled.');
+        return back()->with('success', __('messages.two_factor.disabled'));
     }
 
     public function challenge(Request $request, TwoFactorService $totp, AuditService $audit)
@@ -76,7 +76,7 @@ class TwoFactorController extends Controller
         $user = $request->user();
 
         if (! $user->two_factor_secret || ! $user->two_factor_confirmed_at) {
-            throw ValidationException::withMessages(['code' => 'Two-factor authentication is not enabled.']);
+            throw ValidationException::withMessages(['code' => __('messages.two_factor.not_enabled')]);
         }
 
         $secret = Crypt::decryptString($user->two_factor_secret);
@@ -101,6 +101,6 @@ class TwoFactorController extends Controller
             return redirect()->intended(route('dashboard'));
         }
 
-        throw ValidationException::withMessages(['code' => 'Invalid authenticator or recovery code.']);
+        throw ValidationException::withMessages(['code' => __('messages.two_factor.invalid_code_or_recovery')]);
     }
 }
