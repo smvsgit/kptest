@@ -1,5 +1,88 @@
 # Karyalay Portal - Changelog
 
+## v19.10 - Readable Passwords (2026-11-05)
+
+- Every password field carries a show/hide control: sign in, register, reset password, change
+  password and the two-factor disable field. Nine fields, one component. It starts hidden every
+  time and is not remembered, so a shared screen does not keep the last one showing.
+- The Register screen had never been translated - title, labels, placeholders, role note and both
+  buttons. Done now, with the Viewer role name read from the roles catalogue. Profile's Change
+  Password button was English too.
+
+## v19.09 - Backend Messages v19.05 Missed (2026-11-05)
+
+- v19.05 claimed the backend messages were done. Its sweep matched `abort(N,'...')`,
+  `'message' => '...'`, `with('success','...')` and `withErrors`/`withMessages` - never `abort_if`
+  or `abort_unless`, and never a double-quoted string, which is where every interpolated message
+  lives. 103 user-facing strings were still English.
+- All translated: 77 guard refusals, 21 interpolated messages now carrying placeholders instead of
+  concatenation, and the five CSV-import errors an administrator sees. 167 -> 260 message keys.
+- Still English on purpose: 56 `RuntimeException` diagnostics inside services, and Laravel's own
+  validation and auth catalogues.
+
+## v19.08 - Uploading Lives in the Folder Workspace (2026-11-05)
+
+- Batch Upload retired at the owner's request; the folder workspace does the same job and asks for
+  metadata afterwards.
+- Removing it found that folder uploads were broken: both upload routes demanded `category_id`,
+  which the tray deliberately never sends. Every folder upload had been refused since v19.01. The
+  suite missed it because its helper always supplied a category. Required only when
+  `defer_metadata` is absent; two tests now post exactly the tray's payload.
+- The pre-upload policy and duplicate check moved into the tray rather than retiring with the
+  screen, so the "possible duplicate warning" setting still governs something.
+
+## v19.07 - Portal Opens in English (2026-11-05)
+
+- One-time migration resetting `branding.default_language`. A fresh install already defaulted to
+  English; this instance read Gujarati because the value had been stored during translation
+  testing, and a stored value outranks the code default.
+- A reset, not a lock: the setting still works and a later Gujarati choice sticks.
+
+## v19.06 - Describe Everywhere, Language Before Sign-in (2026-11-05)
+
+- The folder and file context menus were never reachable. Each tile set its own menu, the pane
+  behind it set the background menu, and nothing stopped the event bubbling - so the pane's
+  handler always won. Every right-click produced the background menu, which is why Describe looked
+  missing. Five handlers now claim the event.
+- Describe and Publish also act on a folder picked in the view, not only a file selection or the
+  folder you stand in, and describing a folder no longer navigates into it.
+- The sign-in screens gained an English / Gujarati switch, held in a year-long cookie that
+  `LocaleResolver` reads after the account preference and before the portal default.
+
+## v19.05 - Gujarati Backend Messages (2026-11-05)
+
+- Server refusals, validation failures and confirmations translated into `lang/*/messages.php`.
+- The locale had to move first: `app()->setLocale()` was a side effect of building Inertia's shared
+  props, which never runs for a plain JSON endpoint or a guard that aborts in middleware. It now
+  lives in `LocaleResolver` with a `SetLocale` middleware applied first of the four appended to the
+  web group. Two tests assert the behaviour and fail with that middleware removed.
+- Also finished the interface: Profile's help paragraphs and the 16 theme names and descriptions.
+
+## v19.02 - v19.04 - Gujarati Interface, Phases 1-3 (2026-11-03 to 2026-11-05)
+
+- The whole interface translated: sign-in and password screens, navigation, Browse, Batch Upload,
+  the folder workspace and its inspector and tray, Access Requests, Profile, then Central
+  Administration's thirteen tabs and every admin panel. 1,347 catalogue keys.
+- `lang/en/ui.php` is the source and `lang/gu/ui.php` mirrors it; `LocalePreferenceTest` fails if
+  they drift, if a `:placeholder` is lost, or if the React tree asks for a key that does not exist.
+- A label held in a module-scope constant cannot use a hook; five such tables now hold catalogue
+  keys and translate at the point of use.
+
+## v19.01 - Folder Workspace (2026-11-03)
+
+- The Folders screen in the shape of File Explorer, built to the owner's reference screenshot:
+  tree, address bar with back/forward/up and breadcrumbs, tiles/list/details views, context menus.
+- Folder upload keeping the structure the browser reports, describe-afterwards instead of metadata
+  at upload time, folder-wise publishing, and a background upload tray with per-file progress,
+  pause and cancel (closes review finding B08).
+
+## v19.00 - Review Fixes and Folder Backend (2026-11-03)
+
+- Functional review defects: zero-byte and unreadable-image guard on upload, version name and
+  resolution carried on promote, typo-tolerant database search fallback, a panel hook-order crash,
+  and narrow-screen overflow caused by `min-width:auto` on grid items.
+- Folder model, path service and workspace endpoints behind the v19.01 screen.
+
 ## v18.00 - Role-based Asset Visibility (2026-10-24)
 
 Adds a second dimension to access control alongside Public / Protected / Private.
