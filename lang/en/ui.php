@@ -284,6 +284,8 @@ return [
         'open' => 'Open',
         'rename' => 'Rename',
         'delete' => 'Delete',
+        'describe_needs_target' => 'Select a folder or some files first.',
+        'publish_needs_folder' => 'Select a folder first.',
         'describe_folder' => 'Describe folder…',
         'publish_folder_menu' => 'Publish folder…',
         'upload_into' => 'Upload into this folder',

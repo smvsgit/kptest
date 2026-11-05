@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SystemSetting;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -23,6 +24,9 @@ class LocaleResolver
     public const SUPPORTED = ['en', 'gu'];
 
     public const FALLBACK = 'en';
+
+    /** Where a visitor's choice on the sign-in screen is kept. */
+    public const COOKIE = 'portal_locale';
 
     /** @var array<string,mixed>|null */
     private ?array $branding = null;
@@ -58,13 +62,23 @@ class LocaleResolver
         return in_array($value, self::SUPPORTED, true) ? $value : self::FALLBACK;
     }
 
-    /** A user's own preference wins; anything unrecognised falls back. */
-    public function resolve(?User $user): string
+    /**
+     * A signed-in account's own preference wins. Failing that, the language a
+     * visitor picked on the sign-in screen, which rides in a cookie because
+     * there is no account to hang it on. Failing that, the portal default.
+     */
+    public function resolve(?User $user, ?Request $request = null): string
     {
         $preference = $user?->preferred_language;
+        if (in_array($preference, self::SUPPORTED, true)) {
+            return $preference;
+        }
 
-        return in_array($preference, self::SUPPORTED, true)
-            ? $preference
-            : $this->defaultLanguage();
+        $chosen = $request?->cookie(self::COOKIE);
+        if (is_string($chosen) && in_array($chosen, self::SUPPORTED, true)) {
+            return $chosen;
+        }
+
+        return $this->defaultLanguage();
     }
 }

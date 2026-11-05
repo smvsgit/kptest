@@ -214,6 +214,49 @@ class LocalePreferenceTest extends TestCase
     }
 
     /** lang files are nested; the front end reads them as dot keys. */
+    /**
+     * The sign-in screens have no account to hang a preference on, so the
+     * switch there writes a cookie instead. These cover the visitor's path:
+     * pick a language, see the next screen in it, and keep it on return.
+     */
+    public function test_a_guest_can_choose_a_language_on_the_sign_in_screen(): void
+    {
+        $this->from('/login')
+            ->post('/locale', ['language' => 'gu'])
+            ->assertRedirect('/login')
+            ->assertCookie(\App\Services\LocaleResolver::COOKIE, 'gu');
+    }
+
+    public function test_the_chosen_language_drives_the_next_sign_in_screen(): void
+    {
+        $this->withCookie(\App\Services\LocaleResolver::COOKIE, 'gu')
+            ->get('/login')
+            ->assertInertia(fn ($page) => $page
+                ->where('locale', 'gu')
+                ->where('translations', fn ($lines) => $lines['auth.sign_in'] === trans('ui.auth.sign_in', [], 'gu')));
+    }
+
+    public function test_an_unsupported_language_is_refused_from_the_sign_in_screen(): void
+    {
+        $this->from('/login')
+            ->post('/locale', ['language' => 'fr'])
+            ->assertSessionHasErrors('language')
+            ->assertCookieMissing(\App\Services\LocaleResolver::COOKIE);
+    }
+
+    /**
+     * A signed-in account's own preference outranks the cookie, so a shared
+     * machine where someone once picked Gujarati does not override the next
+     * person's profile setting.
+     */
+    public function test_a_signed_in_preference_beats_the_guest_cookie(): void
+    {
+        $this->actingAs($this->user(['preferred_language' => 'en']))
+            ->withCookie(\App\Services\LocaleResolver::COOKIE, 'gu')
+            ->get('/')
+            ->assertInertia(fn ($page) => $page->where('locale', 'en'));
+    }
+
     public function test_the_message_catalogue_exists_for_both_languages(): void
     {
         $this->assertFileExists(base_path('lang/en/messages.php'));
