@@ -29,7 +29,8 @@ class ChunkUploadController extends Controller
             'chunk'=>'required|file|max:'.(int)ceil($chunkSizeBytes/1024),
             'is_last_chunk'=>'required|in:true,false,1,0',
             'filename'=>'required|string|max:255',
-            'category_id'=>'required_if:is_last_chunk,true|exists:categories,id',
+            // Same as the plain upload: a deferred batch carries no category.
+            'category_id'=>[$request->boolean('defer_metadata')?'nullable':'required_if:is_last_chunk,true','exists:categories,id'],
             'subcategory_id'=>'nullable|exists:subcategories,id','tags'=>'nullable|string',
             'access_policy'=>'required_if:is_last_chunk,true|in:public,protected,private','download_allowed'=>'nullable|boolean',
             'year'=>'nullable|integer|min:1800|max:2500',

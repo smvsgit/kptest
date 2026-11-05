@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { router, Link } from '@inertiajs/react';
-import { Folders, UploadCloud, ShieldCheck, SlidersHorizontal, Sun, Moon, Search, Menu, PlusCircle, FolderPlus, Pencil, LogOut, ChevronRight, Database, Bell, BarChart3, Activity, BookOpen, FolderTree } from 'lucide-react';
+import { Folders, ShieldCheck, SlidersHorizontal, Sun, Moon, Search, Menu, PlusCircle, FolderPlus, Pencil, LogOut, ChevronRight, Database, Bell, BarChart3, Activity, BookOpen, FolderTree } from 'lucide-react';
 import type { Category, PortalNotification, SearchSettings, User, UserRole } from '../types';
 import { usePortalBranding } from '../branding';
 import { applySessionTheme, writeModeOverride } from '../theme';
 import { useTranslation } from '../i18n';
-type ActiveTab='browse-panel'|'folders-panel'|'upload-panel'|'access-panel'|'settings-panel'|'notifications-panel'|'reports-panel'|'integrations-panel'|'guide-panel';
+type ActiveTab='browse-panel'|'folders-panel'|'access-panel'|'settings-panel'|'notifications-panel'|'reports-panel'|'integrations-panel'|'guide-panel';
 export type CategoryModalMode='add-category'|'add-subcategory'|'edit-category'|'edit-subcategory';
 export type CategoryModalState={mode:CategoryModalMode;categoryId?:number|null;subcategoryId?:number|null};
 interface Props { activeTab:ActiveTab;onTabSwitch:(t:ActiveTab)=>void;categories:Category[];simulatedRole:UserRole;currentUser:User;onRoleChange:(r:UserRole)=>void;onSearch:(q:string)=>void;onCategorySelect:(c:number|null,s:number|null)=>void;onCategoryModal:(s:CategoryModalState)=>void;canUpload:boolean;canManageRoles:boolean;canViewAccess:boolean;canViewReports:boolean;canConfigCategories:boolean;canViewSettings:boolean;canViewIntegrations:boolean;canViewUserGuide:boolean;selectedCategoryId:number|null;selectedSubcategoryId:number|null;searchSettings:SearchSettings;initialSearch?:string;notifications:PortalNotification[];unreadNotifications:number;children:React.ReactNode; }
@@ -30,7 +30,6 @@ export default function AppLayout(p:Props){
  return <div className="app-container"><aside className={`sidebar${sidebarOpen?' active':''}`}><div className="sidebar-logo-container"><div className="sidebar-logo"><img src={branding.logo_url} alt={branding.portal_name} onError={e=>{if(!e.currentTarget.src.endsWith('/logo.svg'))e.currentTarget.src='/logo.svg';else e.currentTarget.style.display='none'}}/><span>{branding.portal_name}</span></div></div><nav className="sidebar-nav">
   <button className={`nav-item${p.activeTab==='browse-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('browse-panel');setSidebarOpen(false)}}><Folders/><span>{t('nav.browse')}</span></button>
   <button className={`nav-item${p.activeTab==='folders-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('folders-panel');setSidebarOpen(false)}}><FolderTree/><span>{t('nav.folders')}</span></button>
-  {p.canUpload&&<button className={`nav-item${p.activeTab==='upload-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('upload-panel');setSidebarOpen(false)}}><UploadCloud/><span>{t('nav.upload')}</span></button>}
   {p.canViewAccess&&<button className={`nav-item${p.activeTab==='access-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('access-panel');setSidebarOpen(false)}}><ShieldCheck/><span>{t('nav.access')}</span></button>}
   {p.canViewReports&&<button className={`nav-item${p.activeTab==='reports-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('reports-panel');setSidebarOpen(false)}}><BarChart3/><span>{t('nav.reports')}</span></button>}
   {p.canViewIntegrations&&<button className={`nav-item${p.activeTab==='integrations-panel'?' active':''}`} onClick={()=>{p.onTabSwitch('integrations-panel');setSidebarOpen(false)}}><Activity/><span>{t('nav.integrations')}</span></button>}
