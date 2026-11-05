@@ -257,6 +257,53 @@ class LocalePreferenceTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('locale', 'en'));
     }
 
+    /** The one-time reset that puts the portal's opening language back to English. */
+    private function runLanguageResetMigration(): void
+    {
+        $migration = require database_path('migrations/2026_11_05_000100_default_portal_language_to_english.php');
+        $migration->up();
+    }
+
+    public function test_the_reset_migration_puts_the_opening_language_back_to_english(): void
+    {
+        SystemSetting::put('branding.settings', [
+            'portal_name' => 'Karyalay Portal',
+            'login_text' => 'Secure office media and document portal',
+            'default_language' => 'gu',
+            'logo_path' => 'branding/logo.png',
+        ]);
+
+        $this->runLanguageResetMigration();
+
+        $branding = SystemSetting::valueFor('branding.settings', []);
+        $this->assertSame('en', $branding['default_language']);
+        // Only that one key moves; the rest of the branding row is untouched.
+        $this->assertSame('Karyalay Portal', $branding['portal_name']);
+        $this->assertSame('branding/logo.png', $branding['logo_path']);
+    }
+
+    public function test_the_reset_migration_copes_with_no_branding_row(): void
+    {
+        SystemSetting::query()->where('key', 'branding.settings')->delete();
+
+        $this->runLanguageResetMigration();
+
+        $this->assertSame('en', app(\App\Services\LocaleResolver::class)->defaultLanguage());
+    }
+
+    /**
+     * It is a reset, not a lock. An office that wants the portal to open in
+     * Gujarati must still be able to say so in Settings afterwards.
+     */
+    public function test_an_administrator_can_still_choose_gujarati_afterwards(): void
+    {
+        $this->runLanguageResetMigration();
+
+        SystemSetting::put('branding.settings', ['default_language' => 'gu']);
+
+        $this->get('/login')->assertInertia(fn ($page) => $page->where('locale', 'gu'));
+    }
+
     public function test_the_message_catalogue_exists_for_both_languages(): void
     {
         $this->assertFileExists(base_path('lang/en/messages.php'));
