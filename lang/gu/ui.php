@@ -29,6 +29,18 @@ return [
     ],
 
     'auth' => [
+        'create_account' => 'ખાતું બનાવો',
+        'register_role_note' => 'નવા ખાતાને :role ભૂમિકા મળે છે',
+        'full_name' => 'પૂરું નામ',
+        'name_placeholder' => 'દા.ત. રમેશ પટેલ',
+        'phone' => 'ફોન',
+        'phone_placeholder' => '+91 98765 43210',
+        'password_min' => 'ઓછામાં ઓછા 8 અક્ષર',
+        'repeat_password' => 'પાસવર્ડ ફરી લખો',
+        'creating_account' => 'ખાતું બનાવીએ છીએ…',
+        'have_account' => 'પહેલેથી ખાતું છે?',
+        'show_password' => 'પાસવર્ડ બતાવો',
+        'hide_password' => 'પાસવર્ડ છુપાવો',
         'welcome_back' => 'ફરી આપનું સ્વાગત છે',
         'email_address' => 'ઈમેલ સરનામું',
         'email' => 'ઈમેલ',
@@ -382,6 +394,7 @@ return [
     ],
 
     'profile' => [
+        'updating' => 'બદલીએ છીએ…',
         'back_to_dashboard' => 'ડેશબોર્ડ પર પાછા',
         'personal_information' => 'અંગત માહિતી',
         'full_name' => 'પૂરું નામ',

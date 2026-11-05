@@ -1,6 +1,7 @@
 import { FormEvent } from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import AuthBrand from '../../Components/AuthBrand';
+import PasswordInput from '../../Components/ui/PasswordInput';
 import { usePortalBranding } from '../../branding';
 import { useT } from '../../i18n';
 
@@ -35,7 +36,7 @@ export default function Login() {
 
                     <div className="auth-field">
                         <label htmlFor="password">{t('auth.password')}</label>
-                        <input id="password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} placeholder="••••••••" autoComplete="current-password" />
+                        <PasswordInput id="password" value={data.password} onChange={e => setData('password', e.target.value)} placeholder="••••••••" autoComplete="current-password" />
                         {errors.password && <span className="auth-error">{errors.password}</span>}
                     </div>
 
