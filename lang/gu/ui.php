@@ -285,6 +285,8 @@ return [
         'open' => 'ખોલો',
         'rename' => 'નામ બદલો',
         'delete' => 'કાઢી નાખો',
+        'describe_needs_target' => 'પહેલાં કોઈ ફોલ્ડર કે ફાઇલ પસંદ કરો.',
+        'publish_needs_folder' => 'પહેલાં કોઈ ફોલ્ડર પસંદ કરો.',
         'describe_folder' => 'ફોલ્ડરની માહિતી ભરો…',
         'publish_folder_menu' => 'ફોલ્ડર પ્રકાશિત કરો…',
         'upload_into' => 'આ ફોલ્ડરમાં અપલોડ કરો',
@@ -310,7 +312,7 @@ return [
     'inspector' => [
         'describe_title' => 'માહિતી ભરો',
         'publish_title' => 'ફોલ્ડર પ્રકાશિત કરો',
-        'applies_to' => ':scope ને લાગુ પડશે.',
+        'applies_to' => 'આના પર લાગુ પડશે: :scope.',
         'scope_selection' => ':count પસંદ કરેલી ફાઇલ|:count પસંદ કરેલી ફાઇલો',
         'scope_folder_deep' => ':name અને તેની અંદરનું બધું',
         'scope_folder_only' => 'ફક્ત :name',

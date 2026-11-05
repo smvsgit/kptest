@@ -41,9 +41,15 @@ use App\Http\Controllers\LifecycleWorkflowController;
 use App\Http\Controllers\ImportExportController;
 use App\Http\Controllers\ScheduledReportController;
 use App\Http\Controllers\UserGuideController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\UserGroupController;
 use Illuminate\Support\Facades\Route;
+
+// The language switch on the sign-in screens. Not guest-only: a signed-in user
+// landing here (the two-factor challenge, say) may want it too, and it only
+// ever writes a cookie.
+Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 // Guest-only auth routes
 Route::middleware('guest')->group(function () {

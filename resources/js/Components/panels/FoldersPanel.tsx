@@ -116,6 +116,13 @@ export default function FoldersPanel(p:Props){
     const childrenOf=useCallback((parent:number|null)=>folders.filter(f=>f.parent_id===parent),[folders]);
     const current=folderId?byId.get(folderId)||null:null;
 
+    // What Describe and Publish act on. A folder picked in this view wins over
+    // the one we are standing in, so right-clicking a folder describes that
+    // folder without first walking into it; a file selection wins over both,
+    // which the inspector itself decides.
+    const targetFolder=(selectedFolder?byId.get(selectedFolder)||null:null)||current;
+    const canDescribe=selected.size>0||!!targetFolder;
+
     const trail=useMemo(()=>{
         const out:FolderNode[]=[];
         let node=current;
@@ -257,7 +264,7 @@ export default function FoldersPanel(p:Props){
                     className={`exp-node${folderId===node.id?' active':''}`}
                     style={{paddingLeft:4+node.depth*14}}
                     onClick={()=>navigate(node.id)}
-                    onContextMenu={e=>{e.preventDefault();setMenu({x:e.clientX,y:e.clientY,kind:'folder',folderId:node.id});}}
+                    onContextMenu={e=>{e.preventDefault();e.stopPropagation();setMenu({x:e.clientX,y:e.clientY,kind:'folder',folderId:node.id});}}
                     onDragOver={e=>{if(selected.size)e.preventDefault();}}
                     onDrop={e=>{e.preventDefault();onDropOnFolder(node.id);}}
                 >
@@ -299,8 +306,8 @@ export default function FoldersPanel(p:Props){
                         </>}
                         <span className="exp-sep"/>
                         <button className="exp-cmd" disabled={!selected.size} onClick={moveViaPrompt}><FolderInput size={15}/> {t('folders.move_to')}</button>
-                        <button className="exp-cmd" disabled={!selected.size} onClick={()=>setInspector('metadata')}><Tag size={15}/> {t('folders.describe')}</button>
-                        {isAdmin&&<button className="exp-cmd" disabled={!current} onClick={()=>setInspector('publish')}><Globe2 size={15}/> {t('folders.publish_folder')}</button>}
+                        <button className="exp-cmd" disabled={!canDescribe} title={canDescribe?undefined:t('folders.describe_needs_target')} onClick={()=>setInspector('metadata')}><Tag size={15}/> {t('folders.describe')}</button>
+                        {isAdmin&&<button className="exp-cmd" disabled={!targetFolder} title={targetFolder?undefined:t('folders.publish_needs_folder')} onClick={()=>setInspector('publish')}><Globe2 size={15}/> {t('folders.publish_folder')}</button>}
                         <span className="exp-grow"/>
                         <button className="exp-cmd icon" title={t('folders.refresh')} onClick={()=>void load(folderId)}>
                             {loading?<Loader2 size={15} className="spin"/>:<RotateCw size={15}/>}
@@ -388,7 +395,7 @@ export default function FoldersPanel(p:Props){
                                                 className={`exp-tile${selectedFolder===f.id?' selected':''}`}
                                                 onClick={()=>setSelectedFolder(f.id)}
                                                 onDoubleClick={()=>navigate(f.id)}
-                                                onContextMenu={e=>{e.preventDefault();setSelectedFolder(f.id);setMenu({x:e.clientX,y:e.clientY,kind:'folder',folderId:f.id});}}
+                                                onContextMenu={e=>{e.preventDefault();e.stopPropagation();setSelectedFolder(f.id);setMenu({x:e.clientX,y:e.clientY,kind:'folder',folderId:f.id});}}
                                                 onDragOver={e=>{if(selected.size)e.preventDefault();}}
                                                 onDrop={e=>{e.preventDefault();onDropOnFolder(f.id);}}
                                             >
@@ -406,7 +413,7 @@ export default function FoldersPanel(p:Props){
                                                 className={`exp-row ${view==='details'?'exp-cols-details':'exp-cols-list'}${selectedFolder===f.id?' selected':''}`}
                                                 onClick={()=>setSelectedFolder(f.id)}
                                                 onDoubleClick={()=>navigate(f.id)}
-                                                onContextMenu={e=>{e.preventDefault();setSelectedFolder(f.id);setMenu({x:e.clientX,y:e.clientY,kind:'folder',folderId:f.id});}}
+                                                onContextMenu={e=>{e.preventDefault();e.stopPropagation();setSelectedFolder(f.id);setMenu({x:e.clientX,y:e.clientY,kind:'folder',folderId:f.id});}}
                                             >
                                                 <span className="name"><Folder size={15} style={{color:'var(--color-primary)'}}/><span>{f.name}</span></span>
                                                 {view==='details'&&<>
@@ -440,7 +447,7 @@ export default function FoldersPanel(p:Props){
                                                 draggable
                                                 onDragStart={()=>{if(!selected.has(f.id))setSelected(new Set([f.id]));}}
                                                 onClick={e=>clickFile(e,f)}
-                                                onContextMenu={e=>{e.preventDefault();if(!selected.has(f.id))setSelected(new Set([f.id]));setMenu({x:e.clientX,y:e.clientY,kind:'file',fileId:f.id});}}
+                                                onContextMenu={e=>{e.preventDefault();e.stopPropagation();if(!selected.has(f.id))setSelected(new Set([f.id]));setMenu({x:e.clientX,y:e.clientY,kind:'file',fileId:f.id});}}
                                             >
                                                 <span className="glyph">
                                                     {f.type==='image'&&!noThumb.has(f.id)
@@ -481,7 +488,7 @@ export default function FoldersPanel(p:Props){
                                                 draggable
                                                 onDragStart={()=>{if(!selected.has(f.id))setSelected(new Set([f.id]));}}
                                                 onClick={e=>clickFile(e,f)}
-                                                onContextMenu={e=>{e.preventDefault();if(!selected.has(f.id))setSelected(new Set([f.id]));setMenu({x:e.clientX,y:e.clientY,kind:'file',fileId:f.id});}}
+                                                onContextMenu={e=>{e.preventDefault();e.stopPropagation();if(!selected.has(f.id))setSelected(new Set([f.id]));setMenu({x:e.clientX,y:e.clientY,kind:'file',fileId:f.id});}}
                                             >
                                                 <span className="name"><Icon size={15} style={{color:'var(--color-primary)'}}/><span>{f.name}</span></span>
                                                 {view==='details'&&<>
@@ -514,7 +521,7 @@ export default function FoldersPanel(p:Props){
                 {inspector&&(
                     <FolderInspector
                         mode={inspector}
-                        folder={current}
+                        folder={targetFolder}
                         selectedFiles={selectedFiles}
                         categories={p.categories}
                         masterData={p.masterData}
@@ -558,8 +565,8 @@ export default function FoldersPanel(p:Props){
                         <button onClick={()=>{navigate(menu.folderId!);setMenu(null);}}><FolderOpen size={14}/> {t('folders.open')}</button>
                         {isAdmin&&<button onClick={()=>{setMenu(null);void renameFolder(menu.folderId!);}}><Pencil size={14}/> {t('folders.rename')}</button>}
                         <hr/>
-                        <button onClick={()=>{navigate(menu.folderId!);setInspector('metadata');setMenu(null);}}><Tag size={14}/> {t('folders.describe_folder')}</button>
-                        {isAdmin&&<button onClick={()=>{navigate(menu.folderId!);setInspector('publish');setMenu(null);}}><Globe2 size={14}/> {t('folders.publish_folder_menu')}</button>}
+                        <button onClick={()=>{setSelectedFolder(menu.folderId!);setSelected(new Set());setInspector('metadata');setMenu(null);}}><Tag size={14}/> {t('folders.describe_folder')}</button>
+                        {isAdmin&&<button onClick={()=>{setSelectedFolder(menu.folderId!);setSelected(new Set());setInspector('publish');setMenu(null);}}><Globe2 size={14}/> {t('folders.publish_folder_menu')}</button>}
                         <hr/>
                         {p.canUpload&&<button onClick={()=>{navigate(menu.folderId!);setMenu(null);pickFiles('files');}}><UploadCloud size={14}/> {t('folders.upload_into')}</button>}
                         {isAdmin&&<button className="danger" onClick={()=>{setMenu(null);void deleteFolder(menu.folderId!);}}><Trash2 size={14}/> {t('folders.delete')}</button>}
@@ -576,6 +583,17 @@ export default function FoldersPanel(p:Props){
                             <button onClick={()=>{setMenu(null);pickFiles('files');}}><UploadCloud size={14}/> {t('folders.upload_files')}</button>
                             <button onClick={()=>{setMenu(null);pickFiles('folder');}}><FolderInput size={14}/> {t('folders.upload_folder')}</button>
                         </>}
+                        <hr/>
+                        <button
+                            disabled={!canDescribe}
+                            title={canDescribe?undefined:t('folders.describe_needs_target')}
+                            onClick={()=>{setInspector('metadata');setMenu(null);}}
+                        ><Tag size={14}/> {selected.size?(selected.size>1?t('folders.describe_selection',{count:selected.size}):t('folders.describe_one')):t('folders.describe_folder')}</button>
+                        {isAdmin&&<button
+                            disabled={!targetFolder}
+                            title={targetFolder?undefined:t('folders.publish_needs_folder')}
+                            onClick={()=>{setInspector('publish');setMenu(null);}}
+                        ><Globe2 size={14}/> {t('folders.publish_folder_menu')}</button>}
                         <hr/>
                         <button onClick={()=>{setMenu(null);void reload();}}><RotateCw size={14}/> {t('folders.refresh')}</button>
                     </>}

@@ -22,7 +22,7 @@ class SetLocale
 
     public function handle(Request $request, Closure $next): Response
     {
-        app()->setLocale($this->locales->resolve($request->user()));
+        app()->setLocale($this->locales->resolve($request->user(), $request));
 
         return $next($request);
     }
