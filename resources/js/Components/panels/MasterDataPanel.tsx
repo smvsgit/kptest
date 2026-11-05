@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { Check, Database, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import type { Category, MasterDataMap, MasterDataType, MasterDataValue } from '../../types';
+import { useT } from '../../i18n';
 
 interface Props {
     masterData: MasterDataMap;
@@ -21,32 +22,34 @@ type TabKey = MasterDataType | 'category' | 'subcategory';
 /** Each master type gets its own form, because they do not share the same fields. */
 interface TypeSpec {
     type: TabKey;
-    label: string;
     /** Parent type this value hangs under, when the list is hierarchical. */
     parent: TabKey | null;
-    parentLabel: string;
-    help: string;
-    placeholder: string;
     /** Categories have no code, aliases or active flag, so those inputs are hidden. */
     extras?: boolean;
 }
 
+/**
+ * Only the shape of each list lives here. Its label, help text and example
+ * placeholder are catalogue keys (master.label_*, master.help_*, master.ph_*),
+ * so the screen reads in whichever language the user has chosen.
+ */
 const SPECS: TypeSpec[] = [
-    { type: 'category', label: 'Category', parent: null, parentLabel: '', extras: false, help: 'Top-level grouping for media. Sub-categories hang under a category.', placeholder: 'e.g. Satsang' },
-    { type: 'subcategory', label: 'Sub-category', parent: 'category', parentLabel: 'Category', extras: false, help: 'Belongs to a main category. Choose the category first, then name the sub-category.', placeholder: 'e.g. Satsang Sabha' },
-    { type: 'country', label: 'Country', parent: null, parentLabel: '', help: 'Top of the location hierarchy. States hang under a country.', placeholder: 'e.g. India' },
-    { type: 'state', label: 'State', parent: 'country', parentLabel: 'Country', help: 'Belongs to a country. Cities hang under a state.', placeholder: 'e.g. Gujarat' },
-    { type: 'city', label: 'City', parent: 'state', parentLabel: 'State', help: 'Belongs to a state. Mandirs hang under a city.', placeholder: 'e.g. Vadodara' },
-    { type: 'mandir', label: 'Mandir', parent: 'city', parentLabel: 'City', help: 'Belongs to a city. This is the lowest location level.', placeholder: 'e.g. Atladara Mandir' },
-    { type: 'event', label: 'Event / Prasang', parent: null, parentLabel: '', help: 'Controlled list of events and prasangs used when tagging media.', placeholder: 'e.g. Annakut' },
-    { type: 'person', label: 'Guruji / Person', parent: null, parentLabel: '', help: 'Controlled list of people that media can be attributed to.', placeholder: 'e.g. Guruji' },
-    { type: 'language', label: 'Language', parent: null, parentLabel: '', help: 'Spoken or written language of the media content.', placeholder: 'e.g. Gujarati' },
-    { type: 'media_type', label: 'Media Type', parent: null, parentLabel: '', help: 'Editorial classification, separate from the technical file type.', placeholder: 'e.g. Pravachan' },
+    { type: 'category', parent: null, extras: false },
+    { type: 'subcategory', parent: 'category', extras: false },
+    { type: 'country', parent: null },
+    { type: 'state', parent: 'country' },
+    { type: 'city', parent: 'state' },
+    { type: 'mandir', parent: 'city' },
+    { type: 'event', parent: null },
+    { type: 'person', parent: null },
+    { type: 'language', parent: null },
+    { type: 'media_type', parent: null },
 ];
 
 const blankDraft = { name: '', code: '', parent: '', aliases: '' };
 
 export default function MasterDataPanel({ masterData, categories, onSuccess, onError }: Props) {
+    const t = useT();
     const [active, setActive] = useState<TabKey>('category');
     const [draft, setDraft] = useState({ ...blankDraft });
     const [query, setQuery] = useState('');
@@ -54,6 +57,8 @@ export default function MasterDataPanel({ masterData, categories, onSuccess, onE
     const [editDraft, setEditDraft] = useState({ ...blankDraft });
 
     const spec = SPECS.find(s => s.type === active)!;
+    const label = t('master.label_' + spec.type);
+    const parentLabel = spec.parent ? t('master.label_' + spec.parent) : '';
 
     /**
      * Categories and sub-categories come from their own tables, so they are
@@ -102,13 +107,13 @@ export default function MasterDataPanel({ masterData, categories, onSuccess, onE
     const firstError = (errors: Record<string, string>) => String(Object.values(errors)[0] || '');
 
     const create = () => {
-        if (!draft.name.trim()) return onError(`Enter a ${spec.label.toLowerCase()} name.`);
-        if (spec.parent && !draft.parent) return onError(`Select the ${spec.parentLabel.toLowerCase()} this ${spec.label.toLowerCase()} belongs to.`);
+        if (!draft.name.trim()) return onError(t('master.enter_name', { label }));
+        if (spec.parent && !draft.parent) return onError(t('master.select_parent_error', { parent: parentLabel, label }));
 
         const opts = {
             preserveScroll: true,
-            onSuccess: () => { onSuccess(`Added ${spec.label} “${draft.name.trim()}”.`); setDraft({ ...blankDraft }); },
-            onError: (e: Record<string, string>) => onError(firstError(e) || `Could not add this ${spec.label.toLowerCase()}.`),
+            onSuccess: () => { onSuccess(t('master.added', { label, name: draft.name.trim() })); setDraft({ ...blankDraft }); },
+            onError: (e: Record<string, string>) => onError(firstError(e) || t('master.add_failed', { label })),
         };
 
         if (active === 'category') {
@@ -138,11 +143,11 @@ export default function MasterDataPanel({ masterData, categories, onSuccess, onE
     };
 
     const saveEdit = (row: MasterDataValue) => {
-        if (!editDraft.name.trim()) return onError('Name cannot be empty.');
+        if (!editDraft.name.trim()) return onError(t('master.name_empty'));
         const opts = {
             preserveScroll: true,
-            onSuccess: () => { onSuccess(`Updated “${editDraft.name.trim()}”.`); setEditingId(null); },
-            onError: (e: Record<string, string>) => onError(firstError(e) || 'Could not update this value.'),
+            onSuccess: () => { onSuccess(t('master.updated', { name: editDraft.name.trim() })); setEditingId(null); },
+            onError: (e: Record<string, string>) => onError(firstError(e) || t('master.update_failed')),
         };
 
         if (active === 'category') {
@@ -166,16 +171,16 @@ export default function MasterDataPanel({ masterData, categories, onSuccess, onE
         aliases: row.aliases || [], is_active: !row.is_active, sort_order: row.sort_order || 0,
     }, {
         preserveScroll: true,
-        onSuccess: () => onSuccess(`${row.name} ${row.is_active ? 'deactivated' : 'activated'}.`),
-        onError: e => onError(firstError(e) || 'Could not update this value.'),
+        onSuccess: () => onSuccess(row.is_active ? t('master.toggled_off', { name: row.name }) : t('master.toggled_on', { name: row.name })),
+        onError: e => onError(firstError(e) || t('master.update_failed')),
     });
 
     const remove = (row: MasterDataValue) => {
         const warning = active === 'category'
-            ? `Delete category “${row.name}”? Its sub-categories are removed too and its files become uncategorised.`
+            ? t('master.delete_category', { name: row.name })
             : active === 'subcategory'
-                ? `Delete sub-category “${row.name}”?`
-                : `Delete ${spec.label.toLowerCase()} “${row.name}”? Values already used by media cannot be deleted.`;
+                ? t('master.delete_subcategory', { name: row.name })
+                : t('master.delete_value', { label, name: row.name });
         if (!confirm(warning)) return;
 
         const url = active === 'category' ? `/categories/${row.id}`
@@ -184,20 +189,16 @@ export default function MasterDataPanel({ masterData, categories, onSuccess, onE
 
         router.delete(url, {
             preserveScroll: true,
-            onSuccess: () => onSuccess(`Deleted “${row.name}”.`),
-            onError: e => onError(firstError(e) || 'Could not delete this value.'),
+            onSuccess: () => onSuccess(t('master.deleted', { name: row.name })),
+            onError: e => onError(firstError(e) || t('master.delete_failed')),
         });
     };
 
     return (
         <div className="settings-card">
-            <h2 className="settings-card-title"><Database size={18} /> Master Data Management</h2>
+            <h2 className="settings-card-title"><Database size={18} /> {t('master.title')}</h2>
             <div className="admin-guide">
-                Every controlled list is administered here. <b>Category → Sub-category</b> and
-                <b>Country → State → City → Mandir</b> are hierarchical, so a parent must be chosen first.
-                <b>Event, Guruji/Person, Language</b> and <b>Media Type</b> are flat lists. For the master
-                lists, deactivate a value instead of deleting it once media already uses it. Categories keep
-                their own quick-add in the left drawer for day-to-day use.
+                {t('master.guide')}
             </div>
 
             <div className="master-type-tabs">
@@ -207,83 +208,83 @@ export default function MasterDataPanel({ masterData, categories, onSuccess, onE
                         className={`master-type-tab${s.type === active ? ' active' : ''}`}
                         onClick={() => switchType(s.type)}
                     >
-                        {s.label}
+                        {t('master.label_' + s.type)}
                         <span className="master-type-count">{rowsFor(s.type).length}</span>
                     </button>
                 ))}
             </div>
 
             <div className="master-form">
-                <div className="setting-help" style={{ marginBottom: 10 }}>{spec.help}</div>
+                <div className="setting-help" style={{ marginBottom: 10 }}>{t('master.help_' + spec.type)}</div>
                 <div className="master-form-grid">
                     {spec.parent && (
                         <div className="form-group">
-                            <label className="form-label">{spec.parentLabel} *</label>
+                            <label className="form-label">{parentLabel} *</label>
                             <select className="form-select" value={draft.parent} onChange={e => setDraft({ ...draft, parent: e.target.value })}>
-                                <option value="">Select {spec.parentLabel.toLowerCase()}…</option>
+                                <option value="">{t('master.select_parent', { parent: parentLabel })}</option>
                                 {parentValues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                             </select>
                             {parentValues.length === 0 && (
                                 <div className="setting-help" style={{ marginTop: 5 }}>
-                                    Add a {spec.parentLabel.toLowerCase()} first.
+                                    {t('master.add_parent_first', { parent: parentLabel })}
                                 </div>
                             )}
                         </div>
                     )}
                     <div className="form-group">
-                        <label className="form-label">{spec.label} name *</label>
-                        <input className="form-input" placeholder={spec.placeholder} value={draft.name}
+                        <label className="form-label">{t('master.name_field', { label })} *</label>
+                        <input className="form-input" placeholder={t('master.ph_' + spec.type)} value={draft.name}
                             onChange={e => setDraft({ ...draft, name: e.target.value })}
                             onKeyDown={e => e.key === 'Enter' && create()} />
                     </div>
                     {spec.extras !== false && <>
                         <div className="form-group">
-                            <label className="form-label">Code</label>
-                            <input className="form-input" placeholder="Optional short code" value={draft.code}
+                            <label className="form-label">{t('master.code')}</label>
+                            <input className="form-input" placeholder={t('master.code_placeholder')} value={draft.code}
                                 onChange={e => setDraft({ ...draft, code: e.target.value })} />
                         </div>
                         <div className="form-group">
-                            <label className="form-label">Aliases</label>
-                            <input className="form-input" placeholder="Comma separated, used by search" value={draft.aliases}
+                            <label className="form-label">{t('master.aliases')}</label>
+                            <input className="form-input" placeholder={t('master.aliases_placeholder')} value={draft.aliases}
                                 onChange={e => setDraft({ ...draft, aliases: e.target.value })} />
                         </div>
                     </>}
                 </div>
                 <button className="btn btn-primary" onClick={create} disabled={Boolean(spec.parent) && parentValues.length === 0}>
-                    <Plus size={14} /> Add {spec.label}
+                    <Plus size={14} /> {t('master.add_label', { label })}
                 </button>
             </div>
 
             <div className="master-list-head">
                 <div className="category-search-wrapper" style={{ padding: 0, flex: 1 }}>
                     <Search size={13} className="category-search-icon" style={{ left: 9 }} />
-                    <input className="category-search-input" placeholder={`Search ${spec.label.toLowerCase()} values…`}
-                        value={query} onChange={e => setQuery(e.target.value)} aria-label={`Search ${spec.label} values`} />
+                    <input className="category-search-input" placeholder={t('master.search_values', { label })}
+                        value={query} onChange={e => setQuery(e.target.value)} aria-label={t('master.search_values_aria', { label })} />
                 </div>
-                <span className="setting-help">{visible.length} of {values.length}</span>
+                <span className="setting-help">{t('master.visible_of_total', { visible: visible.length, total: values.length })}</span>
             </div>
 
             <div className="master-list">
-                {values.length === 0 && <div className="setting-help" style={{ padding: '12px 2px' }}>No {spec.label.toLowerCase()} values yet.</div>}
-                {values.length > 0 && visible.length === 0 && <div className="setting-help" style={{ padding: '12px 2px' }}>Nothing matches “{query}”.</div>}
+                {values.length === 0 && <div className="setting-help" style={{ padding: '12px 2px' }}>{t('master.no_values', { label })}</div>}
+                {values.length > 0 && visible.length === 0 && <div className="setting-help" style={{ padding: '12px 2px' }}>{t('master.nothing_matches', { query })}</div>}
 
                 {visible.map(row => editingId === row.id ? (
                     <div className="setting-row" key={row.id}>
                         <div className="master-form-grid" style={{ flex: 1 }}>
                             {spec.parent && (
                                 <select className="form-select" value={editDraft.parent} onChange={e => setEditDraft({ ...editDraft, parent: e.target.value })}>
-                                    <option value="">Select {spec.parentLabel.toLowerCase()}…</option>
+                                    <option value="">{t('master.select_parent', { parent: parentLabel })}</option>
                                     {parentValues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                                 </select>
                             )}
                             <input className="form-input" value={editDraft.name} onChange={e => setEditDraft({ ...editDraft, name: e.target.value })} />
                             {spec.extras !== false && <>
-                                <input className="form-input" placeholder="Code" value={editDraft.code} onChange={e => setEditDraft({ ...editDraft, code: e.target.value })} />
-                                <input className="form-input" placeholder="Aliases" value={editDraft.aliases} onChange={e => setEditDraft({ ...editDraft, aliases: e.target.value })} />
+                                <input className="form-input" placeholder={t('master.code')} value={editDraft.code} onChange={e => setEditDraft({ ...editDraft, code: e.target.value })} />
+                                <input className="form-input" placeholder={t('master.aliases')} value={editDraft.aliases} onChange={e => setEditDraft({ ...editDraft, aliases: e.target.value })} />
                             </>}
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
-                            <button className="btn btn-primary" onClick={() => saveEdit(row)}><Check size={13} /> Save</button>
+                            <button className="btn btn-primary" onClick={() => saveEdit(row)}><Check size={13} /> {t('common.save')}</button>
                             <button className="btn btn-secondary" onClick={() => setEditingId(null)}><X size={13} /></button>
                         </div>
                     </div>
@@ -293,17 +294,17 @@ export default function MasterDataPanel({ masterData, categories, onSuccess, onE
                             <div className="setting-title">
                                 {row.name}
                                 {row.code && <code style={{ marginLeft: 6 }}>{row.code}</code>}
-                                {!row.is_active && <span className="master-inactive-pill">Inactive</span>}
+                                {!row.is_active && <span className="master-inactive-pill">{t('master.inactive')}</span>}
                             </div>
                             <div className="setting-help">
-                                {parentName(row) && <>{spec.parentLabel}: {parentName(row)}</>}
-                                {spec.extras !== false && <>{parentName(row) ? ' · ' : ''}{(row.aliases || []).length ? `Aliases: ${(row.aliases || []).join(', ')}` : 'No aliases'}</>}
+                                {parentName(row) && t('master.parent_line', { parent: parentLabel, name: parentName(row)! })}
+                                {spec.extras !== false && <>{parentName(row) ? ' · ' : ''}{(row.aliases || []).length ? t('master.aliases_line', { list: (row.aliases || []).join(', ') }) : t('master.no_aliases')}</>}
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
-                            <button className="btn btn-secondary" title={`Edit ${row.name}`} onClick={() => startEdit(row)}><Pencil size={12} /></button>
-                            {spec.extras !== false && <button className="btn btn-secondary" onClick={() => toggle(row)}>{row.is_active ? 'Deactivate' : 'Activate'}</button>}
-                            <button className="queue-remove-btn" title={`Delete ${row.name}`} onClick={() => remove(row)}><Trash2 size={14} /></button>
+                            <button className="btn btn-secondary" title={t('settings.edit_item', { name: row.name })} onClick={() => startEdit(row)}><Pencil size={12} /></button>
+                            {spec.extras !== false && <button className="btn btn-secondary" onClick={() => toggle(row)}>{row.is_active ? t('master.deactivate') : t('master.activate')}</button>}
+                            <button className="queue-remove-btn" title={t('settings.delete_item', { name: row.name })} onClick={() => remove(row)}><Trash2 size={14} /></button>
                         </div>
                     </div>
                 ))}

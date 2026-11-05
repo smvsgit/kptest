@@ -214,6 +214,58 @@ class LocalePreferenceTest extends TestCase
     }
 
     /** lang files are nested; the front end reads them as dot keys. */
+    /**
+     * A key the front end asks for but the catalogue does not carry renders as
+     * the key itself — "settings.tab_backup" in the middle of a tab strip. That
+     * is deliberate (it is visible in review rather than silently English), but
+     * it should never reach a release, so every literal key in the React tree
+     * is checked against the English catalogue here.
+     *
+     * Only literal t('...') / tc('...') calls can be checked. Keys built at
+     * runtime, such as t('settings.channel_' + channel), are skipped: the
+     * prefix alone says nothing about which keys exist.
+     */
+    public function test_every_literal_key_the_front_end_asks_for_exists(): void
+    {
+        $catalogue = $this->flatten(require base_path('lang/en/ui.php'));
+        $unknown = [];
+
+        foreach ($this->frontEndFiles() as $file) {
+            $source = (string) file_get_contents($file);
+            // The trailing [,)] is what keeps a built key out: in
+            // t('quota.state_' + d.state) the quote is followed by a +, so the
+            // fragment before it is never mistaken for a whole key.
+            preg_match_all("/\\bt[c]?\\(\\s*'([a-z0-9_]+\\.[a-z0-9_]+)'\\s*[,)]/i", $source, $matches);
+
+            foreach ($matches[1] as $key) {
+                if (! array_key_exists($key, $catalogue)) {
+                    $unknown[] = basename($file).': '.$key;
+                }
+            }
+        }
+
+        $this->assertSame([], array_values(array_unique($unknown)),
+            'Keys asked for but not in lang/en/ui.php: '.implode(', ', array_unique($unknown)));
+    }
+
+    /** @return list<string> */
+    private function frontEndFiles(): array
+    {
+        $root = base_path('resources/js');
+        $files = [];
+
+        $tree = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        foreach ($tree as $entry) {
+            if ($entry->isFile() && in_array($entry->getExtension(), ['ts', 'tsx'], true)) {
+                $files[] = $entry->getPathname();
+            }
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
     private function flatten(array $items, string $prefix = ''): array
     {
         $out = [];
