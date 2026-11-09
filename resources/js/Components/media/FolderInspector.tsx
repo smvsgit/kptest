@@ -209,7 +209,7 @@ export default function FolderInspector(p:Props){
                     <div className="form-group">
                         <label className="form-label" htmlFor="fi-year">{t('fields.year')}</label>
                         <select id="fi-year" className="form-select" value={draft.year||''} onChange={e=>set('year',e.target.value)}>
-                            <option value="">Leave unchanged</option>
+                            <option value="">{t('inspector.leave_unchanged')}</option>
                             {years.map(y=><option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
@@ -250,7 +250,7 @@ export default function FolderInspector(p:Props){
                     <div className="form-group">
                         <label className="form-label" htmlFor="fi-policy">{t('inspector.access_policy')}</label>
                         <select id="fi-policy" className="form-select" value={policy} onChange={e=>setPolicy(e.target.value as AccessPolicy|'')}>
-                            <option value="">Leave unchanged</option>
+                            <option value="">{t('inspector.leave_unchanged')}</option>
                             <option value="public">{t('policy.public')}</option>
                             <option value="protected">{t('policy.protected')}</option>
                             <option value="private">{t('policy.private')}</option>
@@ -259,7 +259,7 @@ export default function FolderInspector(p:Props){
                     <div className="form-group">
                         <label className="form-label" htmlFor="fi-download">{t('inspector.downloadable')}</label>
                         <select id="fi-download" className="form-select" value={downloadAllowed} onChange={e=>setDownloadAllowed(e.target.value as ''|'1'|'0')}>
-                            <option value="">Leave unchanged</option>
+                            <option value="">{t('inspector.leave_unchanged')}</option>
                             <option value="1">{t('inspector.yes')}</option>
                             <option value="0">{t('inspector.no')}</option>
                         </select>
@@ -267,7 +267,7 @@ export default function FolderInspector(p:Props){
                     <div className="form-group">
                         <label className="form-label" htmlFor="fi-status">{t('fields.status')}</label>
                         <select id="fi-status" className="form-select" value={assetStatus} onChange={e=>setAssetStatus(e.target.value as ''|'draft'|'active')}>
-                            <option value="">Leave unchanged</option>
+                            <option value="">{t('inspector.leave_unchanged')}</option>
                             <option value="active">{t('inspector.status_active')}</option>
                             <option value="draft">{t('inspector.status_draft')}</option>
                         </select>
