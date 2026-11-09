@@ -1,5 +1,6 @@
 import { Check, Video as VideoIcon, LockKeyhole, Globe2, ShieldAlert, Building2, Archive, Copy, Star, Link2, Download, Info } from 'lucide-react';
 import type { MediaFile } from '../../types';
+import { useT } from '../../i18n';
 
 const VideoPlaceholder = () => <VideoIcon size={42} style={{ color: 'var(--text-muted)' }} />;
 
@@ -21,6 +22,7 @@ function formatBytes(bytes: number) {
 }
 
 export default function MediaCard({ file, isSelected, onSelect, onFavorite, onOpen, onDownload, onOpenImage }: Props) {
+    const t = useT();
     const canViewImage = file.type === 'image' && file.can_preview && Boolean(file.image_url || file.thumbnail_url);
 
     const handleClick = (e: React.MouseEvent) => {
@@ -41,11 +43,11 @@ export default function MediaCard({ file, isSelected, onSelect, onFavorite, onOp
 
     const renderPreview = () => {
         if (!file.can_preview) {
-            return <div className="doc-card-representation" style={{ gap: 8 }}><LockKeyhole size={42} /><span style={{ fontSize: 11 }}>Protected content</span></div>;
+            return <div className="doc-card-representation" style={{ gap: 8 }}><LockKeyhole size={42} /><span style={{ fontSize: 11 }}>{t('card.protected')}</span></div>;
         }
         if (file.type === 'image') {
             const imageSrc = file.thumbnail_url || file.image_url;
-            return imageSrc ? <img src={imageSrc} alt={file.name} className="card-image" loading="lazy" /> : <div className="doc-card-representation">Image processing…</div>;
+            return imageSrc ? <img src={imageSrc} alt={file.name} className="card-image" loading="lazy" /> : <div className="doc-card-representation">{t('card.image_processing')}</div>;
         }
         if (file.type === 'video') {
             return <>
@@ -72,23 +74,23 @@ export default function MediaCard({ file, isSelected, onSelect, onFavorite, onOp
     };
 
     const policy = file.access_policy === 'public'
-        ? { icon: <Globe2 size={11} />, label: 'Public', cls: 'access-public' }
+        ? { icon: <Globe2 size={11} />, label: t('policy.public'), cls: 'access-public' }
         : file.access_policy === 'protected'
-            ? { icon: <ShieldAlert size={11} />, label: file.can_preview ? 'Protected · Granted' : 'Protected · Locked', cls: 'access-protected' }
-            : { icon: <Building2 size={11} />, label: 'Private', cls: 'access-private' };
+            ? { icon: <ShieldAlert size={11} />, label: file.can_preview ? t('card.protected_granted') : t('card.protected_locked'), cls: 'access-protected' }
+            : { icon: <Building2 size={11} />, label: t('policy.private'), cls: 'access-private' };
 
     return (
         <div className={`media-card${isSelected ? ' selected' : ''}${canViewImage ? ' viewable' : ''}`} data-id={file.id} onClick={handleClick}>
             <div className="card-select-overlay"><div className="custom-checkbox"><Check size={14} /></div></div>
-            <button className={`card-favorite-btn${file.is_favorite ? ' active' : ''}`} title={file.is_favorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={file.is_favorite ? 'Remove from favorites' : 'Add to favorites'}><Star size={15} fill={file.is_favorite ? 'currentColor' : 'none'} /></button>
-            <button className="card-info-btn" title={`Details for ${file.name}`} aria-label={`Details for ${file.name}`}><Info size={14} /></button>
-            {file.can_download && <button className="card-download-btn" title={`Download ${file.name}`} aria-label={`Download ${file.name}`}><Download size={14} /></button>}
+            <button className={`card-favorite-btn${file.is_favorite ? ' active' : ''}`} title={file.is_favorite ? t('card.remove_favorite') : t('card.add_favorite')} aria-label={file.is_favorite ? t('card.remove_favorite') : t('card.add_favorite')}><Star size={15} fill={file.is_favorite ? 'currentColor' : 'none'} /></button>
+            <button className="card-info-btn" title={t('card.details_for',{name:file.name})} aria-label={t('card.details_for',{name:file.name})}><Info size={14} /></button>
+            {file.can_download && <button className="card-download-btn" title={t('card.download_file',{name:file.name})} aria-label={t('card.download_file',{name:file.name})}><Download size={14} /></button>}
             <div className="card-preview-wrapper">{renderPreview()}<span className={`card-type-badge badge-${file.type}`}>{file.type}</span></div>
             <div className="card-details">
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
                     <span className="card-filename" title={file.name}>{file.name}</span>
                 </div>
-                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}><span className={`access-policy-badge ${policy.cls}`}>{policy.icon}{policy.label}</span><span className="access-policy-badge">v{file.current_version||1}</span>{file.asset_status==='archived'&&<span className="access-policy-badge"><Archive size={10}/> Archived</span>}{file.source_health_status&&<span className={`access-policy-badge source-${file.source_health_status}`} title="Linked source health"><Link2 size={10}/> {file.source_health_status}</span>}{file.duplicate_of_id&&<span className="access-policy-badge" title={`Potential duplicate of asset #${file.duplicate_of_id}`}><Copy size={10}/> Duplicate?</span>}</div>
+                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}><span className={`access-policy-badge ${policy.cls}`}>{policy.icon}{policy.label}</span><span className="access-policy-badge">v{file.current_version||1}</span>{file.asset_status==='archived'&&<span className="access-policy-badge"><Archive size={10}/> {t('card.archived')}</span>}{file.source_health_status&&<span className={`access-policy-badge source-${file.source_health_status}`} title={t('card.source_health')}><Link2 size={10}/> {t('health.' + file.source_health_status)}</span>}{file.duplicate_of_id&&<span className="access-policy-badge" title={t('card.duplicate_title',{id:file.duplicate_of_id})}><Copy size={10}/> {t('card.duplicate')}</span>}</div>
                 <div className="card-meta-row"><span>{formatBytes(file.size)}</span><span>{new Date(file.created_at).toLocaleDateString()}</span></div>
                 <div className="card-tags">{(file.tags || []).slice(0, 3).map(tag => <span key={tag} className="card-tag">{tag}</span>)}{(file.tags || []).length > 3 && <span className="card-tag" style={{ background: 'transparent' }}>+{(file.tags || []).length - 3}</span>}</div>
             </div>

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { X, FolderTree, FolderPlus } from 'lucide-react';
 import type { Category } from '../../types';
+import { useT } from '../../i18n';
 
 export type CategoryModalMode = 'add-category' | 'add-subcategory' | 'edit-category' | 'edit-subcategory';
 
@@ -17,14 +18,17 @@ interface Props {
     onError: (msg: string) => void;
 }
 
-const TITLES: Record<CategoryModalMode, string> = {
-    'add-category': 'Add Main Category',
-    'add-subcategory': 'Add Sub-Category',
-    'edit-category': 'Rename Main Category',
-    'edit-subcategory': 'Edit Sub-Category',
+// Catalogue keys, not finished strings: a module-scope constant cannot call a
+// hook, so the title is translated where it is rendered.
+const TITLE_KEYS: Record<CategoryModalMode, string> = {
+    'add-category': 'catmodal.add_category',
+    'add-subcategory': 'catmodal.add_subcategory',
+    'edit-category': 'catmodal.rename_category',
+    'edit-subcategory': 'catmodal.edit_subcategory',
 };
 
 export default function CategoryModal({ mode, categories, categoryId, subcategoryId, onClose, onSuccess, onError }: Props) {
+    const t = useT();
     const editingCategory = mode === 'edit-category' ? categories.find(c => c.id === categoryId) ?? null : null;
     const editingSub = mode === 'edit-subcategory'
         ? categories.flatMap(c => c.subcategories).find(s => s.id === subcategoryId) ?? null
@@ -51,11 +55,11 @@ export default function CategoryModal({ mode, categories, categoryId, subcategor
     const submit = () => {
         const trimmed = name.trim();
         if (needsParent && parentId === '') {
-            onError('Please select the main category first.');
+            onError(t('catmodal.need_parent'));
             return;
         }
         if (!trimmed) {
-            onError(isSubMode ? 'Please enter a sub-category name.' : 'Please enter a category name.');
+            onError(isSubMode ? t('catmodal.need_subcategory_name') : t('catmodal.need_category_name'));
             return;
         }
         setLoading(true);
@@ -65,25 +69,25 @@ export default function CategoryModal({ mode, categories, categoryId, subcategor
             router.post('/categories', { name: trimmed }, {
                 ...opts,
                 onSuccess: done(`Created main category “${trimmed}”`),
-                onError: fail('Failed to create category.'),
+                onError: fail(t('catmodal.create_failed')),
             });
         } else if (mode === 'edit-category') {
             router.put(`/categories/${categoryId}`, { name: trimmed }, {
                 ...opts,
                 onSuccess: done(`Renamed category to “${trimmed}”`),
-                onError: fail('Failed to rename category.'),
+                onError: fail(t('catmodal.rename_failed')),
             });
         } else if (mode === 'add-subcategory') {
             router.post('/subcategories', { category_id: parentId, name: trimmed }, {
                 ...opts,
                 onSuccess: done(`Created sub-category “${trimmed}” under ${parent?.name}`),
-                onError: fail('Failed to create sub-category.'),
+                onError: fail(t('catmodal.create_sub_failed')),
             });
         } else {
             router.put(`/subcategories/${subcategoryId}`, { category_id: parentId, name: trimmed }, {
                 ...opts,
                 onSuccess: done(`Updated sub-category “${trimmed}”`),
-                onError: fail('Failed to update sub-category.'),
+                onError: fail(t('catmodal.update_sub_failed')),
             });
         }
     };
@@ -96,7 +100,7 @@ export default function CategoryModal({ mode, categories, categoryId, subcategor
                 <div className="modal-header" style={{ marginBottom: 16 }}>
                     <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {isSubMode ? <FolderPlus size={18} /> : <FolderTree size={18} />}
-                        {TITLES[mode]}
+                        {t(TITLE_KEYS[mode])}
                     </h2>
                     <button className="modal-close-btn" onClick={onClose}><X size={20} /></button>
                 </div>
@@ -104,7 +108,7 @@ export default function CategoryModal({ mode, categories, categoryId, subcategor
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {needsParent && (
                         <div className="form-group">
-                            <label className="form-label">Step 1 — Main Category</label>
+                            <label className="form-label">{t('catmodal.step1')}</label>
                             <select
                                 className="form-input"
                                 value={parentId}
@@ -131,7 +135,7 @@ export default function CategoryModal({ mode, categories, categoryId, subcategor
 
                     <div className="form-group">
                         <label className="form-label">
-                            {needsParent ? 'Step 2 — Sub-Category Name' : 'Category Name'}
+                            {needsParent ? t('catmodal.step2') : t('catmodal.category_name')}
                         </label>
                         <input
                             ref={nameRef}
@@ -152,13 +156,13 @@ export default function CategoryModal({ mode, categories, categoryId, subcategor
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 12 }}>
-                        <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                        <button className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
                         <button
                             className="btn btn-primary"
                             onClick={submit}
                             disabled={loading || (needsParent && parentId === '')}
                         >
-                            {mode.startsWith('edit') ? 'Save Changes' : 'Create'}
+                            {mode.startsWith('edit') ? t('catmodal.save') : t('catmodal.create')}
                         </button>
                     </div>
                 </div>

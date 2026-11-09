@@ -1,5 +1,21 @@
 # Karyalay Portal - Changelog
 
+## v19.12 - The Components the Catalogue Never Reached (2026-11-09)
+
+- v19.04 claimed nothing in the signed-in UI was English. That was wrong. Six components had never
+  imported the catalogue at all - the file details dialog, bulk edit, the media card, the floating
+  action bar, the category dialog and the full-size image viewer - and BrowsePanel's Advanced
+  Filters carried English labels over Gujarati dropdowns.
+- All of them translated, plus AccessPanel, FolderInspector and the panel error boundary, which the
+  same sweep turned up. 1,551 -> 1,599 interface keys, both catalogues in step.
+- Enum values that reached the screen raw are translated too: access policy, lifecycle status,
+  source type and source health in the details dialog, role names and permission names in
+  AccessPanel.
+- Two more module-scope label maps had to go, for the same reason as the six before them: a
+  constant outside the component cannot call a hook. `CategoryModal`'s titles and `AccessPanel`'s
+  role names now hold catalogue keys and are translated where they are rendered. The panel error
+  boundary is a class, so its fallback became a small function component.
+
 ## v19.10 - Readable Passwords (2026-11-05)
 
 - Every password field carries a show/hide control: sign in, register, reset password, change

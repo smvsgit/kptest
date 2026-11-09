@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { useT } from '../../i18n';
 
 interface Props {
     panelName:string;
@@ -7,6 +8,23 @@ interface Props {
     children:ReactNode;
 }
 interface State { error:Error|null; }
+
+/**
+ * The boundary itself has to be a class, and a class cannot call a hook, so the
+ * fallback it renders is a small function component — that is where the
+ * catalogue is read.
+ */
+function PanelErrorFallback({panelName,message,onReturn}:{panelName:string;message:string;onReturn?:()=>void}) {
+    const t = useT();
+    return <section className="module-panel active">
+        <div className="settings-card" style={{maxWidth:760,margin:'24px auto'}}>
+            <h2 className="settings-card-title">{t('panel.error_title',{panel:panelName})}</h2>
+            <div className="admin-guide">{t('panel.error_body')}</div>
+            <div className="setting-help" style={{marginTop:10,wordBreak:'break-word'}}>{message||t('panel.unknown_error')}</div>
+            {onReturn&&<button className="btn btn-primary" style={{marginTop:14}} onClick={onReturn}>{t('panel.return_browse')}</button>}
+        </div>
+    </section>;
+}
 
 export default class PanelErrorBoundary extends Component<Props,State> {
     state:State={error:null};
@@ -25,13 +43,6 @@ export default class PanelErrorBoundary extends Component<Props,State> {
 
     render() {
         if(!this.state.error) return this.props.children;
-        return <section className="module-panel active">
-            <div className="settings-card" style={{maxWidth:760,margin:'24px auto'}}>
-                <h2 className="settings-card-title">{this.props.panelName} could not be displayed</h2>
-                <div className="admin-guide">The application shell is still running. This panel hit a client-side rendering error instead of taking the whole portal to a blank screen.</div>
-                <div className="setting-help" style={{marginTop:10,wordBreak:'break-word'}}>{this.state.error.message||'Unknown panel error'}</div>
-                {this.props.onReturn&&<button className="btn btn-primary" style={{marginTop:14}} onClick={this.props.onReturn}>Return to Browse Files</button>}
-            </div>
-        </section>;
+        return <PanelErrorFallback panelName={this.props.panelName} message={this.state.error.message} onReturn={this.props.onReturn} />;
     }
 }

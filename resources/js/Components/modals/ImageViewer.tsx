@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Download, X, ZoomIn, ZoomOut } from 'lucide-react';
 import type { MediaFile } from '../../types';
 import { formatBytes } from '../../format';
+import { useT } from '../../i18n';
 
 interface Props {
     file: MediaFile;
@@ -15,6 +16,7 @@ interface Props {
  * is indistinguishable from a broken preview.
  */
 export default function ImageViewer({ file, onClose, onDownload }: Props) {
+    const t = useT();
     const [actualSize, setActualSize] = useState(false);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const src = file.image_url || file.thumbnail_url || undefined;
@@ -35,17 +37,17 @@ export default function ImageViewer({ file, onClose, onDownload }: Props) {
                 </span>
                 <div className="image-zoom-actions">
                     <button className="btn btn-secondary" disabled={status !== 'ready'} onClick={() => setActualSize(v => !v)}
-                        title={actualSize ? 'Fit to screen' : 'Show at actual pixel size'}>
-                        {actualSize ? <><ZoomOut size={14}/> Fit to screen</> : <><ZoomIn size={14}/> Actual size</>}
+                        title={actualSize ? t('viewer.fit') : t('viewer.actual_title')}>
+                        {actualSize ? <><ZoomOut size={14}/> {t('viewer.fit')}</> : <><ZoomIn size={14}/> {t('viewer.actual')}</>}
                     </button>
-                    {file.can_download && <button className="btn btn-primary" onClick={() => onDownload(file.id)}><Download size={14}/> Download</button>}
-                    <button className="btn btn-secondary" onClick={onClose} aria-label="Close full-size view"><X size={14}/></button>
+                    {file.can_download && <button className="btn btn-primary" onClick={() => onDownload(file.id)}><Download size={14}/> {t('viewer.download')}</button>}
+                    <button className="btn btn-secondary" onClick={onClose} aria-label={t('viewer.close')}><X size={14}/></button>
                 </div>
             </div>
 
             <div className={`image-zoom-canvas${actualSize ? ' actual' : ''}`}>
-                {status === 'loading' && <div className="image-zoom-status"><span className="image-zoom-spinner" aria-hidden="true" />Loading the original ({formatBytes(file.size)})…</div>}
-                {status === 'error' && <div className="image-zoom-status">This image could not be loaded. It may still be uploading, or its source may be unavailable.</div>}
+                {status === 'loading' && <div className="image-zoom-status"><span className="image-zoom-spinner" aria-hidden="true" />{t('viewer.loading_original',{size:formatBytes(file.size)})}</div>}
+                {status === 'error' && <div className="image-zoom-status">{t('viewer.load_error')}</div>}
                 <img
                     src={src}
                     alt={file.name}
