@@ -1,5 +1,28 @@
 # Karyalay Portal - Changelog
 
+## v19.15 - Version Replacement, Retested (2026-11-26)
+
+- F11 was verified on 18 November and the reviewers then declined to count that as current evidence:
+  retest it "after the folder and editing fixes". Retested, and the retest found two real gaps.
+- **An asset with no version history lost its original when replaced.** `MediaFile::created` records
+  version 1, but only for assets created through the model with events firing; anything inserted
+  before that hook existed, or imported in bulk, has no row. Replacing such a file left a history of
+  one entry - the new one - while the superseded bytes sat on disk with nothing pointing at them,
+  beyond the reach of Restore. The version being superseded is now recorded before it is replaced,
+  and `2026_11_26_000300_backfill_missing_first_version_rows` writes the missing row for assets that
+  already lack one.
+- **A replacement renames the asset, but the search index only caught up when the queue worker ran.**
+  Every other place that renames or moves an asset already reindexes inside the request; version
+  replacement did not, so the library answered to the superseded name until a worker ran - and
+  whether one runs on their host is still unconfirmed. Both upload and restore now reindex
+  immediately.
+- 18 tests covering the acceptance sentence clause by clause: one logical asset with its folder,
+  department, category, policy and owner untouched; a version carrying actor, date and change note;
+  the current version served by preview and download; version one still listed and still
+  downloadable; restore adding a third version rather than removing one; a bulk edit afterwards
+  leaving the history alone; and refusals for a stranger, a viewer, a missing change note and a file
+  of another type.
+
 ## v19.14 - The Settings Console, Section by Section (2026-11-26)
 
 - Until now a role either reached the whole administration console or none of it: the routes sat
