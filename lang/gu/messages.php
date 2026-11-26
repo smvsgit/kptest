@@ -40,6 +40,7 @@ return [
         'no_department' => 'તમારું ખાતું કોઈ વિભાગ સાથે જોડાયેલું નથી.',
         'department_required' => 'વિભાગ જરૂરી છે.',
         'no_department_configured' => 'હજુ સુધી કોઈ વિભાગ બનાવ્યો નથી.',
+        'settings_section_denied' => 'તમારી ભૂમિકાને Settings ના આ ભાગનો પ્રવેશ નથી.',
     ],
     'department' => [
         'created' => 'વિભાગ બની ગયો.',

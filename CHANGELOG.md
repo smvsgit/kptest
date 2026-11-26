@@ -1,5 +1,25 @@
 # Karyalay Portal - Changelog
 
+## v19.14 - The Settings Console, Section by Section (2026-11-26)
+
+- Until now a role either reached the whole administration console or none of it: the routes sat
+  behind one blanket `role:super-admin`, and the screen hid its tabs behind `isSuper`. The review
+  asked for it to be divided. (F05.)
+- Settings now has fourteen named sections, and a Super Admin sets each role's level per section -
+  **none**, **view** or **edit** - from a grid on the role editor. A role granted Metadata & Master
+  Data gets that and nothing implied with it.
+- The rule holds on the server. A new `settings:<section>` middleware guards 36 routes, so a direct
+  request is refused exactly as the hidden tab would suggest. `view` is a real level: the export of
+  the user list opens, the import does not.
+- Role, department and user-account administration stay Super Admin only, inside their own nested
+  group. A role able to edit those could grant itself the rest.
+- Nothing widens on the day this ships: every built-in role is seeded with exactly what it could do
+  before, and the migration writes that map onto existing roles. Department Admin keeps System,
+  Users and Lifecycle; everyone else starts at none.
+- A section granted for viewing renders with its controls disabled and says so, rather than offering
+  a save that the server would refuse.
+- Role simulation may narrow what a Super Admin sees, never widen it.
+
 ## v19.13 - What the 24 November Review Found (2026-11-26)
 
 - **Bulk Edit opened on a blank page.** v19.12 inserted `const t=useT()` one line too high in

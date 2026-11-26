@@ -772,6 +772,8 @@ return [
         'master_delete_confirm' => 'માસ્ટર મૂલ્ય ":name" કાઢી નાખવું છે? વપરાશમાં હોય તેવાં મૂલ્યો કાઢી શકાતાં નથી.',
         'master_deactivated' => ':name બંધ કર્યું.',
         'master_activated' => ':name ચાલુ કર્યું.',
+        'read_only' => 'આ વિભાગ તમે જોઈ શકો છો, બદલી શકતા નથી.',
+        'no_sections' => 'તમારી ભૂમિકાને Settings નો કોઈ ભાગ અપાયો નથી.',
     ],
     'master' => [
         'title' => 'માસ્ટર ડેટા વ્યવસ્થાપન',
@@ -952,6 +954,11 @@ return [
         'no_matching_user' => 'કોઈ વપરાશકર્તા મળતો નથી',
         'add' => 'ઉમેરો',
         'apply_group_role' => 'સભ્યોને જૂથની ભૂમિકા લાગુ કરો',
+        'settings_sections' => 'Settings ના વિભાગ',
+        'settings_sections_help' => 'આ ભૂમિકા Settings માં ક્યાં સુધી પહોંચે. વપરાશકર્તા, સુરક્ષા અને બૅકઅપ એક-એક કરીને આપવાં પડે.',
+        'level_none' => 'કશું નહીં',
+        'level_view' => 'ફક્ત જોવું',
+        'level_edit' => 'ફેરફાર',
     ],
     'quota' => [
         'title' => 'વિભાગ પ્રમાણે સંગ્રહ મર્યાદા',

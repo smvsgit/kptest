@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Support\SettingsSections;
 
 class User extends Authenticatable
 {
@@ -131,6 +132,49 @@ class User extends Authenticatable
             'settings' => in_array($this->role,['super-admin','department-admin'],true),
             default => false,
         };
+    }
+
+    /**
+     * How far this user reaches into one section of the Settings console:
+     * 'none', 'view' or 'edit'. (Review F05.)
+     *
+     * A Super Admin always has edit, so the console cannot lock out the person
+     * who administers it. Anyone else needs the Settings page first; after that
+     * their portal role decides, falling back to what their base role could
+     * already do before sections existed.
+     */
+    public function settingsAccess(string $section): string
+    {
+        if (!SettingsSections::isSection($section)) return SettingsSections::NONE;
+        if ($this->role === 'super-admin') return SettingsSections::EDIT;
+        if (($this->status ?? 'active') !== 'active') return SettingsSections::NONE;
+        if (!$this->canAccessPage('settings')) return SettingsSections::NONE;
+
+        $portalRole = $this->relationLoaded('portalRole') ? $this->portalRole : $this->portalRole()->first();
+        if ($portalRole && $portalRole->is_active) {
+            $map = $portalRole->settings_access ?? [];
+            if (array_key_exists($section, $map)) return SettingsSections::normaliseLevel($map[$section]);
+        }
+
+        return SettingsSections::DEFAULTS[$this->role][$section] ?? SettingsSections::NONE;
+    }
+
+    public function canViewSettingsSection(string $section): bool
+    {
+        return in_array($this->settingsAccess($section), [SettingsSections::VIEW, SettingsSections::EDIT], true);
+    }
+
+    public function canEditSettingsSection(string $section): bool
+    {
+        return $this->settingsAccess($section) === SettingsSections::EDIT;
+    }
+
+    /** The whole console as the screen needs it: section => level. */
+    public function settingsAccessMap(): array
+    {
+        $out = [];
+        foreach (SettingsSections::keys() as $key) $out[$key] = $this->settingsAccess($key);
+        return $out;
     }
 
     public function roleDisplayName(): string

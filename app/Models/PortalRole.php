@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PortalRole extends Model
 {
-    protected $fillable = ['name','slug','base_role','is_builtin','is_active','permissions','page_access','created_by'];
+    protected $fillable = ['name','slug','base_role','is_builtin','is_active','permissions','page_access','settings_access','created_by'];
 
     protected function casts(): array
     {
@@ -15,6 +15,7 @@ class PortalRole extends Model
             'is_active'=>'boolean',
             'permissions'=>'array',
             'page_access'=>'array',
+            'settings_access'=>'array',
         ];
     }
 

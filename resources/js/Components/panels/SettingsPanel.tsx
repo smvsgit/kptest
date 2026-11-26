@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { Building2, FolderTree, GitBranch, Info, Pencil, PieChart, Plus, Trash2, X, Type, Search, Upload, RotateCcw, BookOpen, Database, Languages, Sparkles, SlidersHorizontal, Bell, Send, LockKeyhole, DatabaseBackup, ShieldCheck, UserCog } from 'lucide-react';
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
@@ -12,6 +12,7 @@ import UserRoleManagementPanel from './UserRoleManagementPanel';
 import MasterDataPanel from './MasterDataPanel';
 import DepartmentQuotaPanel from './DepartmentQuotaPanel';
 import { useT } from '../../i18n';
+import type { SettingsAccessLevel, SettingsAccessMap, SettingsSectionKey, SharedProps } from '../../types';
 Chart.register(ArcElement, Tooltip, Legend);
 
 type SettingsTab='general'|'users'|'fonts'|'search'|'metadata'|'upload'|'security'|'notifications'|'backup'|'readiness'|'lifecycle'|'completion'|'guide';
@@ -26,11 +27,55 @@ const Guide=({children}:{children:React.ReactNode})=><div className="admin-guide
 function parseGroups(value:string){return value.split('\n').map(l=>l.split('|').map(x=>x.trim()).filter(Boolean)).filter(g=>g.length>=2)}
 function groupsText(groups:string[][]){return(groups||[]).map(g=>g.join(' | ')).join('\n')}
 
+
+/**
+ * A Settings tab and the section a Super Admin grants it through. The tab key
+ * is historic ('general'); the section key is what the server enforces.
+ * (Review F05.)
+ */
+const SETTINGS_TABS: { tab: SettingsTab; section: SettingsSectionKey; label: string; icon?: 'users'|'lifecycle'|'fonts'|'search'|'metadata'|'upload'|'security'|'notifications'|'backup'|'readiness'|'guide'|'completion' }[] = [
+    { tab: 'general', section: 'system', label: 'settings.tab_system' },
+    { tab: 'users', section: 'users', label: 'settings.tab_users', icon: 'users' },
+    { tab: 'lifecycle', section: 'lifecycle', label: 'settings.tab_lifecycle', icon: 'lifecycle' },
+    { tab: 'fonts', section: 'fonts', label: 'settings.tab_fonts', icon: 'fonts' },
+    { tab: 'search', section: 'search', label: 'settings.tab_search', icon: 'search' },
+    { tab: 'metadata', section: 'metadata', label: 'settings.tab_metadata', icon: 'metadata' },
+    { tab: 'upload', section: 'upload', label: 'settings.tab_upload', icon: 'upload' },
+    { tab: 'security', section: 'security', label: 'settings.tab_security', icon: 'security' },
+    { tab: 'notifications', section: 'notifications', label: 'settings.tab_notifications', icon: 'notifications' },
+    { tab: 'backup', section: 'backup', label: 'settings.tab_backup', icon: 'backup' },
+    { tab: 'readiness', section: 'readiness', label: 'settings.tab_readiness', icon: 'readiness' },
+    { tab: 'guide', section: 'guide', label: 'settings.tab_guide', icon: 'guide' },
+    { tab: 'completion', section: 'completion', label: 'settings.tab_completion', icon: 'completion' },
+];
+/** Role simulation may narrow what is shown, never widen it. */
+const SIMULATED_SECTIONS: Record<string, SettingsSectionKey[]> = {
+    'department-admin': ['system', 'users', 'lifecycle'],
+};
+const TAB_ICON: Record<string, React.ReactNode> = {
+    users: <UserCog size={14}/>, lifecycle: <RotateCcw size={14}/>, fonts: <Type size={14}/>,
+    search: <Search size={14}/>, metadata: <SlidersHorizontal size={14}/>, upload: <Upload size={14}/>,
+    security: <SlidersHorizontal size={14}/>, notifications: <Bell size={14}/>,
+    backup: <DatabaseBackup size={14}/>, readiness: <ShieldCheck size={14}/>,
+    guide: <BookOpen size={14}/>, completion: <GitBranch size={14}/>,
+};
+
 export default function SettingsPanel(p:Props){
  const t=useT();
  const isSuper=p.simulatedRole==='super-admin';
  const isLifecycleAdmin=['super-admin','department-admin'].includes(p.simulatedRole);
+ const sharedAccess=((usePage().props as unknown as SharedProps).settingsAccess||{}) as SettingsAccessMap;
+ const simulating=p.simulatedRole!==p.currentUser.role;
+ const sectionLevel=(key:SettingsSectionKey):SettingsAccessLevel=>{
+  if(simulating&&p.simulatedRole!=='super-admin'&&!(SIMULATED_SECTIONS[p.simulatedRole]||[]).includes(key))return 'none';
+  return sharedAccess[key]||'none';
+ };
+ const visibleTabs=SETTINGS_TABS.filter(x=>sectionLevel(x.section)!=='none');
  const [tab,setTab]=useState<SettingsTab>('general');
+ const activeTabRow=visibleTabs.find(x=>x.tab===tab)||visibleTabs[0];
+ const activeSection=activeTabRow?.section;
+ const readOnly=Boolean(activeSection)&&sectionLevel(activeSection as SettingsSectionKey)==='view';
+ useEffect(()=>{if(activeTabRow&&activeTabRow.tab!==tab)setTab(activeTabRow.tab)},[activeTabRow,tab]);
  const safeStats=p.stats??{total_files:0,total_size:0,by_type:{video:0,image:0,audio:0,document:0}};
  const [fonts,setFonts]=useState<FontAssignments>(p.appearanceSettings);
  const [fontName,setFontName]=useState(''); const [fontWeight,setFontWeight]=useState('400'); const [fontStyle,setFontStyle]=useState('normal'); const [fontScripts,setFontScripts]=useState<string[]>(['latin']); const [fontFile,setFontFile]=useState<File|null>(null);
@@ -96,7 +141,10 @@ export default function SettingsPanel(p:Props){
  if(!p.active)return null;
  return <section className="module-panel active" id="settings-panel">
   <div className="page-title-section"><div><h1 className="page-title"><Info size={28} style={{color:'var(--color-primary)'}}/>{t('settings.title')}</h1><p className="page-subtitle">{t('settings.subtitle')}</p></div></div>
-  <div className="settings-tabs"><button className={`settings-tab ${tab==='general'?'active':''}`} onClick={()=>setTab('general')}>{t('settings.tab_system')}</button>{isLifecycleAdmin&&<button className={`settings-tab ${tab==='users'?'active':''}`} onClick={()=>setTab('users')}><UserCog size={14}/> {t('settings.tab_users')}</button>}{isLifecycleAdmin&&<button className={`settings-tab ${tab==='lifecycle'?'active':''}`} onClick={()=>setTab('lifecycle')}><RotateCcw size={14}/> {t('settings.tab_lifecycle')}</button>}{isSuper&&<><button className={`settings-tab ${tab==='fonts'?'active':''}`} onClick={()=>setTab('fonts')}><Type size={14}/> {t('settings.tab_fonts')}</button><button className={`settings-tab ${tab==='search'?'active':''}`} onClick={()=>setTab('search')}><Search size={14}/> {t('settings.tab_search')}</button><button className={`settings-tab ${tab==='metadata'?'active':''}`} onClick={()=>setTab('metadata')}><SlidersHorizontal size={14}/> {t('settings.tab_metadata')}</button><button className={`settings-tab ${tab==='upload'?'active':''}`} onClick={()=>setTab('upload')}><Upload size={14}/> {t('settings.tab_upload')}</button><button className={`settings-tab ${tab==='security'?'active':''}`} onClick={()=>setTab('security')}><SlidersHorizontal size={14}/> {t('settings.tab_security')}</button><button className={`settings-tab ${tab==='notifications'?'active':''}`} onClick={()=>setTab('notifications')}><Bell size={14}/> {t('settings.tab_notifications')}</button><button className={`settings-tab ${tab==='backup'?'active':''}`} onClick={()=>setTab('backup')}><DatabaseBackup size={14}/> {t('settings.tab_backup')}</button><button className={`settings-tab ${tab==='readiness'?'active':''}`} onClick={()=>setTab('readiness')}><ShieldCheck size={14}/> {t('settings.tab_readiness')}</button><button className={`settings-tab ${tab==='guide'?'active':''}`} onClick={()=>setTab('guide')}><BookOpen size={14}/> {t('settings.tab_guide')}</button><button className={`settings-tab ${tab==='completion'?'active':''}`} onClick={()=>setTab('completion')}><GitBranch size={14}/> {t('settings.tab_completion')}</button></>}</div>
+  <div className="settings-tabs">{visibleTabs.map(x=><button key={x.tab} className={`settings-tab ${tab===x.tab?'active':''}`} onClick={()=>setTab(x.tab)}>{x.icon?TAB_ICON[x.icon]:null} {t(x.label)}</button>)}</div>
+  {visibleTabs.length===0&&<div className="admin-guide">{t('settings.no_sections')}</div>}
+  {readOnly&&<div className="admin-guide"><LockKeyhole size={14} style={{verticalAlign:-2,marginRight:6}}/>{t('settings.read_only')}</div>}
+  <fieldset disabled={readOnly} style={{border:0,padding:0,margin:0,minInlineSize:'auto'}}>
 
   {tab==='general'&&<>
    <div className="settings-card" style={{marginBottom:20,borderColor:'var(--color-primary)'}}><h2 className="settings-card-title"><Info size={18}/> {t('settings.system_information')}</h2><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:12,marginTop:12}}>{[['settings.app_version',`v${p.appVersion.current}`],['settings.release_type',p.appVersion.release_type],['settings.release_date',p.appVersion.release_date],['settings.release',p.appVersion.release_name],['settings.previous',`v${p.appVersion.previous}`]].map(([a,b])=><div key={a} style={{padding:13,background:'var(--bg-input)',borderRadius:'var(--radius-md)',border:'1px solid var(--border-color)'}}><div style={{fontSize:10.5,color:'var(--text-muted)'}}>{t(a)}</div><div style={{fontWeight:800,marginTop:3,color:a==='settings.app_version'?'var(--color-primary)':'inherit'}}>{b}</div></div>)}</div></div>
@@ -216,5 +264,6 @@ export default function SettingsPanel(p:Props){
    <div className="settings-card"><h2 className="settings-card-title"><Send size={18}/> {t('settings.delivery_matrix')}</h2><Guide>{t('settings.delivery_matrix_guide')}</Guide><div style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={{textAlign:'left'}}>{t('settings.event')}</th>{['portal','email','whatsapp','sms'].map(c=><th key={c}>{t('settings.channel_'+c)}</th>)}</tr></thead><tbody>{Object.entries(notify.events||{}).map(([event,channels])=><tr key={event}><td style={{padding:'8px 4px'}}>{event.replaceAll('_',' ')}</td>{(['portal','email','whatsapp','sms'] as const).map(c=><td key={c} style={{textAlign:'center'}}><input type="checkbox" checked={Boolean(channels[c])} onChange={e=>setEventChannel(event,c,e.target.checked)}/></td>)}</tr>)}</tbody></table></div><button className="btn btn-primary" style={{marginTop:12}} onClick={saveNotify}>{t('settings.save_notifications')}</button></div>
    <div className="settings-card"><h2 className="settings-card-title"><Bell size={18}/> {t('settings.escalation_title')}</h2><Guide>{t('settings.escalation_guide')}</Guide><div className="setting-row"><div><div className="setting-title">{t('settings.escalation_enable')}</div><div className="setting-help">{t('settings.escalation_enable_help')}</div></div><Toggle checked={escalation.enabled} onChange={v=>setEscalation({...escalation,enabled:v})}/></div><div className="settings-grid"><div><label className="form-label">{t('settings.first_reminder')}</label><input className="form-input" type="number" min={1} value={escalation.first_after_hours} onChange={e=>setEscalation({...escalation,first_after_hours:Number(e.target.value)})}/></div><div><label className="form-label">{t('settings.repeat_every')}</label><input className="form-input" type="number" min={1} value={escalation.repeat_every_hours} onChange={e=>setEscalation({...escalation,repeat_every_hours:Number(e.target.value)})}/></div><div><label className="form-label">{t('settings.max_escalations')}</label><input className="form-input" type="number" min={1} max={20} value={escalation.max_escalations} onChange={e=>setEscalation({...escalation,max_escalations:Number(e.target.value)})}/></div></div><button className="btn btn-primary" style={{marginTop:12}} onClick={saveEscalation}>{t('settings.save_escalation')}</button></div>
   </div>}
+  </fieldset>
  </section>
 }

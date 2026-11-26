@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PortalRole;
+use App\Support\SettingsSections;
 use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class RoleManagementController extends Controller
             'base_role'=>['required', Rule::in(self::BASE_ROLES)],
             'permissions'=>'nullable|array',
             'page_access'=>'required|array',
+            'settings_access'=>'nullable|array',
         ]);
         $slugBase = Str::slug($data['name']) ?: 'custom-role';
         $slug = $slugBase;
@@ -37,10 +39,11 @@ class RoleManagementController extends Controller
             'is_active'=>true,
             'permissions'=>$this->normalizePermissions($data['permissions'] ?? []),
             'page_access'=>$this->normalizePages($data['page_access'], $data['base_role']),
+            'settings_access'=>SettingsSections::normaliseMap($data['settings_access'] ?? [], $data['base_role']),
             'created_by'=>$request->user()->id,
         ]);
         $audit->log($request,'portal-role.created',$role,'Custom portal role created.',[
-            'base_role'=>$role->base_role,'page_access'=>$role->page_access,'permissions'=>$role->permissions,
+            'base_role'=>$role->base_role,'page_access'=>$role->page_access,'permissions'=>$role->permissions,'settings_access'=>$role->settings_access,
         ]);
         return response()->json(['message'=>__('messages.role.created'),'role'=>$role]);
     }
@@ -52,6 +55,7 @@ class RoleManagementController extends Controller
             'base_role'=>['required', Rule::in(self::BASE_ROLES)],
             'permissions'=>'nullable|array',
             'page_access'=>'required|array',
+            'settings_access'=>'nullable|array',
             'is_active'=>'required|boolean',
         ]);
         if ($portalRole->is_builtin && $data['base_role'] !== $portalRole->base_role) {
@@ -66,6 +70,7 @@ class RoleManagementController extends Controller
             'base_role'=>$data['base_role'],
             'permissions'=>$this->normalizePermissions($data['permissions'] ?? []),
             'page_access'=>$this->normalizePages($data['page_access'], $data['base_role']),
+            'settings_access'=>SettingsSections::normaliseMap($data['settings_access'] ?? ($portalRole->settings_access ?? []), $data['base_role']),
             'is_active'=>$portalRole->is_builtin ? true : (bool)$data['is_active'],
         ]);
         $audit->log($request,'portal-role.updated',$portalRole,'Portal role updated.',[

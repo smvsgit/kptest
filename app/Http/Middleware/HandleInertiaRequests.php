@@ -94,6 +94,10 @@ class HandleInertiaRequests extends Middleware
             ],
             'branding' => $branding,
             'locale' => $locale,
+            // How far this user reaches into each section of the Settings
+            // console: 'none', 'view' or 'edit'. The screen draws its tabs from
+            // this, and the same answer guards the routes. (Review F05.)
+            'settingsAccess' => $request->user()?->settingsAccessMap() ?? [],
             // The whole interface catalogue, flattened to dot keys. It is a few
             // kilobytes and every screen draws on it, so sending it with the
             // page beats a round trip the moment a label renders.
