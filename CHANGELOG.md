@@ -1,5 +1,29 @@
 # Karyalay Portal - Changelog
 
+## v19.19 - Fields of Your Own (2026-11-26)
+
+- Metadata settings offered a fixed list of mandatory fields and the master-data lists. The review
+  asked for the other half: "Admin defines per-file-type fields, input type, required/default values
+  and editable versus locked status. Support adding/retiring fields with validation and migration
+  rules. Preserve system timestamps, IDs, checksums and version audit data as immutable." (F09b.)
+- **Settings -> Metadata & Master Data** now carries a field builder. A field has a name, a help
+  line, an answer type (short text, long text, number, date, one-of-a-list, yes/no), the file types
+  it applies to, a default, and two switches: **must be filled** and **locked once set**.
+- Values live in `media_files.custom_metadata`, keyed by the definition. Adding a field costs no
+  migration and **retiring one destroys no data** - it leaves the forms and every value already
+  recorded stays readable. A field may only be deleted while nothing has ever been filed under it;
+  the server refuses otherwise and says so.
+- **Describe asks for them**, narrowed to the types actually selected: a field for video is not
+  asked for a document. Both ways in write them - a selection through bulk edit and a folder
+  through the folder endpoint - and both honour the locked rule.
+- **The system stays the system.** A field cannot be named after a column the portal keeps for
+  itself: id, name, timestamps, checksum, current version, department, folder and the built-in
+  metadata are all refused by name. A business date is a field of your own; the upload timestamp is
+  not, and nothing here can write it.
+- Every value is checked against its definition before it is stored. A number field refuses text, a
+  list field refuses a value that is not on its list, and a field that is retired or does not apply
+  to the file is dropped rather than written.
+
 ## v19.18 - Tag Suggestions, Asked For One at a Time (2026-11-26)
 
 - Describe had a Tags field and add/replace controls but no way to ask for a suggestion. The review

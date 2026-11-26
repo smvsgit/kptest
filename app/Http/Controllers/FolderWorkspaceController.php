@@ -193,7 +193,10 @@ class FolderWorkspaceController extends Controller
         $this->assertReachable($request, $folder);
 
         $data = $request->validate([
-            'metadata' => 'required|array',
+            // Optional since v19.19: a pass may set only the administrator's own
+            // fields, or only tags. The "nothing to apply" guard below is what
+            // actually stops an empty request. (Review F09b.)
+            'metadata' => 'nullable|array',
             'metadata.year' => 'nullable|integer|min:1800|max:2500',
             'metadata.country_id' => ['nullable', Rule::exists('master_data_values', 'id')->where('type', 'country')],
             'metadata.state_id' => ['nullable', Rule::exists('master_data_values', 'id')->where('type', 'state')],
@@ -207,6 +210,9 @@ class FolderWorkspaceController extends Controller
             'metadata.subcategory_id' => 'nullable|exists:subcategories,id',
             'metadata.description' => 'nullable|string|max:5000',
             'metadata.internal_remarks' => 'nullable|string|max:5000',
+            // Administrator-defined fields. Checked against their definitions
+            // rather than a fixed list, so adding one costs no code. (F09b.)
+            'custom_metadata' => 'nullable|array',
             'tags' => 'nullable|array|max:100',
             'tags.*' => 'string|max:80',
             'tags_mode' => 'nullable|in:add,replace',
@@ -215,8 +221,9 @@ class FolderWorkspaceController extends Controller
             'only_empty' => 'nullable|boolean',
         ]);
 
-        $updates = array_intersect_key($data['metadata'], array_flip(self::METADATA_FIELDS));
-        abort_if(!$updates && empty($data['tags']), 422, __('messages.folder.nothing_to_apply'));
+        $updates = array_intersect_key($data['metadata'] ?? [], array_flip(self::METADATA_FIELDS));
+        $custom = $data['custom_metadata'] ?? [];
+        abort_if(!$updates && empty($data['tags']) && !$custom, 422, __('messages.folder.nothing_to_apply'));
 
         $location = app(LocationHierarchyService::class);
         if ($location->touches($updates)) $location->assertValid($updates);
@@ -228,12 +235,24 @@ class FolderWorkspaceController extends Controller
         $onlyEmpty = $request->boolean('only_empty');
         $touched = [];
 
-        DB::transaction(function () use ($folderIds, $updates, $data, $onlyEmpty, &$touched, $request, $audit) {
-            MediaFile::query()->whereIn('folder_id', $folderIds)->chunkById(200, function ($chunk) use ($updates, $data, $onlyEmpty, &$touched, $request, $audit) {
+        DB::transaction(function () use ($folderIds, $updates, $custom, $data, $onlyEmpty, &$touched, $request, $audit) {
+            MediaFile::query()->whereIn('folder_id', $folderIds)->chunkById(200, function ($chunk) use ($updates, $custom, $data, $onlyEmpty, &$touched, $request, $audit) {
                 foreach ($chunk as $file) {
                     $apply = $onlyEmpty
                         ? array_filter($updates, fn ($value, $field) => blank($file->{$field}) && filled($value), ARRAY_FILTER_USE_BOTH)
                         : $updates;
+
+                    // The administrator's own fields go through the same save and
+                    // the same audit entry as everything else. (Review F09b.)
+                    if ($custom) {
+                        $service = app(\App\Services\CustomMetadataService::class);
+                        $clean = $service->validate($custom, $file);
+                        if ($onlyEmpty) {
+                            $have = $file->custom_metadata ?? [];
+                            $clean = array_filter($clean, fn ($value, $key) => blank($have[$key] ?? null) && filled($value), ARRAY_FILTER_USE_BOTH);
+                        }
+                        if ($clean) $apply['custom_metadata'] = $service->merge($file, $clean);
+                    }
 
                     if (!empty($data['tags'])) {
                         $incoming = array_values(array_unique(array_filter(array_map('trim', $data['tags']))));

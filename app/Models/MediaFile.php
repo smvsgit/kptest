@@ -14,10 +14,12 @@ class MediaFile extends Model
         'year', 'country_id', 'state_id', 'city_id', 'mandir_id', 'event_id', 'person_id', 'language_id', 'media_type_id',
         'description', 'internal_remarks', 'source_type', 'asset_status', 'current_version', 'duplicate_of_id',
         'archived_from_status', 'archived_at', 'archived_by',
-        'access_policy', 'download_allowed', 'tags', 'resolution', 'file_path', 'thumbnail_path', 'checksum_sha256',
+        'access_policy', 'download_allowed', 'tags','custom_metadata', 'resolution', 'file_path', 'thumbnail_path', 'checksum_sha256',
         'technical_metadata','processing_status','uploaded_by','owner_user_id','folder_id','watermark_enabled',
     ];
-    protected $casts = ['tags' => 'array', 'technical_metadata' => 'array', 'download_allowed' => 'boolean', 'watermark_enabled'=>'boolean', 'archived_at' => 'datetime'];
+    // 'custom_metadata' holds the administrator-defined fields, keyed by
+    // definition. (Review F09b.)
+    protected $casts = ['tags' => 'array', 'custom_metadata' => 'array', 'technical_metadata' => 'array', 'download_allowed' => 'boolean', 'watermark_enabled'=>'boolean', 'archived_at' => 'datetime'];
     protected $appends = ['thumbnail_url', 'image_url', 'video_url', 'audio_url', 'document_url', 'download_url'];
 
     public function category() { return $this->belongsTo(Category::class); }

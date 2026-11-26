@@ -4,7 +4,7 @@ import {
     FolderInput, Tag, Globe2, ChevronRight, ChevronDown, Folder, FolderOpen, Image as ImageIcon,
     Video, Music, FileText, LayoutGrid, List, Columns3, X, Loader2,
 } from 'lucide-react';
-import type { AiTaggingState, AccessPolicy, Category, MasterDataMap, MetadataSettings, UploadSettings, User, VisibilityRole } from '../../types';
+import type { MetadataFieldDefinition, AiTaggingState, AccessPolicy, Category, MasterDataMap, MetadataSettings, UploadSettings, User, VisibilityRole } from '../../types';
 import { formatBytes } from '../../format';
 import { getCsrf } from '../../upload';
 import { useTx } from '../../i18n';
@@ -28,6 +28,7 @@ interface Props {
     visibilityRoles:VisibilityRole[];
     canUpload:boolean;
     aiTagging:AiTaggingState;
+    metadataFields:MetadataFieldDefinition[];
     /** Hand a batch to the shared upload tray, bound to a folder. */
     onUpload:(files:File[],folderId:number|null)=>void;
     /** Changes whenever a transfer finishes, wherever it was started. */
@@ -527,7 +528,7 @@ export default function FoldersPanel(p:Props){
                 </div>
 
                 {inspector&&(
-                    <FolderInspector aiTagging={p.aiTagging}
+                    <FolderInspector aiTagging={p.aiTagging} metadataFields={p.metadataFields}
                         mode={inspector}
                         folder={targetFolder}
                         selectedFiles={selectedFiles}

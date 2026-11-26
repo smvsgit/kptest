@@ -39,6 +39,8 @@ class BulkMediaController extends Controller
             'department_id'=>['nullable',Rule::exists('departments','id')->where('is_active',1)->where('is_system',0)],
             'visible_role_ids'=>'nullable|array|max:20',
             'visible_role_ids.*'=>['integer',Rule::exists('portal_roles','id')->where('is_active',true)],
+            // Administrator-defined fields, checked against their definitions. (F09b.)
+            'custom_metadata'=>'nullable|array',
             'archive_mode'=>'nullable|in:archive,unarchive',
             'access_policy'=>'nullable|in:public,protected,private','download_allowed'=>'nullable|boolean',
         ]);
@@ -71,6 +73,11 @@ class BulkMediaController extends Controller
                         $audit->log($request,'media.role-visibility.updated',$file,'Role visibility updated.',['visible_role_ids'=>$roleIds]);
                         if(!in_array($file->id,$changed,true))$changed[]=$file->id;
                     }
+                }
+                if(!empty($data['custom_metadata'])){
+                    $service=app(\App\Services\CustomMetadataService::class);
+                    $clean=$service->validate($data['custom_metadata'],$file);
+                    if($clean) $updates['custom_metadata']=$service->merge($file,$clean);
                 }
                 foreach(['category_id','subcategory_id','department_id','access_policy','download_allowed'] as $field) if(array_key_exists($field,$data)) $updates[$field]=$data[$field];
                 if(array_key_exists('category_id',$updates) && !array_key_exists('subcategory_id',$updates)) $updates['subcategory_id']=null;

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { X, Tag, Globe2, Loader2, Sparkles, Plus } from 'lucide-react';
-import type { AiTaggingState, AccessPolicy, Category, MasterDataMap, MasterDataType, MasterDataValue, MetadataSettings, VisibilityRole } from '../../types';
+import type { MetadataFieldDefinition, AiTaggingState, AccessPolicy, Category, MasterDataMap, MasterDataType, MasterDataValue, MetadataSettings, VisibilityRole } from '../../types';
 import { getCsrf } from '../../upload';
 import { useTx } from '../../i18n';
 import type { FolderFile, FolderNode } from '../panels/FoldersPanel';
@@ -16,6 +16,7 @@ interface Props {
     canPublish:boolean;
     /** Whether on-demand tag suggestions exist and this role may spend on them. (F08.) */
     aiTagging:AiTaggingState;
+    metadataFields:MetadataFieldDefinition[];
     onClose:()=>void;
     onDone:(message:string)=>void;
     onError:(message:string)=>void;
@@ -50,12 +51,24 @@ async function post(url:string,body:unknown,method='POST'){
 export default function FolderInspector(p:Props){
     const {t,tc}=useTx();
     const [draft,setDraft]=useState<Draft>({});
+    const [custom,setCustom]=useState<Record<string,string>>({});
     const [tags,setTags]=useState('');
     // On-demand tag suggestions. They live here until the person adds one;
     // nothing reaches the asset on its own. (Review F08.)
     const [suggested,setSuggested]=useState<string[]>([]);
     const [suggesting,setSuggesting]=useState(false);
     const [suggestNote,setSuggestNote]=useState('');
+
+    // The administrator's own fields, narrowed to the types actually selected.
+    // A field that applies to images only is not asked for a document. (F09b.)
+    const selectedTypes=Array.from(new Set(p.selectedFiles.map(f=>f.type)));
+    const customFields=p.metadataFields.filter(field=>{
+        if(!field.is_active)return false;
+        const applies=field.applies_to||[];
+        if(!applies.length)return true;
+        if(!selectedTypes.length)return true;
+        return selectedTypes.some(type=>applies.includes(type));
+    });
     const tagList=()=>tags.split(',').map(x=>x.trim()).filter(Boolean);
     const hasTag=(tag:string)=>tagList().some(x=>x.toLowerCase()===tag.toLowerCase());
     const toggleTag=(tag:string)=>{
@@ -123,7 +136,8 @@ export default function FolderInspector(p:Props){
     },[draft]);
 
     const applyMetadata=async()=>{
-        if(!Object.keys(metadataPayload).length&&!tags.trim()){
+        const customValues=()=>Object.fromEntries(Object.entries(custom).filter(([,v])=>String(v).trim()!==''));
+        if(!Object.keys(metadataPayload).length&&!tags.trim()&&!Object.keys(customValues()).length){
             return p.onError(t('inspector.nothing_filled'));
         }
         setBusy(true);
@@ -135,6 +149,7 @@ export default function FolderInspector(p:Props){
                     metadata:metadataPayload,
                     ...(draft.category_id?{category_id:Number(draft.category_id)}:{}),
                     ...(draft.subcategory_id?{subcategory_id:Number(draft.subcategory_id)}:{}),
+                    ...(Object.keys(customValues()).length?{custom_metadata:customValues()}:{}),
                     ...(tagList.length?{tags:tagList,tags_mode:tagsMode}:{}),
                 },'PATCH');
                 p.onDone(data.message);
@@ -142,6 +157,7 @@ export default function FolderInspector(p:Props){
                 if(!p.folder)return p.onError(t('inspector.open_folder_first'));
                 const data=await post(`/folders/${p.folder.id}/metadata`,{
                     metadata:metadataPayload,
+                    ...(Object.keys(customValues()).length?{custom_metadata:customValues()}:{}),
                     ...(tagList.length?{tags:tagList,tags_mode:tagsMode}:{}),
                     include_subfolders:recursive,
                     only_empty:onlyEmpty,
@@ -257,6 +273,37 @@ export default function FolderInspector(p:Props){
                         <label className="form-label" htmlFor="fi-description">{t('access.description')}</label>
                         <textarea id="fi-description" className="form-input" rows={3} value={draft.description||''} onChange={e=>set('description',e.target.value)} placeholder={t('inspector.leave_unchanged')}/>
                     </div>
+
+                    {customFields.length>0&&<div className="form-group">
+                        <span className="form-label">{t('inspector.custom_fields')}</span>
+                        {customFields.map(field=><div className="form-group" key={field.key} style={{marginTop:8}}>
+                            <label className="form-label" htmlFor={'fi-c-'+field.key}>
+                                {field.label}{field.is_required?' *':''}{field.is_locked?' 🔒':''}
+                            </label>
+                            {field.input_type==='textarea'
+                                ? <textarea id={'fi-c-'+field.key} className="form-input" rows={2} style={{resize:'vertical'}}
+                                    value={custom[field.key]??''} onChange={e=>setCustom({...custom,[field.key]:e.target.value})}/>
+                                : field.input_type==='select'
+                                ? <select id={'fi-c-'+field.key} className="form-select" value={custom[field.key]??''}
+                                    onChange={e=>setCustom({...custom,[field.key]:e.target.value})}>
+                                    <option value="">{t('inspector.leave_unchanged')}</option>
+                                    {(field.options||[]).map(option=><option key={option} value={option}>{option}</option>)}
+                                  </select>
+                                : field.input_type==='checkbox'
+                                ? <select id={'fi-c-'+field.key} className="form-select" value={custom[field.key]??''}
+                                    onChange={e=>setCustom({...custom,[field.key]:e.target.value})}>
+                                    <option value="">{t('inspector.leave_unchanged')}</option>
+                                    <option value="1">{t('inspector.yes')}</option>
+                                    <option value="0">{t('inspector.no')}</option>
+                                  </select>
+                                : <input id={'fi-c-'+field.key} className="form-input"
+                                    type={field.input_type==='number'?'number':field.input_type==='date'?'date':'text'}
+                                    value={custom[field.key]??''} onChange={e=>setCustom({...custom,[field.key]:e.target.value})}/>}
+                            {(field.help||field.is_locked)&&<div className="setting-help">
+                                {field.help}{field.help&&field.is_locked?' · ':''}{field.is_locked?t('inspector.locked_hint'):''}
+                            </div>}
+                        </div>)}
+                    </div>}
 
                     <div className="form-group">
                         <label className="form-label" htmlFor="fi-tags">{t('upload.tags')}</label>
