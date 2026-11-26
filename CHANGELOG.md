@@ -1,5 +1,25 @@
 # Karyalay Portal - Changelog
 
+## v19.17 - AI Search, Optional and Off (2026-11-26)
+
+- Search settings said semantic/AI search was deferred, and `hybrid_semantic_enabled` was hard-wired
+  to false on every save. The review asked for AI search to exist "as a separately enabled, explicit
+  optional mode without slowing or silently replacing native queries". (F07.)
+- **Two switches, and neither implies the other.** An administrator configures and enables it in
+  Settings -> Search; the person searching then has to ask for it on that query, with a chip beside
+  the filters. An ordinary search never reaches a provider, even with the mode switched on.
+- **It widens, it does not replace.** The words the user typed are searched natively first and keep
+  their order; the AI's extra terms are appended behind them. Exact, fuzzy and tag search are
+  untouched and remain the default.
+- **No provider is chosen for them.** Endpoint, model, key, timeout, term cap and the domain
+  instructions are all the administrator's, and any OpenAI-shaped chat-completions service fits.
+  Without an endpoint and a model the mode cannot be switched on at all.
+- **A failure is never silent.** Refused, unreachable, timed out or nothing usable returned - the
+  native results stand and the screen says the AI did not run. An AI search that quietly degraded
+  into a normal one can never be mistaken for an AI result.
+- The key is write-only: it is never sent to the screen, never written to the audit trail, and an
+  empty box keeps the stored one. Saving the mode needs the Settings -> Search section from v19.14.
+
 ## v19.16 - Uploading From the Main Page (2026-11-26)
 
 - Browse offered search, filters and selection but no way to upload: since Batch Upload was retired

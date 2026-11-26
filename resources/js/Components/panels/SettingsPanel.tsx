@@ -3,7 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Building2, FolderTree, GitBranch, Info, Pencil, PieChart, Plus, Trash2, X, Type, Search, Upload, RotateCcw, BookOpen, Database, Languages, Sparkles, SlidersHorizontal, Bell, Send, LockKeyhole, DatabaseBackup, ShieldCheck, UserCog } from 'lucide-react';
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import type { AppVersion, Category, Department, User, Stats, FontAssignments, FontFamily, SearchSettings, MasterDataMap, MasterDataType, MetadataSettings, NotificationChannelSettings, NotificationEscalationSettings, RecycleBinItem, UploadSettings, SecurityAuthSettings, AccessMaturitySettings, BackupSettings, BackupRunRow, RestoreVerificationRow, BackupStatusSummary, ReadinessData, OrganizationUnit, PortalRole, UserGroup, NetworkPolicySummary, DepartmentStorage } from '../../types';
+import type { AiSearchSettings, AppVersion, Category, Department, User, Stats, FontAssignments, FontFamily, SearchSettings, MasterDataMap, MasterDataType, MetadataSettings, NotificationChannelSettings, NotificationEscalationSettings, RecycleBinItem, UploadSettings, SecurityAuthSettings, AccessMaturitySettings, BackupSettings, BackupRunRow, RestoreVerificationRow, BackupStatusSummary, ReadinessData, OrganizationUnit, PortalRole, UserGroup, NetworkPolicySummary, DepartmentStorage } from '../../types';
 import BackupSettingsPanel from './BackupSettingsPanel';
 import UatReadinessPanel from './UatReadinessPanel';
 import FeatureCompletionPanel from './FeatureCompletionPanel';
@@ -17,7 +17,7 @@ Chart.register(ArcElement, Tooltip, Legend);
 
 type SettingsTab='general'|'users'|'fonts'|'search'|'metadata'|'upload'|'security'|'notifications'|'backup'|'readiness'|'lifecycle'|'completion'|'guide';
 interface Props {
- active:boolean; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
+ active:boolean; aiSearchSettings:AiSearchSettings; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
  canConfigCategories:boolean; canManageDepartments:boolean; fontFamilies:FontFamily[]; appearanceSettings:FontAssignments; searchSettings:SearchSettings; masterData:MasterDataMap; metadataSettings:MetadataSettings; notificationSettings:NotificationChannelSettings; notificationEscalation:NotificationEscalationSettings; uploadSettings:UploadSettings; securityAuthSettings:SecurityAuthSettings; accessMaturitySettings:AccessMaturitySettings; backupSettings:BackupSettings; backupRuns:BackupRunRow[]; restoreVerifications:RestoreVerificationRow[]; backupStatus:BackupStatusSummary; readinessData:ReadinessData; featureCompletionSettings?:Record<string,Record<string,unknown>>;
  onCategoryModal:(s:{mode:'add-category'|'add-subcategory'|'edit-category'|'edit-subcategory';categoryId?:number|null;subcategoryId?:number|null})=>void; onSuccess:(msg:string)=>void; onError:(msg:string)=>void;
 }
@@ -78,6 +78,18 @@ export default function SettingsPanel(p:Props){
  useEffect(()=>{if(activeTabRow&&activeTabRow.tab!==tab)setTab(activeTabRow.tab)},[activeTabRow,tab]);
  const safeStats=p.stats??{total_files:0,total_size:0,by_type:{video:0,image:0,audio:0,document:0}};
  const [fonts,setFonts]=useState<FontAssignments>(p.appearanceSettings);
+ // Optional AI search. The key is write-only: it is never sent to the screen,
+ // so an empty box means "keep what is stored". (Review F07.)
+ const [ai,setAi]=useState(p.aiSearchSettings);
+ const [aiKey,setAiKey]=useState('');
+ const [aiProbe,setAiProbe]=useState('');
+ const [aiTesting,setAiTesting]=useState(false);
+ const [aiResult,setAiResult]=useState('');
+ const saveAi=()=>router.patch('/settings/search/ai',{...ai,api_key:aiKey},{preserveScroll:true,onSuccess:()=>setAiKey('')});
+ const testAi=async()=>{setAiTesting(true);setAiResult('');try{
+   const r=await fetch('/settings/search/ai/test',{method:'POST',headers:{'X-CSRF-TOKEN':csrf(),'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({query:aiProbe.trim()})});
+   const d=await r.json();setAiResult(d.message||'');
+  }catch(e){setAiResult(e instanceof Error?e.message:'')}finally{setAiTesting(false)}};
  const [fontName,setFontName]=useState(''); const [fontWeight,setFontWeight]=useState('400'); const [fontStyle,setFontStyle]=useState('normal'); const [fontScripts,setFontScripts]=useState<string[]>(['latin']); const [fontFile,setFontFile]=useState<File|null>(null);
  const [search,setSearch]=useState<SearchSettings>({...p.searchSettings}); const [exactField,setExactField]=useState('');
  const [synonymText,setSynonymText]=useState(groupsText(p.searchSettings.synonym_groups)); const [aliasText,setAliasText]=useState(groupsText(p.searchSettings.alias_groups));
@@ -196,6 +208,39 @@ export default function SettingsPanel(p:Props){
   </div>}
 
   {tab==='search'&&isSuper&&<div style={{display:'grid',gap:18}}>
+   {/* Optional AI search. Default off, its own endpoint, and it never changes
+       what a normal search does. (Review F07.) */}
+   <div className="settings-card">
+    <h2 className="settings-card-title"><Sparkles size={18}/> {t('settings.ai_search_title')}</h2>
+    <Guide>{t('settings.ai_search_guide')}</Guide>
+    <div className="setting-row" style={{marginTop:10}}>
+     <div><div className="setting-title">{t('settings.ai_enable')}</div></div>
+     <Toggle checked={ai.enabled} onChange={v=>setAi({...ai,enabled:v})}/>
+    </div>
+    <div className="settings-grid" style={{marginTop:10}}>
+     <div className="form-group"><label className="form-label">{t('settings.ai_endpoint')}</label>
+      <input className="form-input" value={ai.endpoint} onChange={e=>setAi({...ai,endpoint:e.target.value})} placeholder="https://…/v1/chat/completions"/></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_model')}</label>
+      <input className="form-input" value={ai.model} onChange={e=>setAi({...ai,model:e.target.value})}/></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_key')}</label>
+      <input className="form-input" type="password" value={aiKey} onChange={e=>setAiKey(e.target.value)} placeholder="••••••••"/>
+      <div className="setting-help">{t('settings.ai_key_help')}</div></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_timeout')}</label>
+      <input className="form-input" type="number" min={1} max={30} value={ai.timeout_seconds} onChange={e=>setAi({...ai,timeout_seconds:Number(e.target.value)||6})}/></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_max_terms')}</label>
+      <input className="form-input" type="number" min={1} max={20} value={ai.max_terms} onChange={e=>setAi({...ai,max_terms:Number(e.target.value)||6})}/></div>
+    </div>
+    <div className="form-group" style={{marginTop:10}}><label className="form-label">{t('settings.ai_instructions')}</label>
+     <textarea className="form-input" rows={3} value={ai.instructions} onChange={e=>setAi({...ai,instructions:e.target.value})} style={{resize:'vertical'}}/></div>
+    <div className="settings-grid" style={{marginTop:10}}>
+     <div className="form-group"><label className="form-label">{t('settings.ai_test')}</label>
+      <input className="form-input" value={aiProbe} onChange={e=>setAiProbe(e.target.value)} placeholder={t('settings.ai_test_placeholder')}/></div>
+     <div className="form-group" style={{alignSelf:'end'}}>
+      <button className="btn btn-secondary" disabled={aiTesting||!aiProbe.trim()} onClick={testAi}>{t('settings.ai_run_test')}</button></div>
+    </div>
+    {aiResult&&<div className="admin-guide" style={{marginTop:8}}>{aiResult}</div>}
+    <button className="btn btn-primary" style={{marginTop:12}} onClick={saveAi}>{t('settings.ai_save')}</button>
+   </div>
    <Guide><b>{t('settings.search_guide_title')}</b> {t('settings.search_guide')} <b>{t('settings.search_guide_ai')}</b></Guide>
    <div className="settings-card"><h2 className="settings-card-title"><Database size={18}/> {t('settings.search_engine_mode')}</h2><div className="setting-row"><div className="setting-copy"><div className="setting-title">{t('settings.search_enabled')}</div><div className="setting-help">{t('settings.search_enabled_help')}</div></div><Toggle checked={search.enabled} onChange={v=>setSearch({...search,enabled:v})}/></div><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:10,marginTop:12}}><label className="admin-guide"><input type="radio" name="mode" checked={search.mode==='meilisearch'} onChange={()=>setSearch({...search,mode:'meilisearch'})}/> <b>{t('settings.mode_b')}</b><br/>{t('settings.mode_b_help')}</label><label className="admin-guide"><input type="radio" name="mode" checked={search.mode==='hybrid'} onChange={()=>setSearch({...search,mode:'hybrid'})}/> <b>{t('settings.mode_e')}</b><br/>{t('settings.mode_e_help')}</label></div></div>
    <div className="settings-card"><h2 className="settings-card-title"><Sparkles size={18}/> {t('settings.search_features')}</h2>{[

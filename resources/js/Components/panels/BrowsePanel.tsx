@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Archive, Clock3, Database, FileText, Files, Image, Music, RotateCcw, Save, Search, Shield, SlidersHorizontal, Star, Trash2, Video, X, UploadCloud, FolderUp } from 'lucide-react';
-import type { AccessPolicy, Department, FilterOwner, MasterDataMap, MasterDataValue, MediaFile, MetadataSettings, PaginatedResult, QuickViewCounts, SavedSearch, SearchSettings, Stats, User, UserRole } from '../../types';
+import { Archive, Clock3, Database, FileText, Files, Image, Music, RotateCcw, Save, Search, Shield, SlidersHorizontal, Star, Trash2, Video, X, UploadCloud, FolderUp, Sparkles } from 'lucide-react';
+import type { AiSearchState, AccessPolicy, Department, FilterOwner, MasterDataMap, MasterDataValue, MediaFile, MetadataSettings, PaginatedResult, QuickViewCounts, SavedSearch, SearchSettings, Stats, User, UserRole } from '../../types';
 import MediaCard from '../media/MediaCard';
 import { useT } from '../../i18n';
 
 interface BrowseFilters {
+    /** The optional AI mode, asked for per query and never stored. (F07.) */
+    ai?:string|boolean|null;
     search?: string; scope?: 'everywhere'|'current_department'; type?: string; sort?: string;
     department_id?: number|null; category_id?: number|null; subcategory_id?: number|null; access_policy?: AccessPolicy|null;
     year?: number|null; country_id?: number|null; state_id?: number|null; city_id?: number|null; mandir_id?: number|null;
@@ -15,6 +17,8 @@ interface BrowseFilters {
 
 interface Props {
     active: boolean;
+    /** Whether the optional AI mode exists at all, and what it did here. (F07.) */
+    aiSearch: AiSearchState;
     /** Whether this user may upload at all; the actions are hidden otherwise. */
     canUpload: boolean;
     /** Open the destination picker for a files or a folder upload. (F04.) */
@@ -128,6 +132,13 @@ export default function BrowsePanel(p:Props){
                 {searchSettings.department_filter&&filters.scope!=='current_department'&&<select className="sort-select" value={filters.department_id||''} onChange={e=>p.onFilterChange({department_id:e.target.value?Number(e.target.value):undefined})}><option value="">{t('filters.all_departments')}</option>{departments.filter(d=>d.is_active).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select>}
                 <select className="sort-select" value={filters.access_policy||''} onChange={e=>p.onFilterChange({access_policy:e.target.value||undefined})}><option value="">{t('filters.all_policies')}</option><option value="public">{t('policy.public')}</option><option value="protected">{t('policy.protected')}</option><option value="private">{t('policy.private')}</option></select>
                 <button className={`btn btn-secondary${advancedOpen?' active':''}`} onClick={()=>setAdvancedOpen(x=>!x)}><SlidersHorizontal size={15}/> {t('browse.advanced_filters')}</button>
+                {/* The optional AI mode. Shown only where an administrator has
+                    configured it, off on every query until it is asked for, and
+                    it never replaces the native search. (Review F07.) */}
+                {p.aiSearch.available&&<button type="button" title={t('browse.ai_mode_hint')}
+                    className={`btn btn-secondary${filters.ai?' active':''}`}
+                    onClick={()=>p.onFilterChange({ai:filters.ai?undefined:'1'})}>
+                    <Sparkles size={15}/> {t('browse.ai_mode')}</button>}
                 <select className="sort-select" value={filters.sort||(filters.search&&searchSettings.best_match_sort?'best':'newest')} onChange={e=>p.onSort(e.target.value)}>{filters.search&&searchSettings.best_match_sort&&<option value="best">{t('sort.best_match')}</option>}<option value="newest">{t('sort.newest')}</option><option value="updated">{t('sort.recently_updated')}</option><option value="oldest">{t('sort.oldest')}</option><option value="name_asc">{t('sort.name_asc')}</option><option value="name_desc">{t('sort.name_desc')}</option><option value="size_desc">{t('sort.largest')}</option></select>
                 <button className="btn btn-secondary" onClick={p.onSelectAll}>{t('browse.select_all')}</button>
                 {/* Upload from the main page. The destination is asked for first,
@@ -158,6 +169,10 @@ export default function BrowsePanel(p:Props){
             <div className="advanced-filter-footer"><button className="btn btn-secondary" onClick={()=>p.onFilterChange(clearKeys)}><RotateCcw size={14}/> {t('browse.clear_metadata_filters')}</button></div>
         </div>}
 
+        {p.aiSearch.requested&&<div className="admin-guide" style={{marginBottom:10}}>
+            <Sparkles size={14} style={{verticalAlign:-2,marginRight:6}}/>
+            {p.aiSearch.used?t('browse.ai_used',{terms:p.aiSearch.terms.join(', ')}):(p.aiSearch.note||t('browse.ai_not_used'))}
+        </div>}
         {(activeFilterEntries.length>0||filters.quick_view)&&<div className="active-filter-strip"><span>{t('browse.active_label')}</span>{filters.quick_view&&<button onClick={()=>p.onFilterChange({quick_view:undefined})}>{filters.quick_view==='favorites'?t('browse.favorites'):t('browse.recently_viewed')} <X size={12}/></button>}{activeFilterEntries.map(item=><button key={String(item.key)} onClick={()=>p.onFilterChange({[item.key]:undefined})}>{item.label}: {item.value} <X size={12}/></button>)}<button className="clear-all" onClick={()=>p.onFilterChange(clearKeys)}>{t('browse.clear_all')}</button></div>}
 
         <div className="media-grid">{files.data.length===0?<div className="search-empty-state"><Search size={48}/><h3>{t('browse.no_matching_files')}</h3><p>{t('browse.try_broader')}</p><button className="btn btn-secondary" onClick={()=>p.onFilterChange({...clearKeys,search:undefined,type:undefined,scope:'everywhere'})}><RotateCcw size={14}/> {t('browse.reset_search')}</button></div>:files.data.map(file=><MediaCard key={file.id} file={file} isSelected={selectedFiles.has(file.id)} onSelect={()=>p.onToggleSelect(file.id)} onFavorite={()=>p.onToggleFavorite(file)} onOpen={()=>p.onOpenPreview(file)} onDownload={()=>p.onDownload(file)} onOpenImage={()=>p.onOpenImage(file)}/>)}</div>

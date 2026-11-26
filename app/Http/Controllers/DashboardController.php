@@ -40,6 +40,9 @@ class DashboardController extends Controller
         'search','scope','type','sort','department_id','category_id','subcategory_id','access_policy',
         'year','country_id','state_id','city_id','mandir_id','event_id','person_id','language_id','media_type_id',
         'asset_status','source_type','uploaded_by','date_from','date_to','quick_view','panel','page',
+        // The optional AI mode is asked for per query and is never remembered
+        // as a setting, so it travels with the filters. (Review F07.)
+        'ai',
     ];
 
     public function index(Request $request, SearchIndexService $searchIndex, MediaAccessService $access, IntegrationHealthService $integrationHealth, BackupService $backups, ReadinessService $readiness, UserGuideService $userGuide, StorageQuotaService $storageQuota)
@@ -74,6 +77,10 @@ class DashboardController extends Controller
             $query->where('media_files.department_id', $user->department_id);
         }
 
+        // Reported to the screen so an AI search that quietly degraded into a
+        // normal one is never mistaken for an AI result.
+        $aiSearch = ['requested' => false, 'used' => false, 'terms' => [], 'note' => null];
+
         if ($search = trim((string) $request->get('search'))) {
             $ids = [];
             if (($searchSettings['enabled'] ?? true) && ($searchSettings['engine_pipeline_enabled'] ?? true)) {
@@ -87,6 +94,27 @@ class DashboardController extends Controller
                     $engineFilters['_visibility_department_id'] = $user->department_id;
                 }
                 $ids = $searchIndex->search($search, $engineFilters);
+
+                // The optional AI mode. It runs only when an administrator has
+                // switched it on AND this query asked for it, and it never
+                // replaces the native result - the words the user typed are
+                // searched first and keep their order, and the AI's extra terms
+                // are appended behind them. (Review F07.)
+                if ($request->boolean('ai')) {
+                    $ai = app(\App\Services\AiSearchService::class);
+                    $expansion = $ai->expand($search);
+                    $aiSearch = [
+                        'requested' => true,
+                        'used' => $expansion['used'],
+                        'terms' => $expansion['terms'],
+                        'note' => $expansion['note'],
+                    ];
+                    foreach ($expansion['terms'] as $term) {
+                        foreach ($searchIndex->search($term, $engineFilters) as $id) {
+                            if (!in_array($id, $ids, true)) $ids[] = $id;
+                        }
+                    }
+                }
             }
 
             if ($ids) {
@@ -227,6 +255,12 @@ class DashboardController extends Controller
             'fontFamilies' => $user->role === 'super-admin' ? FontFamily::with('files')->orderByDesc('is_system')->orderBy('name')->get() : [],
             'appearanceSettings' => SystemSetting::valueFor('appearance.fonts', ['global' => 'hind-vadodara', 'gujarati' => 'hind-vadodara', 'hindi' => 'noto-sans-devanagari', 'english' => 'inter']),
             'searchSettings' => $searchSettings,
+            // The key is deliberately absent: it is write-only, so the screen
+            // cannot show it and an empty box means "keep the stored one".
+            'aiSearchSettings' => collect(app(\App\Services\AiSearchService::class)->settings())->except('api_key')->all(),
+            // Whether the optional AI mode is available at all, and what it did
+            // on this request. Off unless an administrator configured it.
+            'aiSearch' => $aiSearch + ['available' => app(\App\Services\AiSearchService::class)->available()],
             'masterData' => MasterDataValue::query()->orderBy('type')->orderBy('sort_order')->orderBy('name')->get()->groupBy('type'),
             'metadataSettings' => SystemSetting::valueFor('metadata.settings', ['required_fields'=>['year','event_id','city_id','language_id'],'person_required'=>false,'allow_free_tags'=>true,'years_min'=>1950,'years_max'=>(int) date('Y')+2]),
             'notificationSettings' => $user->role === 'super-admin' ? $this->publicNotificationSettings() : ['portal'=>['enabled'=>true],'email'=>['enabled'=>false,'provider'=>'smtp','host'=>'','port'=>587,'encryption'=>'tls','username'=>'','from_address'=>'','from_name'=>''],'whatsapp'=>['enabled'=>false,'provider'=>'meta-cloud-api','endpoint'=>'','phone_number_id'=>'','business_account_id'=>'','sender'=>''],'sms'=>['enabled'=>false,'provider'=>'generic-http','endpoint'=>'','sender_id'=>''],'events'=>[]],

@@ -10,6 +10,7 @@ use App\Http\Controllers\FontController;
 use App\Http\Controllers\AppearanceSettingsController;
 use App\Http\Controllers\AccessRequestController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AiSearchSettingsController;
 use App\Http\Controllers\SearchSettingsController;
 use App\Http\Controllers\SearchDiscoveryController;
 use App\Http\Controllers\MediaFileController;
@@ -288,6 +289,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/settings/fonts/{fontFamily}', [FontController::class, 'destroy'])->name('settings.fonts.destroy')->middleware('settings:fonts');
         Route::patch('/settings/search', [SearchSettingsController::class, 'update'])->name('settings.search.update')->middleware('settings:search');
         Route::post('/settings/search/sync', [SearchSettingsController::class, 'sync'])->name('settings.search.sync')->middleware('settings:search');
+        // The optional AI mode keeps its own endpoint so that saving it cannot
+        // disturb the native search configuration. (Review F07.)
+        Route::patch('/settings/search/ai', [AiSearchSettingsController::class, 'update'])->name('settings.search.ai.update')->middleware('settings:search');
+        Route::post('/settings/search/ai/test', [AiSearchSettingsController::class, 'test'])->name('settings.search.ai.test')->middleware('settings:search');
         Route::post('/settings/master-data', [MasterDataController::class, 'store'])->name('settings.master-data.store')->middleware('settings:metadata');
         Route::patch('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'update'])->name('settings.master-data.update')->middleware('settings:metadata');
         Route::delete('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'destroy'])->name('settings.master-data.destroy')->middleware('settings:metadata');

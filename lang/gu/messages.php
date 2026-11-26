@@ -285,6 +285,13 @@ return [
         'reindex_failed' => 'અનુક્રમણિકા ફરી બની શકી નહીં: :error',
         'synchronized' => 'Meilisearch નું સેટિંગ સુમેળમાં આવ્યું.',
         'sync_incomplete' => 'સેટિંગ સચવાયું; Meilisearch સાથે સુમેળ પૂરો થઈ શક્યો નહીં: :error',
+        'ai_unavailable' => 'AI શોધ ચાલુ નથી, અથવા endpoint અને model ગોઠવેલાં નથી.',
+        'ai_needs_endpoint' => 'AI શોધ ચાલુ કરતાં પહેલાં endpoint અને model જોઈએ.',
+        'ai_refused' => 'AI provider એ વિનંતી નકારી (HTTP :status).',
+        'ai_no_terms' => 'AI provider પાસેથી વાપરવા જેવું કશું આવ્યું નહીં.',
+        'ai_failed' => 'AI provider સુધી પહોંચી શકાયું નહીં.',
+        'ai_saved' => 'AI શોધની ગોઠવણી સાચવી.',
+        'ai_test_ok' => 'AI શોધે જવાબ આપ્યો: :terms',
     ],
     'settings' => [
         'year_range_order' => 'વધુમાં વધુ વર્ષ ઓછામાં ઓછા વર્ષ જેટલું કે તેથી વધુ હોવું જોઈએ.',

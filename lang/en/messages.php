@@ -294,6 +294,13 @@ return [
         'reindex_failed' => 'Re-index failed: :error',
         'synchronized' => 'Meilisearch settings synchronized.',
         'sync_incomplete' => 'Settings saved; Meilisearch sync could not be completed: :error',
+        'ai_unavailable' => 'AI search is not switched on, or no endpoint and model are configured.',
+        'ai_needs_endpoint' => 'An endpoint and a model are needed before AI search can be switched on.',
+        'ai_refused' => 'The AI provider refused the request (HTTP :status).',
+        'ai_no_terms' => 'The AI provider returned nothing usable.',
+        'ai_failed' => 'The AI provider could not be reached.',
+        'ai_saved' => 'AI search settings saved.',
+        'ai_test_ok' => 'AI search answered with: :terms',
     ],
     'settings' => [
         'year_range_order' => 'The maximum year must be greater than or equal to the minimum year.',
