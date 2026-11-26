@@ -77,7 +77,25 @@ class MediaVersionService
         $version = DB::transaction(function () use ($media, $path, $originalName, $size, $mime, $user, $changeNote, $restoredFrom) {
             /** @var MediaFile $locked */
             $locked = MediaFile::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
-            $next = max(1, (int) $locked->current_version) + 1;
+            $current = max(1, (int) $locked->current_version);
+
+            // An asset that carries no row for the version it is on would lose
+            // its original here: the file it is being replaced with takes over
+            // file_path, and nothing would point at the bytes left behind.
+            // Record what is being superseded before superseding it. (F11.)
+            if ($locked->file_path && !$locked->versions()->where('version_number', $current)->exists()) {
+                $locked->versions()->create([
+                    'version_number' => $current,
+                    'original_name' => $locked->name,
+                    'file_path' => $locked->file_path,
+                    'size' => $locked->size,
+                    'checksum_sha256' => $locked->checksum_sha256,
+                    'change_note' => 'Initial upload.',
+                    'changed_by' => $locked->uploaded_by,
+                ]);
+            }
+
+            $next = $current + 1;
 
             $version = $locked->versions()->create([
                 'version_number' => $next,

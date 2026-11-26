@@ -43,7 +43,7 @@ class MediaLifecycleController extends Controller
         ]);
     }
 
-    public function storeVersion(Request $request, MediaFile $mediaFile, MediaAccessService $access, MediaVersionService $versions, AuditService $audit, UploadPolicyService $uploadPolicy, NotificationDeliveryService $notifications)
+    public function storeVersion(Request $request, MediaFile $mediaFile, MediaAccessService $access, MediaVersionService $versions, AuditService $audit, UploadPolicyService $uploadPolicy, NotificationDeliveryService $notifications, SearchIndexService $search)
     {
         abort_unless($access->canUploadVersion($mediaFile, $request->user()), 403);
         $data = $request->validate([
@@ -57,6 +57,11 @@ class MediaLifecycleController extends Controller
         abort_unless($this->resolveType($ext) === $mediaFile->type, 422, __('messages.file.version_type_mismatch'));
 
         $version = $versions->replaceWithUpload($mediaFile, $file, $request->user(), $data['change_note']);
+        // The asset takes the new file's name, so the index has to be told now.
+        // Waiting for ProcessMediaFile means the library answers to the old
+        // name until a queue worker runs, and the one on their host has never
+        // been confirmed. (Review F11.)
+        $search->upsert($mediaFile->fresh(['category', 'subcategory', 'department']));
         $audit->log($request, 'media.version.created', $mediaFile, 'New media version uploaded.', [
             'version_number' => $version->version_number,
             'change_note' => $version->change_note,
@@ -66,12 +71,13 @@ class MediaLifecycleController extends Controller
         return response()->json(['message' => __('messages.file.version_uploaded', ['number' => $version->version_number]), 'version_number' => $version->version_number], 201);
     }
 
-    public function restoreVersion(Request $request, MediaFile $mediaFile, MediaFileVersion $version, MediaAccessService $access, MediaVersionService $versions, AuditService $audit, NotificationDeliveryService $notifications)
+    public function restoreVersion(Request $request, MediaFile $mediaFile, MediaFileVersion $version, MediaAccessService $access, MediaVersionService $versions, AuditService $audit, NotificationDeliveryService $notifications, SearchIndexService $search)
     {
         abort_unless($version->media_file_id === $mediaFile->id, 404);
         abort_unless($access->canRestoreVersion($mediaFile, $request->user()), 403);
         $data = $request->validate(['change_note' => 'nullable|string|max:1000']);
         $new = $versions->restoreVersion($mediaFile, $version, $request->user(), $data['change_note'] ?? null);
+        $search->upsert($mediaFile->fresh(['category', 'subcategory', 'department']));
         $audit->log($request, 'media.version.restored', $mediaFile, 'Historical version restored as a new current version.', [
             'restored_from_version' => $version->version_number,
             'new_version' => $new->version_number,
