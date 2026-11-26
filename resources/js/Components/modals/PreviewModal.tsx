@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Download, Trash2, Headphones, LockKeyhole, ShieldAlert, History, UploadCloud, RotateCcw, AlertTriangle, Link2, RefreshCw, Plus, Maximize2 } from 'lucide-react';
 import type { AccessLevel, AccessPolicy, MediaFile, MediaFileVersion, Category, UploadSettings, SourceConnection, MediaSourceItem } from '../../types';
 import ImageViewer from './ImageViewer';
@@ -33,6 +33,25 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
     // Full-size viewer: the inline preview is deliberately capped so the metadata
     // stays visible, so opening the original is a separate overlay.
     const [zoomOpen, setZoomOpen] = useState(false);
+    // A closed preview must leave nothing playing. Unmounting usually stops a
+    // media element, but a detached <audio>/<video> can keep its stream alive
+    // long enough to be heard, so the source is paused and released by hand on
+    // close, on a change of asset and on unmount. (Review F01.)
+    const mediaRef = useRef<HTMLMediaElement | null>(null);
+    const releaseMedia = useCallback(() => {
+        const el = mediaRef.current;
+        if (!el) return;
+        try {
+            el.pause();
+            el.removeAttribute('src');
+            while (el.firstChild) el.removeChild(el.firstChild);
+            el.load();
+        } catch { /* a detached element can refuse; nothing is playing either way */ }
+        mediaRef.current = null;
+    }, []);
+    useEffect(() => releaseMedia, [releaseMedia]);
+    useEffect(() => releaseMedia, [file.id, releaseMedia]);
+    const closeWithMedia = useCallback(() => { releaseMedia(); onClose(); }, [releaseMedia, onClose]);
     const [inlineStatus, setInlineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [reason, setReason] = useState('');
     const [level, setLevel] = useState<AccessLevel>(file.can_preview && !file.can_download ? 'download' : 'view');
@@ -157,8 +176,8 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
                 <span className="image-zoom-hint"><Maximize2 size={13}/> {t('details.full_size')}</span>
             </button>;
         }
-        if (file.type === 'video') return file.video_url?<video controls autoPlay muted style={{ width: '100%', height: '100%', maxHeight: '50vh' }}><source src={file.video_url} />{t('details.no_video_tag')}</video>:<div className="access-locked-panel"><Link2 size={50}/><p>{t('details.video_external')}</p></div>;
-        if (file.type === 'audio') return <div className="modal-audio-player"><div className="audio-preview-icon"><Headphones size={32} /></div><div style={{ textAlign: 'center' }}><h4 style={{ fontWeight: 600, marginBottom: 4 }}>{file.name}</h4><span style={{ fontSize: 11, color: '#94a3b8' }}>{t('details.audio_track')}</span></div><audio controls autoPlay className="audio-element"><source src={file.audio_url || ''} /></audio></div>;
+        if (file.type === 'video') return file.video_url?<video ref={el=>{mediaRef.current=el}} controls autoPlay muted style={{ width: '100%', height: '100%', maxHeight: '50vh' }}><source src={file.video_url} />{t('details.no_video_tag')}</video>:<div className="access-locked-panel"><Link2 size={50}/><p>{t('details.video_external')}</p></div>;
+        if (file.type === 'audio') return <div className="modal-audio-player"><div className="audio-preview-icon"><Headphones size={32} /></div><div style={{ textAlign: 'center' }}><h4 style={{ fontWeight: 600, marginBottom: 4 }}>{file.name}</h4><span style={{ fontSize: 11, color: '#94a3b8' }}>{t('details.audio_track')}</span></div><audio ref={el=>{mediaRef.current=el}} controls autoPlay className="audio-element"><source src={file.audio_url || ''} /></audio></div>;
         const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE';
         return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, color: '#ffffff', padding: 48 }}><div style={{ width: 72, height: 84, borderRadius: 8, background: 'var(--color-accent)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#1b2e2a', gap: 4 }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg><span style={{ fontSize: 11, fontWeight: 700 }}>{ext}</span></div><div style={{ textAlign: 'center' }}><h3 style={{ fontWeight: 600, marginBottom: 8 }}>{file.name}</h3><p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>{t('details.document_preview')}</p>{file.document_url && <a href={file.document_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--color-accent)', fontWeight: 600, textDecoration: 'underline' }}>{t('details.open_new_tab')}</a>}</div></div>;
     };
@@ -173,7 +192,7 @@ export default function PreviewModal({ file, categories, canDelete, uploadSettin
         [t('details.label_version'), `v${file.current_version || 1}`], [t('details.label_roles'), (file.visible_to_roles||[]).length ? (file.visible_to_roles||[]).map(r=>r.name).join(', ') : t('details.policy_only')], [t('details.label_upload_date'), new Date(file.created_at).toLocaleString()], [t('details.label_uploaded_by'), file.uploader?.name || t('details.system')],
     ];
 
-    return <>{zoomOpen && <ImageViewer file={file} onClose={() => setZoomOpen(false)} onDownload={onDownload} />}<div className="modal-overlay active" onClick={e => { if (e.target === e.currentTarget) onClose(); }}><div className={`modal-container${showMediaPane ? '' : ' details-only'}`}>{showMediaPane&&<div className="modal-preview-pane" style={{position:'relative'}}>{renderPreview()}{file.can_preview&&file.watermark_enabled_effective&&<div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',opacity:.18,fontSize:34,fontWeight:800,transform:'rotate(-28deg)',color:'#fff',textShadow:'0 1px 2px #000'}}>{file.watermark_text||'Karyalay Portal'}</div>}</div>}<div className="modal-info-pane"><div className="modal-header"><div><h2 className="modal-title">{file.name}</h2><div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><span className={`card-type-badge badge-${file.type}`} style={{ position: 'static', display: 'inline-block' }}>{file.type}</span><span className={`access-policy-badge access-${file.access_policy}`}>{t('policy.' + file.access_policy)}</span>{file.access_request_status && <span className="request-status-pill">{t('details.request_label',{status:file.access_request_status})}</span>}{!showMediaPane&&imageSrc&&<button type="button" className="view-image-pill" onClick={() => setZoomOpen(true)}><Maximize2 size={12}/> {t('details.view_image')}</button>}</div></div><button className="modal-close-btn" onClick={onClose}><X size={20} /></button></div>
+    return <>{zoomOpen && <ImageViewer file={file} onClose={() => setZoomOpen(false)} onDownload={onDownload} />}<div className="modal-overlay active" onClick={e => { if (e.target === e.currentTarget) closeWithMedia(); }}><div className={`modal-container${showMediaPane ? '' : ' details-only'}`}>{showMediaPane&&<div className="modal-preview-pane" style={{position:'relative'}}>{renderPreview()}{file.can_preview&&file.watermark_enabled_effective&&<div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',opacity:.18,fontSize:34,fontWeight:800,transform:'rotate(-28deg)',color:'#fff',textShadow:'0 1px 2px #000'}}>{file.watermark_text||'Karyalay Portal'}</div>}</div>}<div className="modal-info-pane"><div className="modal-header"><div><h2 className="modal-title">{file.name}</h2><div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><span className={`card-type-badge badge-${file.type}`} style={{ position: 'static', display: 'inline-block' }}>{file.type}</span><span className={`access-policy-badge access-${file.access_policy}`}>{t('policy.' + file.access_policy)}</span>{file.access_request_status && <span className="request-status-pill">{t('details.request_label',{status:file.access_request_status})}</span>}{!showMediaPane&&imageSrc&&<button type="button" className="view-image-pill" onClick={() => setZoomOpen(true)}><Maximize2 size={12}/> {t('details.view_image')}</button>}</div></div><button className="modal-close-btn" onClick={closeWithMedia}><X size={20} /></button></div>
         <div className="metadata-grid">{metadata.map(([label, value]) => <div key={String(label)} className="metadata-row"><span className="metadata-label">{label}</span><span className="metadata-value">{value}</span></div>)}</div>
         {file.description&&<div className="form-group"><span className="form-label">{t('details.description')}</span><div style={{fontSize:12,color:'var(--text-secondary)',marginTop:4}}>{file.description}</div></div>}<div className="form-group" style={{ marginBottom: 18 }}><span className="form-label">{t('details.tags')}</span><div className="card-tags" style={{ marginTop: 6 }}>{file.tags.map(tag => <span key={tag} className="card-tag" style={{ fontSize: 11, padding: '4px 8px' }}>{tag}</span>)}</div></div>
 

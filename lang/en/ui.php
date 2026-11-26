@@ -1720,4 +1720,12 @@ return [
         'review_access' => 'Review access',
         'manage_categories' => 'Manage categories',
     ],
+
+    'modal' => [
+        'error_title' => ':name could not be opened',
+        'error_body' => 'The rest of the portal is still running. Close this and try again; if it keeps happening, tell the administrator what you were doing.',
+        'preview' => 'File details',
+        'image' => 'Image viewer',
+        'category' => 'Category',
+    ],
 ];

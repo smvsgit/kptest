@@ -104,9 +104,16 @@ class FolderWorkspaceController extends Controller
             ];
         }
 
+        // Inside a folder, list what the folder holds. The folder itself has
+        // already been access-checked, and filtering the files by department on
+        // top of that hid assets whose department had drifted from the folder's
+        // — the tree counted them, the pane did not. (Review F03/F12.)
         $files = MediaFile::query()
-            ->where('department_id', $department)
-            ->when($folderId, fn ($q) => $q->where('folder_id', $folderId), fn ($q) => $q->whereNull('folder_id'))
+            ->when(
+                $folderId,
+                fn ($q) => $q->where('folder_id', $folderId),
+                fn ($q) => $q->where('department_id', $department)->whereNull('folder_id')
+            )
             ->orderBy('name')
             ->limit(500)
             ->get(['id', 'name', 'type', 'size', 'asset_status', 'access_policy', 'folder_id', 'created_at'])

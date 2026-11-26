@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\ProcessMediaFile;
 use App\Models\Department;
+use App\Models\MediaFolder;
 use App\Models\MasterDataValue;
 use App\Models\MediaFile;
 use App\Models\SystemSetting;
@@ -93,10 +94,20 @@ class ChunkUploadController extends Controller
         if($assembled!==$totalSize){@unlink($finalAbs);abort(422,__('messages.upload.size_mismatch', ['assembled' => $assembled, 'expected' => $totalSize]));}
         Storage::disk('local')->deleteDirectory($dir);
 
-        $departmentId=$request->user()?->department_id??Department::where('is_system',true)->value('id'); if($departmentId)$quota->assertCanStore((int)$departmentId,$assembled);
+        // The destination folder decides the owner department, not the uploader's own.
+        // A Super Admin belongs to no department, so taking it from the user dropped
+        // every one of their uploads into the system "Unassigned" department while the
+        // folder it was uploaded into belonged to another one. The file then vanished
+        // from the folder pane, which filters by department. (Review F03.)
+        $targetFolder=$request->folder_id?MediaFolder::find((int)$request->folder_id):null;
+        if($targetFolder)$this->assertFolderWritable($request,$targetFolder);
+        $departmentId=$targetFolder?->department_id
+            ??$request->user()?->department_id
+            ??Department::where('is_system',true)->value('id');
+        if($departmentId)$quota->assertCanStore((int)$departmentId,$assembled);
         $resolution=null;if($type==='image'){[$w,$h]=@getimagesize($finalAbs)?:[null,null];if($w&&$h)$resolution="{$w}x{$h}";}
         $tags=$request->tags?array_values(array_filter(array_map('trim',explode(',',$request->tags)))):[];
-        $folderId=$request->folder_id?(int)$request->folder_id:null;
+        $folderId=$targetFolder?(int)$targetFolder->id:null;
         if($departmentId && $request->filled('folder_path')){
             $folderId=app(\App\Services\FolderPathService::class)->resolveForUpload(
                 (string)$request->input('folder_path'),(int)$departmentId,(int)$request->user()->id,$folderId
@@ -156,5 +167,19 @@ class ChunkUploadController extends Controller
         if(in_array($ext,['mp4','mov','avi','mkv','webm','flv','wmv','m4v','3gp'],true))return'video';
         if(in_array($ext,['jpg','jpeg','png','webp','gif','svg','bmp','tiff','tif','ico','heic','heif','avif','raw'],true))return'image';
         if(in_array($ext,['mp3','wav','aac','ogg','m4a','flac','wma','opus'],true))return'audio';return'document';
+    }
+
+    /**
+     * A folder may only receive an upload from someone who can reach it.
+     * Super Admin reaches every department; everyone else only their own.
+     */
+    private function assertFolderWritable(Request $request, MediaFolder $folder): void
+    {
+        $user = $request->user();
+        abort_unless(
+            $user && ($user->role === 'super-admin' || (int) $folder->department_id === (int) $user->department_id),
+            403,
+            __('messages.folder.own_department_only')
+        );
     }
 }

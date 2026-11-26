@@ -9,8 +9,8 @@ interface Props {
 }
 const csrf=()=>document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')||'';
 
-    const t=useT();
 export default function BulkEditModal({ids,categories,departments,masterData,role,onClose,onSuccess,onError}:Props){
+    const t=useT();
     const [busy,setBusy]=useState(false);
     const [categoryId,setCategoryId]=useState(''),[subcategoryId,setSubcategoryId]=useState('');
     const [tagsMode,setTagsMode]=useState(''),[tags,setTags]=useState('');

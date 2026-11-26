@@ -1,5 +1,32 @@
 # Karyalay Portal - Changelog
 
+## v19.13 - What the 24 November Review Found (2026-11-26)
+
+- **Bulk Edit opened on a blank page.** v19.12 inserted `const t=useT()` one line too high in
+  `BulkEditModal`, at module scope. Every dialog is `lazy()`-loaded, so the hook threw while the
+  chunk was evaluated, with no component mounted - React unmounted the whole page and left a white
+  screen recoverable only by reload. My mistake, shipped on 9 November. (Review F09.)
+- The four lazily loaded dialogs now sit inside a `ModalErrorBoundary`, so the next failure inside
+  one is a dialog that says so rather than an empty portal. A test asserts both that no translation
+  hook sits outside a component body and that every `<Suspense>` dialog has its boundary - neither
+  `tsc` nor the bundler says a word about either.
+- **An upload took its owner department from the uploader.** A Super Admin belongs to no department,
+  so their uploads landed in the system "Unassigned" department even when uploaded into a folder
+  owned by a real one. The folder pane filters by department, so the file was invisible there -
+  "Files (0)" - while the tree still counted it. The destination folder now decides the department,
+  on both upload endpoints, and uploading into another department's folder is refused with 403.
+  (F03.)
+- The folder pane lists what the folder holds instead of filtering by department a second time, so
+  the pane and the tree count agree even for assets whose department had already drifted. (F03/F12.)
+- A folder that cannot be deleted now says what is in the way - how many files and sub-folders,
+  with a note that some may belong to another department and not be listed. Previously it answered
+  only "not empty" while the pane showed zero items. (F12.)
+- `2026_11_26_000100_repair_folder_department_drift` puts existing assets and sub-folders back in
+  the department of the folder they live in. Nothing moves between folders; only rows whose folder
+  already says otherwise are touched.
+- Closing a preview now pauses the media element, drops its source and reloads it, on close, on a
+  change of asset and on unmount, so nothing can be left playing. (F01.)
+
 ## v19.12 - The Components the Catalogue Never Reached (2026-11-09)
 
 - v19.04 claimed nothing in the signed-in UI was English. That was wrong. Six components had never
