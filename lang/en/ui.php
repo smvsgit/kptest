@@ -226,6 +226,19 @@ return [
         'tags' => 'Tags',
         'failed' => 'Upload failed',
         'quick_add_failed' => 'Could not add this value.',
+        'files_action' => 'Upload files',
+        'folder_action' => 'Upload folder',
+        'choose_files_title' => 'Upload files',
+        'choose_folder_title' => 'Upload a folder',
+        'destination_help' => 'Choose where these files should land. Nothing is uploaded until a destination is picked.',
+        'destination' => 'Destination folder',
+        'department_root' => 'department root',
+        'no_folders' => 'This department has no folders yet. The department root is still a destination.',
+        'will_go_to' => 'Files will go to:',
+        'pick_destination_first' => 'Pick a destination first.',
+        'pick_files' => 'Choose files…',
+        'pick_folder' => 'Choose a folder…',
+        'sending_to' => 'Uploading to :path',
     ],
 
     'folders' => [
@@ -288,6 +301,7 @@ return [
         'delete_failed' => 'Could not delete the folder. It may still hold files.',
         'move_failed' => 'Could not move the assets.',
         'not_a_number' => 'That is not a folder number.',
+        'search_folders' => 'Search folders…',
     ],
 
     'inspector' => [

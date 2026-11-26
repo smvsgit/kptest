@@ -1,5 +1,24 @@
 # Karyalay Portal - Changelog
 
+## v19.16 - Uploading From the Main Page (2026-11-26)
+
+- Browse offered search, filters and selection but no way to upload: since Batch Upload was retired
+  in v19.08, the folder workspace was the only door in. The review asked for the actions back on the
+  main page - "but require or show the target folder; do not silently upload into an unrelated
+  root". (F04.)
+- **Upload files** and **Upload folder** now sit in the Browse toolbar, drawn only for a role that
+  may upload. Both open a destination dialog first: department, the folder tree with its file counts,
+  and the department root as a destination of its own. The file picker stays **disabled** until
+  something is chosen, and the full path is spelled out above it - "Files will go to: Audio Video /
+  Annakut 2024 / Photos".
+- A folder dropped in keeps its structure underneath the folder that was chosen, rather than beside
+  it.
+- The upload tray moved up to the Dashboard, so one queue now serves the whole portal instead of one
+  per screen. The folder workspace hands its batches to the same tray and refreshes when any
+  transfer finishes, wherever it was started.
+- A destination in another department is refused outright rather than quietly swapped for a root the
+  user can reach - the rule v19.13 put on the server.
+
 ## v19.15 - Version Replacement, Retested (2026-11-26)
 
 - F11 was verified on 18 November and the reviewers then declined to count that as current evidence:

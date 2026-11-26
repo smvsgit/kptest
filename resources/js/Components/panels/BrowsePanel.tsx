@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Archive, Clock3, Database, FileText, Files, Image, Music, RotateCcw, Save, Search, Shield, SlidersHorizontal, Star, Trash2, Video, X } from 'lucide-react';
+import { Archive, Clock3, Database, FileText, Files, Image, Music, RotateCcw, Save, Search, Shield, SlidersHorizontal, Star, Trash2, Video, X, UploadCloud, FolderUp } from 'lucide-react';
 import type { AccessPolicy, Department, FilterOwner, MasterDataMap, MasterDataValue, MediaFile, MetadataSettings, PaginatedResult, QuickViewCounts, SavedSearch, SearchSettings, Stats, User, UserRole } from '../../types';
 import MediaCard from '../media/MediaCard';
 import { useT } from '../../i18n';
@@ -15,6 +15,10 @@ interface BrowseFilters {
 
 interface Props {
     active: boolean;
+    /** Whether this user may upload at all; the actions are hidden otherwise. */
+    canUpload: boolean;
+    /** Open the destination picker for a files or a folder upload. (F04.) */
+    onUploadFrom: (mode: 'files'|'folder') => void;
     files: PaginatedResult<MediaFile>;
     stats: Stats;
     filters: BrowseFilters;
@@ -126,6 +130,10 @@ export default function BrowsePanel(p:Props){
                 <button className={`btn btn-secondary${advancedOpen?' active':''}`} onClick={()=>setAdvancedOpen(x=>!x)}><SlidersHorizontal size={15}/> {t('browse.advanced_filters')}</button>
                 <select className="sort-select" value={filters.sort||(filters.search&&searchSettings.best_match_sort?'best':'newest')} onChange={e=>p.onSort(e.target.value)}>{filters.search&&searchSettings.best_match_sort&&<option value="best">{t('sort.best_match')}</option>}<option value="newest">{t('sort.newest')}</option><option value="updated">{t('sort.recently_updated')}</option><option value="oldest">{t('sort.oldest')}</option><option value="name_asc">{t('sort.name_asc')}</option><option value="name_desc">{t('sort.name_desc')}</option><option value="size_desc">{t('sort.largest')}</option></select>
                 <button className="btn btn-secondary" onClick={p.onSelectAll}>{t('browse.select_all')}</button>
+                {/* Upload from the main page. The destination is asked for first,
+                    so nothing lands in an unrelated root. (Review F04.) */}
+                {p.canUpload&&<><button className="btn btn-primary" onClick={()=>p.onUploadFrom('files')}><UploadCloud size={15}/> {t('upload.files_action')}</button>
+                <button className="btn btn-secondary" onClick={()=>p.onUploadFrom('folder')}><FolderUp size={15}/> {t('upload.folder_action')}</button></>}
             </div>
         </div>
 
