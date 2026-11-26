@@ -101,6 +101,7 @@ export interface RecycleBinItem { id:number; name:string; type:FileType; size:nu
 export interface MediaFile {
     id:number; name:string; type:FileType; size:number; category_id:number|null; subcategory_id:number|null;
     department_id:number|null; department?:Department|null; year?:number|null; country_id?:number|null; state_id?:number|null; city_id?:number|null; mandir_id?:number|null; event_id?:number|null; person_id?:number|null; language_id?:number|null; media_type_id?:number|null; description?:string|null; internal_remarks?:string|null; source_type?:string; asset_status?:string; current_version:number; duplicate_of_id?:number|null; archived_from_status?:string|null; archived_at?:string|null; country?:MasterDataValue|null; state?:MasterDataValue|null; city?:MasterDataValue|null; mandir?:MasterDataValue|null; event?:MasterDataValue|null; person?:MasterDataValue|null; language?:MasterDataValue|null; media_type?:MasterDataValue|null; access_policy:AccessPolicy; download_allowed:boolean; visible_to_roles?:{id:number;name:string}[]; tags:string[]; resolution:string|null;
+    custom_metadata?:Record<string,unknown>|null;
     file_path:string|null; thumbnail_path:string|null; thumbnail_url:string|null; image_url:string|null; video_url:string|null;
     audio_url:string|null; document_url:string|null; download_url:string|null; temporary_download_url?:string|null; checksum_sha256?:string|null;
     processing_status?:string; uploaded_by:number; uploader:User; created_at:string;
@@ -137,10 +138,19 @@ export interface AiSearchSettings { enabled:boolean; endpoint:string; model:stri
 export interface AiTaggingState { available:boolean; permitted:boolean; supported_extensions:string[] }
 export interface AiTaggingSettings { enabled:boolean; endpoint:string; model:string; api_key?:string; timeout_seconds:number; max_tags:number; instructions:string }
 
+export type MetadataFieldInput = 'text'|'textarea'|'number'|'date'|'select'|'checkbox';
+export type MediaFileType = FileType;
+export interface MetadataFieldDefinition {
+    id:number; key:string; label:string; help:string|null; input_type:MetadataFieldInput;
+    applies_to:FileType[]|null; options:string[]|null; default_value:string|null;
+    is_required:boolean; is_locked:boolean; is_active:boolean; sort_order:number;
+}
+
 export interface SharedProps { auth:{user:User|null}; appearance:SharedAppearance; branding:BrandingSettings; locale:'en'|'gu'|string; settingsAccess?:SettingsAccessMap; flash?:{success?:string;warning?:string}; }
 export interface DashboardProps {
     categories:Category[]; departments:Department[]; appVersion:AppVersion; files?:PaginatedResult<MediaFile>;
     users:User[]; departmentStorage:DepartmentStorage[]; visibilityRoles:VisibilityRole[]; organizationUnits:OrganizationUnit[]; permissionSets:PermissionSet[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; pageAccess:Record<PageAccessKey,boolean>; networkPolicySummary:NetworkPolicySummary; approvalDelegations:ApprovalDelegation[]; securityAuthSettings:SecurityAuthSettings; accessMaturitySettings:AccessMaturitySettings; fontFamilies:FontFamily[]; appearanceSettings:FontAssignments; searchSettings:SearchSettings; masterData:MasterDataMap; metadataSettings:MetadataSettings; notificationSettings:NotificationChannelSettings; notificationPreferences:NotificationPreferences; notificationEscalation:NotificationEscalationSettings; uploadSettings:UploadSettings; integrationConnections:IntegrationConnection[]; sourceConnections:SourceConnection[]; integrationHealthSummary:IntegrationHealthSummary; backupSettings:BackupSettings; backupRuns:BackupRunRow[]; restoreVerifications:RestoreVerificationRow[]; backupStatus:BackupStatusSummary; readinessData:ReadinessData; featureCompletionSettings?:Record<string,Record<string,unknown>>; userGuideAccess:UserGuideAccess;
+    metadataFields?:MetadataFieldDefinition[];
     aiSearch?:AiSearchState; aiSearchSettings?:AiSearchSettings; aiTagging?:AiTaggingState; aiTaggingSettings?:AiTaggingSettings;
     stats?:Stats; currentUser:User; simulatedRole:UserRole; accessRequests:MediaAccessRequest[]; notifications:PortalNotification[]; unreadNotifications:number;
     filterOwners:FilterOwner[]; savedSearches:SavedSearch[]; quickViewCounts:QuickViewCounts;

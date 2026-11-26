@@ -259,6 +259,9 @@ class DashboardController extends Controller
             // cannot show it and an empty box means "keep the stored one".
             // AI tagging: whether it is configured at all, whether this role may
             // spend on it, and its settings without the key.
+            // The administrator's own metadata fields: the whole list for the
+            // builder, and the active ones for Describe. (Review F09b.)
+            'metadataFields' => \App\Models\MetadataFieldDefinition::orderBy('sort_order')->orderBy('label')->get(),
             'aiTagging' => [
                 'available' => app(\App\Services\AiTaggingService::class)->available(),
                 'permitted' => (bool) $user->hasPermission('ai_tagging'),

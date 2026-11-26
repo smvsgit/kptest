@@ -301,6 +301,10 @@ Route::middleware('auth')->group(function () {
         Route::patch('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'update'])->name('settings.master-data.update')->middleware('settings:metadata');
         Route::delete('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'destroy'])->name('settings.master-data.destroy')->middleware('settings:metadata');
         Route::patch('/settings/metadata', [MetadataSettingsController::class, 'update'])->name('settings.metadata.update')->middleware('settings:metadata');
+        // Administrator-defined metadata fields. (Review F09b.)
+        Route::post('/settings/metadata/fields', [\App\Http\Controllers\MetadataFieldController::class, 'store'])->name('settings.metadata.fields.store')->middleware('settings:metadata');
+        Route::patch('/settings/metadata/fields/{metadataField}', [\App\Http\Controllers\MetadataFieldController::class, 'update'])->name('settings.metadata.fields.update')->middleware('settings:metadata');
+        Route::delete('/settings/metadata/fields/{metadataField}', [\App\Http\Controllers\MetadataFieldController::class, 'destroy'])->name('settings.metadata.fields.destroy')->middleware('settings:metadata');
         Route::patch('/settings/notifications', [NotificationSettingsController::class, 'update'])->name('settings.notifications.update')->middleware('settings:notifications');
         Route::patch('/settings/notifications/escalation', [NotificationSettingsController::class, 'updateEscalation'])->name('settings.notifications.escalation')->middleware('settings:notifications');
         Route::patch('/settings/upload', [UploadSettingsController::class, 'update'])->name('settings.upload.update')->middleware('settings:upload');

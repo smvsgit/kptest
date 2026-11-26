@@ -3,13 +3,14 @@ import { router, usePage } from '@inertiajs/react';
 import { Building2, FolderTree, GitBranch, Info, Pencil, PieChart, Plus, Trash2, X, Type, Search, Upload, RotateCcw, BookOpen, Database, Languages, Sparkles, SlidersHorizontal, Bell, Send, LockKeyhole, DatabaseBackup, ShieldCheck, UserCog } from 'lucide-react';
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import type { AiTaggingSettings, AiSearchSettings, AppVersion, Category, Department, User, Stats, FontAssignments, FontFamily, SearchSettings, MasterDataMap, MasterDataType, MetadataSettings, NotificationChannelSettings, NotificationEscalationSettings, RecycleBinItem, UploadSettings, SecurityAuthSettings, AccessMaturitySettings, BackupSettings, BackupRunRow, RestoreVerificationRow, BackupStatusSummary, ReadinessData, OrganizationUnit, PortalRole, UserGroup, NetworkPolicySummary, DepartmentStorage } from '../../types';
+import type { MetadataFieldDefinition, AiTaggingSettings, AiSearchSettings, AppVersion, Category, Department, User, Stats, FontAssignments, FontFamily, SearchSettings, MasterDataMap, MasterDataType, MetadataSettings, NotificationChannelSettings, NotificationEscalationSettings, RecycleBinItem, UploadSettings, SecurityAuthSettings, AccessMaturitySettings, BackupSettings, BackupRunRow, RestoreVerificationRow, BackupStatusSummary, ReadinessData, OrganizationUnit, PortalRole, UserGroup, NetworkPolicySummary, DepartmentStorage } from '../../types';
 import BackupSettingsPanel from './BackupSettingsPanel';
 import UatReadinessPanel from './UatReadinessPanel';
 import FeatureCompletionPanel from './FeatureCompletionPanel';
 import UserGuideAccessSettingsPanel from './UserGuideAccessSettingsPanel';
 import UserRoleManagementPanel from './UserRoleManagementPanel';
 import MasterDataPanel from './MasterDataPanel';
+import MetadataFieldsPanel from './MetadataFieldsPanel';
 import DepartmentQuotaPanel from './DepartmentQuotaPanel';
 import { useT } from '../../i18n';
 import type { SettingsAccessLevel, SettingsAccessMap, SettingsSectionKey, SharedProps } from '../../types';
@@ -17,7 +18,7 @@ Chart.register(ArcElement, Tooltip, Legend);
 
 type SettingsTab='general'|'users'|'fonts'|'search'|'metadata'|'upload'|'security'|'notifications'|'backup'|'readiness'|'lifecycle'|'completion'|'guide';
 interface Props {
- active:boolean; aiSearchSettings:AiSearchSettings; aiTaggingSettings:AiTaggingSettings; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
+ active:boolean; aiSearchSettings:AiSearchSettings; aiTaggingSettings:AiTaggingSettings; metadataFields:MetadataFieldDefinition[]; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
  canConfigCategories:boolean; canManageDepartments:boolean; fontFamilies:FontFamily[]; appearanceSettings:FontAssignments; searchSettings:SearchSettings; masterData:MasterDataMap; metadataSettings:MetadataSettings; notificationSettings:NotificationChannelSettings; notificationEscalation:NotificationEscalationSettings; uploadSettings:UploadSettings; securityAuthSettings:SecurityAuthSettings; accessMaturitySettings:AccessMaturitySettings; backupSettings:BackupSettings; backupRuns:BackupRunRow[]; restoreVerifications:RestoreVerificationRow[]; backupStatus:BackupStatusSummary; readinessData:ReadinessData; featureCompletionSettings?:Record<string,Record<string,unknown>>;
  onCategoryModal:(s:{mode:'add-category'|'add-subcategory'|'edit-category'|'edit-subcategory';categoryId?:number|null;subcategoryId?:number|null})=>void; onSuccess:(msg:string)=>void; onError:(msg:string)=>void;
 }
@@ -267,6 +268,7 @@ export default function SettingsPanel(p:Props){
    <div style={{display:'flex',gap:10}}><button className="btn btn-primary" onClick={saveSearch}>{t('settings.save_search')}</button><button className="btn btn-secondary" onClick={()=>router.post('/settings/search/sync',{}, {preserveScroll:true,onSuccess:()=>p.onSuccess(t('settings.sync_requested'))})}>{t('settings.sync_meili')}</button></div>
   </div>}
 
+  {tab==='metadata'&&isSuper&&<div style={{marginBottom:18}}><MetadataFieldsPanel fields={p.metadataFields} onSuccess={p.onSuccess} onError={p.onError}/></div>}
   {tab==='metadata'&&isSuper&&<div className="settings-card" style={{marginBottom:18}}>
     <h2 className="settings-card-title"><Sparkles size={18}/> {t('settings.ai_tagging_title')}</h2>
     <Guide>{t('settings.ai_tagging_guide')}</Guide>

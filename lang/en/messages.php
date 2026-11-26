@@ -343,4 +343,17 @@ return [
         'needs_endpoint' => 'An endpoint and a model are needed before AI tagging can be switched on.',
         'saved' => 'AI tagging settings saved.',
     ],
+
+    'metadata' => [
+        'field_created' => 'Field added.',
+        'field_updated' => 'Field saved.',
+        'field_deleted' => 'Field deleted.',
+        'field_in_use' => 'Assets already carry a value for :label, so it can be retired but not deleted.',
+        'field_locked' => ':label is set once and cannot be changed.',
+        'field_required' => ':label must be filled.',
+        'field_invalid' => 'The value for :label does not fit that kind of field.',
+        'key_reserved' => 'The name :key belongs to the system and cannot be used for a field of your own.',
+        'key_taken' => 'A field named :key already exists.',
+        'select_needs_options' => 'A list field needs at least one choice.',
+    ],
 ];
