@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\SystemSetting;
 use App\Services\AuditService;
 use App\Services\LocaleResolver;
 use Illuminate\Auth\Events\Failed;
@@ -21,6 +22,12 @@ class AppServiceProvider extends ServiceProvider
         // One answer per request to "what language is this?", so the branding
         // row is read once however many callers ask.
         $this->app->singleton(LocaleResolver::class);
+
+        // The same idea for the whole of the administrator's configuration. A
+        // scoped binding lives for one request, one command or one queued job,
+        // so a worker that runs for days still sees a setting changed in
+        // Settings on its next job. (Review F10.)
+        $this->app->scoped(SystemSetting::MAP, fn () => SystemSetting::freshMap());
     }
 
     /**

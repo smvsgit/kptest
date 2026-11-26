@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'current' => '19.21',
-    'previous' => '19.20',
+    'current' => '19.22',
+    'previous' => '19.21',
     'release_type' => 'Minor',
-    'release_date' => '2026-11-05',
-    'release_name' => 'Changelog Caught Up',
+    'release_date' => '2026-11-26',
+    'release_name' => 'The Measurement F10 Asked For',
 ];

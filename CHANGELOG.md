@@ -1,5 +1,30 @@
 # Karyalay Portal - Changelog
 
+## v19.22 - The Measurement F10 Asked For (2026-11-26)
+
+- F10 was never a defect. It said the choice between governed administrator configuration and a
+  text configuration file was being argued without evidence, and asked for three things to be
+  measured first: representative libraries, query latency and administrator saves. So they were
+  measured, with `php artisan karyalay:benchmark`, on MariaDB 11.8 at **5,000, 25,000 and 100,000
+  files** and on SQLite at 25,000.
+- **The answer is to keep governed administrator configuration.** Configuration costs the same
+  whatever the library holds - about 19 ms a page at every size - while everything that grows with
+  the library is the library itself. A configuration file would have bought roughly a millisecond a
+  page over what the portal now does, in exchange for losing the audit trail, per-role governance
+  and the ability to change a setting without a deploy.
+- **What the measurement did find:** the dashboard asked the database for configuration **thirty
+  separate times** in one render. It now reads the whole of it **once per request** - 78 queries a
+  render became 49, and configuration fell from 9.6% of the page to 0.6%. A save still flushes the
+  map, so a screen that writes a section and re-reads it sees its own change.
+- **And one real defect the review had not found.** `media_files` carried eighteen indexes and not
+  one covered `folder_id` - the column the folder workspace, the portal's home screen since v19.20,
+  navigates by. Every folder's file count was a scan of the whole library. An index on
+  `(folder_id, deleted_at)` takes the folder tree from **6.2 seconds to 10.6 ms** at 25,000 files on
+  SQLite, and from 227 ms to 64 ms at 100,000 on MariaDB.
+- `karyalay:benchmark` stays in the repository so the reviewers can re-run the measurement
+  themselves rather than take the numbers on trust, and `ConfigurationArchitectureTest` guards both
+  fixes.
+
 ## v19.21 - The Portal as an MCP Server (2026-11-26)
 
 - F06 gated rollout on a demonstration and named five things the developer had to supply:
