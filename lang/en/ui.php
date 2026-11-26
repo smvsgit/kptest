@@ -171,6 +171,8 @@ return [
         'any_uploader' => 'Any uploader',
         'uploaded_from' => 'Uploaded From',
         'uploaded_to' => 'Uploaded To',
+        'any_category' => 'Any category',
+        'any_subcategory' => 'Any sub-category',
     ],
 
     'fields' => [

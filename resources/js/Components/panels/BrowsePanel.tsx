@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Archive, Clock3, Database, FileText, Files, Image, Music, RotateCcw, Save, Search, Shield, SlidersHorizontal, Star, Trash2, Video, X, UploadCloud, FolderUp, Sparkles } from 'lucide-react';
-import type { AiSearchState, AccessPolicy, Department, FilterOwner, MasterDataMap, MasterDataValue, MediaFile, MetadataSettings, PaginatedResult, QuickViewCounts, SavedSearch, SearchSettings, Stats, User, UserRole } from '../../types';
+import type { Category, AiSearchState, AccessPolicy, Department, FilterOwner, MasterDataMap, MasterDataValue, MediaFile, MetadataSettings, PaginatedResult, QuickViewCounts, SavedSearch, SearchSettings, Stats, User, UserRole } from '../../types';
 import MediaCard from '../media/MediaCard';
 import { useT } from '../../i18n';
 
@@ -17,6 +17,8 @@ interface BrowseFilters {
 
 interface Props {
     active: boolean;
+    /** For the category filter, which replaced the sidebar tree. (F02.) */
+    categories: Category[];
     /** Whether the optional AI mode exists at all, and what it did here. (F07.) */
     aiSearch: AiSearchState;
     /** Whether this user may upload at all; the actions are hidden otherwise. */
@@ -151,6 +153,10 @@ export default function BrowsePanel(p:Props){
         {advancedOpen&&<div className="advanced-filter-panel">
             <div className="advanced-filter-header"><div><strong>{t('browse.advanced_filters')}</strong><span>{t('browse.combine_help')}</span></div><button className="icon-btn" onClick={()=>setAdvancedOpen(false)}><X size={16}/></button></div>
             <div className="advanced-filter-grid">
+                {/* Category is a metadata filter now, not a second navigation
+                    tree in the sidebar. (Review F02.) */}
+                <label>{t('fields.category')}<select value={filters.category_id||''} onChange={e=>p.onFilterChange({category_id:e.target.value?Number(e.target.value):undefined,subcategory_id:undefined})}><option value="">{t('filters.any_category')}</option>{p.categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+                <label>{t('fields.subcategory')}<select value={filters.subcategory_id||''} disabled={!filters.category_id} onChange={e=>p.onFilterChange({subcategory_id:e.target.value?Number(e.target.value):undefined})}><option value="">{t('filters.any_subcategory')}</option>{(p.categories.find(c=>c.id===Number(filters.category_id))?.subcategories||[]).map(sub=><option key={sub.id} value={sub.id}>{sub.name}</option>)}</select></label>
                 <label>{t('fields.year')}<select value={filters.year||''} onChange={e=>p.onFilterChange({year:e.target.value?Number(e.target.value):undefined})}><option value="">{t('filters.any_year')}</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
                 <label>{t('fields.country')}<select value={filters.country_id||''} onChange={e=>p.onFilterChange({country_id:e.target.value?Number(e.target.value):undefined,state_id:undefined,city_id:undefined,mandir_id:undefined})}><option value="">{t('filters.any_country')}</option>{countries.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
                 <label>{t('fields.state')}<select value={filters.state_id||''} disabled={!filters.country_id} onChange={e=>p.onFilterChange({state_id:e.target.value?Number(e.target.value):undefined,city_id:undefined,mandir_id:undefined})}><option value="">{t('filters.any_state')}</option>{states.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>

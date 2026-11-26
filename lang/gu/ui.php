@@ -172,6 +172,8 @@ return [
         'any_uploader' => 'કોઈ પણ અપલોડ કરનાર',
         'uploaded_from' => 'આ તારીખથી',
         'uploaded_to' => 'આ તારીખ સુધી',
+        'any_category' => 'કોઈ પણ કેટેગરી',
+        'any_subcategory' => 'કોઈ પણ સબ-કેટેગરી',
     ],
 
     'fields' => [
