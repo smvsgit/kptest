@@ -254,73 +254,76 @@ Route::middleware('auth')->group(function () {
     Route::post('/permission-sets', [PermissionSetController::class, 'store'])->name('permission-sets.store')->middleware('role:super-admin');
     Route::patch('/permission-sets/{permissionSet}', [PermissionSetController::class, 'update'])->name('permission-sets.update')->middleware('role:super-admin');
     Route::delete('/permission-sets/{permissionSet}', [PermissionSetController::class, 'destroy'])->name('permission-sets.destroy')->middleware('role:super-admin');
-    Route::patch('/settings/security-auth', [SecuritySettingsController::class, 'update'])->name('settings.security-auth')->middleware('role:super-admin');
-    Route::patch('/settings/access-maturity', [SecuritySettingsController::class, 'updateAccess'])->name('settings.access-maturity')->middleware('role:super-admin');
+    Route::patch('/settings/security-auth', [SecuritySettingsController::class, 'update'])->name('settings.security-auth')->middleware(['page:settings','settings:security']);
+    Route::patch('/settings/access-maturity', [SecuritySettingsController::class, 'updateAccess'])->name('settings.access-maturity')->middleware(['page:settings','settings:security']);
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'updateInfo'])->name('profile.update');
     Route::patch('/profile/language', [ProfileController::class, 'updateLanguage'])->name('profile.language');
     Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
-    // Super Admin-only organization and authorization management.
-    Route::middleware('role:super-admin')->group(function () {
+    // The administration console. Role, department and account administration
+    // stay Super Admin only - a role able to edit those could grant itself the
+    // rest. Every other route states the Settings section it belongs to, and a
+    // Super Admin decides per role who reaches it. (Review F05.)
+    Route::middleware('page:settings')->group(function () {
         Route::patch('/users/{user}/role', [UserController::class, 'updateRole'])
-            ->name('users.update-role');
+            ->name('users.update-role')->middleware('role:super-admin');
         Route::patch('/users/{user}/department', [UserController::class, 'updateDepartment'])
-            ->name('users.update-department');
-        Route::post('/portal-roles', [RoleManagementController::class, 'store'])->name('portal-roles.store');
-        Route::patch('/portal-roles/{portalRole}', [RoleManagementController::class, 'update'])->name('portal-roles.update');
-        Route::delete('/portal-roles/{portalRole}', [RoleManagementController::class, 'destroy'])->name('portal-roles.destroy');
+            ->name('users.update-department')->middleware('role:super-admin');
+        Route::post('/portal-roles', [RoleManagementController::class, 'store'])->name('portal-roles.store')->middleware('role:super-admin');
+        Route::patch('/portal-roles/{portalRole}', [RoleManagementController::class, 'update'])->name('portal-roles.update')->middleware('role:super-admin');
+        Route::delete('/portal-roles/{portalRole}', [RoleManagementController::class, 'destroy'])->name('portal-roles.destroy')->middleware('role:super-admin');
 
         Route::post('/departments', [DepartmentController::class, 'store'])
-            ->name('departments.store');
+            ->name('departments.store')->middleware('role:super-admin');
         Route::patch('/departments/{department}', [DepartmentController::class, 'update'])
-            ->name('departments.update');
+            ->name('departments.update')->middleware('role:super-admin');
         Route::delete('/departments/{department}', [DepartmentController::class, 'destroy'])
-            ->name('departments.destroy');
+            ->name('departments.destroy')->middleware('role:super-admin');
 
-        Route::patch('/settings/appearance/fonts', [AppearanceSettingsController::class, 'update'])->name('settings.fonts.update');
-        Route::post('/settings/fonts/upload', [FontController::class, 'upload'])->name('settings.fonts.upload');
-        Route::patch('/settings/fonts/{fontFamily}/status', [FontController::class, 'setStatus'])->name('settings.fonts.status');
-        Route::delete('/settings/fonts/{fontFamily}', [FontController::class, 'destroy'])->name('settings.fonts.destroy');
-        Route::patch('/settings/search', [SearchSettingsController::class, 'update'])->name('settings.search.update');
-        Route::post('/settings/search/sync', [SearchSettingsController::class, 'sync'])->name('settings.search.sync');
-        Route::post('/settings/master-data', [MasterDataController::class, 'store'])->name('settings.master-data.store');
-        Route::patch('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'update'])->name('settings.master-data.update');
-        Route::delete('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'destroy'])->name('settings.master-data.destroy');
-        Route::patch('/settings/metadata', [MetadataSettingsController::class, 'update'])->name('settings.metadata.update');
-        Route::patch('/settings/notifications', [NotificationSettingsController::class, 'update'])->name('settings.notifications.update');
-        Route::patch('/settings/notifications/escalation', [NotificationSettingsController::class, 'updateEscalation'])->name('settings.notifications.escalation');
-        Route::patch('/settings/upload', [UploadSettingsController::class, 'update'])->name('settings.upload.update');
-        Route::post('/settings/notifications/test', [NotificationSettingsController::class, 'test'])->name('settings.notifications.test');
-        Route::post('/settings/integrations', [IntegrationController::class, 'store'])->name('settings.integrations.store');
-        Route::patch('/settings/integrations/{integrationConnection}', [IntegrationController::class, 'update'])->name('settings.integrations.update');
-        Route::delete('/settings/integrations/{integrationConnection}', [IntegrationController::class, 'destroy'])->name('settings.integrations.destroy');
-        Route::post('/settings/integrations/{integrationConnection}/check', [IntegrationController::class, 'check'])->name('settings.integrations.check');
-        Route::patch('/settings/backups', [BackupController::class, 'updateSettings'])->name('settings.backups.update');
-        Route::post('/settings/backups/create', [BackupController::class, 'create'])->name('settings.backups.create');
-        Route::post('/settings/backups/{backupRun}/verify', [BackupController::class, 'verify'])->name('settings.backups.verify');
-        Route::post('/settings/backups/{backupRun}/restore-verification', [BackupController::class, 'restoreVerification'])->name('settings.backups.restore-verification');
-        Route::get('/settings/backups/{backupRun}/download', [BackupController::class, 'download'])->name('settings.backups.download');
-        Route::post('/settings/backups/prune', [BackupController::class, 'prune'])->name('settings.backups.prune');
+        Route::patch('/settings/appearance/fonts', [AppearanceSettingsController::class, 'update'])->name('settings.fonts.update')->middleware('settings:fonts');
+        Route::post('/settings/fonts/upload', [FontController::class, 'upload'])->name('settings.fonts.upload')->middleware('settings:fonts');
+        Route::patch('/settings/fonts/{fontFamily}/status', [FontController::class, 'setStatus'])->name('settings.fonts.status')->middleware('settings:fonts');
+        Route::delete('/settings/fonts/{fontFamily}', [FontController::class, 'destroy'])->name('settings.fonts.destroy')->middleware('settings:fonts');
+        Route::patch('/settings/search', [SearchSettingsController::class, 'update'])->name('settings.search.update')->middleware('settings:search');
+        Route::post('/settings/search/sync', [SearchSettingsController::class, 'sync'])->name('settings.search.sync')->middleware('settings:search');
+        Route::post('/settings/master-data', [MasterDataController::class, 'store'])->name('settings.master-data.store')->middleware('settings:metadata');
+        Route::patch('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'update'])->name('settings.master-data.update')->middleware('settings:metadata');
+        Route::delete('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'destroy'])->name('settings.master-data.destroy')->middleware('settings:metadata');
+        Route::patch('/settings/metadata', [MetadataSettingsController::class, 'update'])->name('settings.metadata.update')->middleware('settings:metadata');
+        Route::patch('/settings/notifications', [NotificationSettingsController::class, 'update'])->name('settings.notifications.update')->middleware('settings:notifications');
+        Route::patch('/settings/notifications/escalation', [NotificationSettingsController::class, 'updateEscalation'])->name('settings.notifications.escalation')->middleware('settings:notifications');
+        Route::patch('/settings/upload', [UploadSettingsController::class, 'update'])->name('settings.upload.update')->middleware('settings:upload');
+        Route::post('/settings/notifications/test', [NotificationSettingsController::class, 'test'])->name('settings.notifications.test')->middleware('settings:notifications');
+        Route::post('/settings/integrations', [IntegrationController::class, 'store'])->name('settings.integrations.store')->middleware('settings:integrations');
+        Route::patch('/settings/integrations/{integrationConnection}', [IntegrationController::class, 'update'])->name('settings.integrations.update')->middleware('settings:integrations');
+        Route::delete('/settings/integrations/{integrationConnection}', [IntegrationController::class, 'destroy'])->name('settings.integrations.destroy')->middleware('settings:integrations');
+        Route::post('/settings/integrations/{integrationConnection}/check', [IntegrationController::class, 'check'])->name('settings.integrations.check')->middleware('settings:integrations');
+        Route::patch('/settings/backups', [BackupController::class, 'updateSettings'])->name('settings.backups.update')->middleware('settings:backup');
+        Route::post('/settings/backups/create', [BackupController::class, 'create'])->name('settings.backups.create')->middleware('settings:backup');
+        Route::post('/settings/backups/{backupRun}/verify', [BackupController::class, 'verify'])->name('settings.backups.verify')->middleware('settings:backup');
+        Route::post('/settings/backups/{backupRun}/restore-verification', [BackupController::class, 'restoreVerification'])->name('settings.backups.restore-verification')->middleware('settings:backup');
+        Route::get('/settings/backups/{backupRun}/download', [BackupController::class, 'download'])->name('settings.backups.download')->middleware('settings:backup,view');
+        Route::post('/settings/backups/prune', [BackupController::class, 'prune'])->name('settings.backups.prune')->middleware('settings:backup');
         // v12.x UAT + Go-Live Readiness control center.
-        Route::post('/settings/readiness/run', [ReadinessController::class, 'run'])->name('settings.readiness.run');
-        Route::patch('/settings/readiness/uat/{uatCase}', [ReadinessController::class, 'updateUat'])->name('settings.readiness.uat.update');
-        Route::post('/settings/readiness/uat/{uatCase}/approve', [ReadinessController::class, 'approveUat'])->name('settings.readiness.uat.approve');
-        Route::patch('/settings/readiness/go-live', [ReadinessController::class, 'updateSettings'])->name('settings.readiness.go-live.update');
-        Route::patch('/settings/readiness/dependencies', [ReadinessController::class, 'updateDependencies'])->name('settings.readiness.dependencies.update');
-        Route::post('/settings/readiness/review', [ReadinessController::class, 'review'])->name('settings.readiness.review');
-        Route::get('/settings/readiness/export.csv', [ReadinessController::class, 'export'])->name('settings.readiness.export');
-        Route::patch('/settings/feature-completion', [FeatureCompletionSettingsController::class, 'update'])->name('settings.feature-completion.update');
-        Route::post('/settings/branding/logo', [FeatureCompletionSettingsController::class, 'logo'])->name('settings.branding.logo');
-        Route::delete('/settings/branding/logo', [FeatureCompletionSettingsController::class, 'resetLogo'])->name('settings.branding.logo.reset');
-        Route::get('/users/export.xlsx', [ImportExportController::class, 'usersExport'])->name('users.export.xlsx');
-        Route::post('/users/import.xlsx', [ImportExportController::class, 'usersImport'])->name('users.import.xlsx');
-        Route::get('/scheduled-reports', [ScheduledReportController::class, 'index'])->name('scheduled-reports.index');
-        Route::post('/scheduled-reports', [ScheduledReportController::class, 'store'])->name('scheduled-reports.store');
-        Route::patch('/scheduled-reports/{scheduledReport}', [ScheduledReportController::class, 'update'])->name('scheduled-reports.update');
-        Route::delete('/scheduled-reports/{scheduledReport}', [ScheduledReportController::class, 'destroy'])->name('scheduled-reports.destroy');
-        Route::post('/scheduled-reports/{scheduledReport}/run', [ScheduledReportController::class, 'run'])->name('scheduled-reports.run');
+        Route::post('/settings/readiness/run', [ReadinessController::class, 'run'])->name('settings.readiness.run')->middleware('settings:readiness');
+        Route::patch('/settings/readiness/uat/{uatCase}', [ReadinessController::class, 'updateUat'])->name('settings.readiness.uat.update')->middleware('settings:readiness');
+        Route::post('/settings/readiness/uat/{uatCase}/approve', [ReadinessController::class, 'approveUat'])->name('settings.readiness.uat.approve')->middleware('settings:readiness');
+        Route::patch('/settings/readiness/go-live', [ReadinessController::class, 'updateSettings'])->name('settings.readiness.go-live.update')->middleware('settings:readiness');
+        Route::patch('/settings/readiness/dependencies', [ReadinessController::class, 'updateDependencies'])->name('settings.readiness.dependencies.update')->middleware('settings:readiness');
+        Route::post('/settings/readiness/review', [ReadinessController::class, 'review'])->name('settings.readiness.review')->middleware('settings:readiness');
+        Route::get('/settings/readiness/export.csv', [ReadinessController::class, 'export'])->name('settings.readiness.export')->middleware('settings:readiness,view');
+        Route::patch('/settings/feature-completion', [FeatureCompletionSettingsController::class, 'update'])->name('settings.feature-completion.update')->middleware('settings:completion|guide|system');
+        Route::post('/settings/branding/logo', [FeatureCompletionSettingsController::class, 'logo'])->name('settings.branding.logo')->middleware('settings:completion|system');
+        Route::delete('/settings/branding/logo', [FeatureCompletionSettingsController::class, 'resetLogo'])->name('settings.branding.logo.reset')->middleware('settings:completion|system');
+        Route::get('/users/export.xlsx', [ImportExportController::class, 'usersExport'])->name('users.export.xlsx')->middleware('settings:users,view');
+        Route::post('/users/import.xlsx', [ImportExportController::class, 'usersImport'])->name('users.import.xlsx')->middleware('settings:users');
+        Route::get('/scheduled-reports', [ScheduledReportController::class, 'index'])->name('scheduled-reports.index')->middleware('role:super-admin');
+        Route::post('/scheduled-reports', [ScheduledReportController::class, 'store'])->name('scheduled-reports.store')->middleware('role:super-admin');
+        Route::patch('/scheduled-reports/{scheduledReport}', [ScheduledReportController::class, 'update'])->name('scheduled-reports.update')->middleware('role:super-admin');
+        Route::delete('/scheduled-reports/{scheduledReport}', [ScheduledReportController::class, 'destroy'])->name('scheduled-reports.destroy')->middleware('role:super-admin');
+        Route::post('/scheduled-reports/{scheduledReport}/run', [ScheduledReportController::class, 'run'])->name('scheduled-reports.run')->middleware('role:super-admin');
 
     });
 });

@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import { CheckCircle2, Globe2, KeyRound, Mail, Plus, RefreshCcw, ShieldCheck, Trash2, UserCog, UserPlus, Users, WifiOff } from 'lucide-react';
 import type { Department, NetworkPolicySummary, OrganizationUnit, PageAccessKey, PortalRole, User, UserGroup, UserRole } from '../../types';
 import { useT } from '../../i18n';
+import type { SettingsAccessLevel, SettingsAccessMap, SettingsSectionKey } from '../../types';
 
 interface Props {
   currentUser:User;
@@ -18,6 +19,52 @@ interface Props {
 
 // These maps hold catalogue keys, not English, so every card below reads in
 // the user's own language. roles.* already carries the four base role names.
+
+/**
+ * The Settings console, section by section, with what a role may do in each.
+ * The server enforces the same map, so hiding a tab is a convenience and not
+ * the control itself. (Review F05.)
+ */
+const SETTINGS_SECTIONS: { key: SettingsSectionKey; label: string }[] = [
+    { key: 'system', label: 'settings.tab_system' },
+    { key: 'users', label: 'settings.tab_users' },
+    { key: 'lifecycle', label: 'settings.tab_lifecycle' },
+    { key: 'fonts', label: 'settings.tab_fonts' },
+    { key: 'search', label: 'settings.tab_search' },
+    { key: 'metadata', label: 'settings.tab_metadata' },
+    { key: 'upload', label: 'settings.tab_upload' },
+    { key: 'security', label: 'settings.tab_security' },
+    { key: 'notifications', label: 'settings.tab_notifications' },
+    { key: 'backup', label: 'settings.tab_backup' },
+    { key: 'readiness', label: 'settings.tab_readiness' },
+    { key: 'guide', label: 'settings.tab_guide' },
+    { key: 'completion', label: 'settings.tab_completion' },
+    { key: 'integrations', label: 'nav.integrations' },
+];
+const ACCESS_LEVELS: SettingsAccessLevel[] = ['none', 'view', 'edit'];
+const LEVEL_LABEL: Record<SettingsAccessLevel, string> = {
+    none: 'users.level_none', view: 'users.level_view', edit: 'users.level_edit',
+};
+
+function SettingsAccessGrid({ value, baseRole, onChange }: {
+    value: SettingsAccessMap; baseRole: UserRole; onChange: (next: SettingsAccessMap) => void;
+}) {
+    const t = useT();
+    const locked = baseRole === 'super-admin';
+    return <div className="settings-access-grid">
+        <span className="mini-heading">{t('users.settings_sections')}</span>
+        <div className="setting-help">{t('users.settings_sections_help')}</div>
+        {SETTINGS_SECTIONS.map(section => <div className="settings-access-row" key={section.key}>
+            <span>{t(section.label)}</span>
+            <select className="form-select" disabled={locked}
+                value={locked ? 'edit' : (value[section.key] || 'none')}
+                onChange={e => onChange({ ...value, [section.key]: e.target.value as SettingsAccessLevel })}>
+                {ACCESS_LEVELS.map(level => <option key={level} value={level}>{t(LEVEL_LABEL[level])}</option>)}
+            </select>
+        </div>)}
+    </div>;
+}
+
 const pageLabels:Record<PageAccessKey,string>={browse:'users.page_browse',upload:'users.page_upload',access:'users.page_access_requests',reports:'users.page_reports',integrations:'users.page_integrations',guide:'users.page_guide',settings:'users.page_settings'};
 const permissionLabels:Record<string,string>={upload:'users.perm_upload',delete:'users.perm_delete',manage_policy:'users.perm_manage_policy',manage_lifecycle:'users.perm_manage_lifecycle',review_access:'users.perm_review_access',manage_categories:'users.perm_manage_categories'};
 const BASE_ROLES:UserRole[]=['super-admin','department-admin','department-operator','viewer'];
@@ -58,8 +105,9 @@ export default function UserRoleManagementPanel(p:Props){
   const setDraft=(u:User,next:Partial<{allowed:boolean;starts_at:string;expires_at:string;reason:string}>)=>setExternalDraft(x=>({...x,[u.id]:{...draftFor(u),...next}}));
   const saveExternal=async(u:User)=>{const d=draftFor(u);try{const r=await api(`/users/${u.id}/external-access`,'PATCH',{allowed:d.allowed,starts_at:d.starts_at||null,expires_at:d.expires_at||null,reason:d.reason||null});p.onSuccess(r.message);setExternalDraft(x=>{const n={...x};delete n[u.id];return n});refresh();}catch(e){p.onError(e instanceof Error?e.message:t('users.external_failed'))}};
 
-  const createRole=async()=>{if(!isSuper||!roleName.trim())return p.onError(t('users.role_name_required'));try{const d=await api('/portal-roles','POST',{name:roleName.trim(),base_role:roleBase,page_access:rolePages,permissions:rolePermissions});p.onSuccess(d.message);setRoleName('');refresh();}catch(e){p.onError(e instanceof Error?e.message:t('users.role_create_failed'))}};
-  const saveRole=async(r:PortalRole,patch:Partial<PortalRole>)=>{if(!isSuper)return;const next={...r,...patch};try{const d=await api(`/portal-roles/${r.id}`,'PATCH',{name:next.name,base_role:next.base_role,is_active:next.is_builtin?true:next.is_active,page_access:next.page_access,permissions:next.permissions});p.onSuccess(d.message);refresh();}catch(e){p.onError(e instanceof Error?e.message:t('users.role_update_failed'))}};
+  const [roleSettings,setRoleSettings]=useState<SettingsAccessMap>({});
+  const createRole=async()=>{if(!isSuper||!roleName.trim())return p.onError(t('users.role_name_required'));try{const d=await api('/portal-roles','POST',{name:roleName.trim(),base_role:roleBase,page_access:rolePages,permissions:rolePermissions,settings_access:roleSettings});p.onSuccess(d.message);setRoleName('');setRoleSettings({});refresh();}catch(e){p.onError(e instanceof Error?e.message:t('users.role_create_failed'))}};
+  const saveRole=async(r:PortalRole,patch:Partial<PortalRole>)=>{if(!isSuper)return;const next={...r,...patch};try{const d=await api(`/portal-roles/${r.id}`,'PATCH',{name:next.name,base_role:next.base_role,is_active:next.is_builtin?true:next.is_active,page_access:next.page_access,permissions:next.permissions,settings_access:next.settings_access||{}});p.onSuccess(d.message);refresh();}catch(e){p.onError(e instanceof Error?e.message:t('users.role_update_failed'))}};
   const deleteRole=async(r:PortalRole)=>{if(!isSuper||r.is_builtin||!confirm(t('users.role_delete_confirm',{name:r.name})))return;try{const d=await api(`/portal-roles/${r.id}`,'DELETE');p.onSuccess(d.message);refresh();}catch(e){p.onError(e instanceof Error?e.message:t('users.role_delete_failed'))}};
 
   const createGroup=async()=>{if(!groupName.trim())return p.onError(t('users.group_name_required'));try{const d=await api('/user-groups','POST',{name:groupName.trim(),description:groupDescription.trim()||null,department_id:groupDept?Number(groupDept):null,portal_role_id:groupRole?Number(groupRole):null});p.onSuccess(d.message);setGroupName('');setGroupDescription('');refresh();}catch(e){p.onError(e instanceof Error?e.message:t('users.group_create_failed'))}};
@@ -92,7 +140,7 @@ export default function UserRoleManagementPanel(p:Props){
 
     {isSuper&&<div className="settings-card"><h2 className="settings-card-title"><ShieldCheck size={18}/> {t('users.role_management')}</h2><div className="setting-help">{t('users.role_management_help')}</div>
       <div className="role-admin-grid" style={{marginTop:12}}>{p.portalRoles.map(r=><RoleCard key={r.id} role={r} onSave={saveRole} onDelete={deleteRole}/>)}</div>
-      <div className="role-create-box"><h3>{t('users.create_new_role')}</h3><div className="settings-grid"><input className="form-input" placeholder={t('users.role_name')} value={roleName} onChange={e=>setRoleName(e.target.value)}/><select className="form-select" value={roleBase} onChange={e=>setRoleBase(e.target.value as UserRole)}>{BASE_ROLES.map(k=><option value={k} key={k}>{t('users.security_base',{role:t('roles.'+k)})}</option>)}</select></div><div className="role-check-grid"><div><b>{t('users.page_access')}</b>{(Object.keys(pageLabels) as PageAccessKey[]).map(k=><label className="check-row" key={k}><input type="checkbox" checked={rolePages[k]} disabled={k==='browse'||(roleBase==='super-admin'&&k==='settings')} onChange={e=>setRolePages(x=>({...x,[k]:e.target.checked}))}/>{t(pageLabels[k])}</label>)}</div><div><b>{t('users.permission_limits')}</b>{Object.keys(permissionLabels).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(rolePermissions[k])} onChange={e=>setRolePermissions(x=>({...x,[k]:e.target.checked}))}/>{t(permissionLabels[k])}</label>)}</div></div><button className="btn btn-primary" onClick={createRole}><Plus size={14}/> {t('users.create_custom_role')}</button></div>
+      <div className="role-create-box"><h3>{t('users.create_new_role')}</h3><div className="settings-grid"><input className="form-input" placeholder={t('users.role_name')} value={roleName} onChange={e=>setRoleName(e.target.value)}/><select className="form-select" value={roleBase} onChange={e=>setRoleBase(e.target.value as UserRole)}>{BASE_ROLES.map(k=><option value={k} key={k}>{t('users.security_base',{role:t('roles.'+k)})}</option>)}</select></div><div className="role-check-grid"><div><b>{t('users.page_access')}</b>{(Object.keys(pageLabels) as PageAccessKey[]).map(k=><label className="check-row" key={k}><input type="checkbox" checked={rolePages[k]} disabled={k==='browse'||(roleBase==='super-admin'&&k==='settings')} onChange={e=>setRolePages(x=>({...x,[k]:e.target.checked}))}/>{t(pageLabels[k])}</label>)}</div><div><b>{t('users.permission_limits')}</b>{Object.keys(permissionLabels).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(rolePermissions[k])} onChange={e=>setRolePermissions(x=>({...x,[k]:e.target.checked}))}/>{t(permissionLabels[k])}</label>)}</div></div><SettingsAccessGrid value={roleSettings} baseRole={roleBase} onChange={setRoleSettings}/><button className="btn btn-primary" onClick={createRole}><Plus size={14}/> {t('users.create_custom_role')}</button></div>
     </div>}
 
     <div className="settings-card"><h2 className="settings-card-title"><Users size={18}/> {t('users.user_groups')}</h2><div className="setting-help">{t('users.user_groups_help')}</div><div className="settings-grid" style={{marginTop:12}}><input className="form-input" placeholder={t('users.group_name')} value={groupName} onChange={e=>setGroupName(e.target.value)}/><input className="form-input" placeholder={t('users.description')} value={groupDescription} onChange={e=>setGroupDescription(e.target.value)}/><select className="form-select" disabled={!isSuper} value={groupDept} onChange={e=>setGroupDept(e.target.value)}><option value="">{t('users.global_group')}</option>{activeDepartments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select><select className="form-select" value={groupRole} onChange={e=>setGroupRole(e.target.value)}><option value="">{t('users.no_role_assignment')}</option>{manageableRoles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></div><button className="btn btn-primary" style={{marginTop:10}} onClick={createGroup}>{t('users.create_group')}</button>
@@ -104,7 +152,8 @@ export default function UserRoleManagementPanel(p:Props){
 function RoleCard({role,onSave,onDelete}:{role:PortalRole;onSave:(r:PortalRole,p:Partial<PortalRole>)=>void;onDelete:(r:PortalRole)=>void}){
   const t=useT();
   const [name,setName]=useState(role.name),[pages,setPages]=useState({...role.page_access}),[permissions,setPermissions]=useState({...role.permissions}),[active,setActive]=useState(role.is_active);
-  return <div className="role-admin-card"><div className="setting-row"><div><b>{role.name}</b><div className="setting-help">{role.is_builtin?t('users.builtin'):t('users.custom')} · {t('users.base_label',{role:t('roles.'+role.base_role)})}</div></div>{!role.is_builtin&&<button className="icon-btn danger" onClick={()=>onDelete(role)}><Trash2 size={15}/></button>}</div>{!role.is_builtin&&<input className="form-input" value={name} onChange={e=>setName(e.target.value)}/>}<div className="role-check-grid"><div><span className="mini-heading">{t('users.pages')}</span>{(Object.keys(pageLabels) as PageAccessKey[]).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(pages[k])} disabled={k==='browse'||(role.base_role==='super-admin'&&k==='settings')} onChange={e=>setPages(x=>({...x,[k]:e.target.checked}))}/>{t(pageLabels[k])}</label>)}</div><div><span className="mini-heading">{t('users.permissions')}</span>{Object.keys(permissionLabels).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(permissions[k])} onChange={e=>setPermissions(x=>({...x,[k]:e.target.checked}))}/>{t(permissionLabels[k])}</label>)}</div></div>{!role.is_builtin&&<label className="check-row"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>{t('users.role_active')}</label>}<button className="btn btn-secondary" onClick={()=>onSave(role,{name,page_access:pages,permissions,is_active:role.is_builtin?true:active})}>{t('users.save_role')}</button></div>
+  const [sections,setSections]=useState<SettingsAccessMap>({...(role.settings_access||{})});
+  return <div className="role-admin-card"><div className="setting-row"><div><b>{role.name}</b><div className="setting-help">{role.is_builtin?t('users.builtin'):t('users.custom')} · {t('users.base_label',{role:t('roles.'+role.base_role)})}</div></div>{!role.is_builtin&&<button className="icon-btn danger" onClick={()=>onDelete(role)}><Trash2 size={15}/></button>}</div>{!role.is_builtin&&<input className="form-input" value={name} onChange={e=>setName(e.target.value)}/>}<div className="role-check-grid"><div><span className="mini-heading">{t('users.pages')}</span>{(Object.keys(pageLabels) as PageAccessKey[]).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(pages[k])} disabled={k==='browse'||(role.base_role==='super-admin'&&k==='settings')} onChange={e=>setPages(x=>({...x,[k]:e.target.checked}))}/>{t(pageLabels[k])}</label>)}</div><div><span className="mini-heading">{t('users.permissions')}</span>{Object.keys(permissionLabels).map(k=><label className="check-row" key={k}><input type="checkbox" checked={Boolean(permissions[k])} onChange={e=>setPermissions(x=>({...x,[k]:e.target.checked}))}/>{t(permissionLabels[k])}</label>)}</div></div>{!role.is_builtin&&<label className="check-row"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>{t('users.role_active')}</label>}<SettingsAccessGrid value={sections} baseRole={role.base_role} onChange={setSections}/><button className="btn btn-secondary" onClick={()=>onSave(role,{name,page_access:pages,permissions,settings_access:sections,is_active:role.is_builtin?true:active})}>{t('users.save_role')}</button></div>
 }
 
 /**

@@ -7,7 +7,11 @@ export interface Department { id:number; name:string; is_active:boolean; is_syst
 export interface OrganizationUnit { id:number; department_id:number; parent_id:number|null; type:'sub-department'|'team'; name:string; is_active:boolean; parent?:{id:number;name:string}|null; }
 export interface PermissionSet { id:number; name:string; description:string|null; permissions:Record<string,boolean>; is_active:boolean; }
 
-export interface PortalRole { id:number; name:string; slug:string; base_role:UserRole; is_builtin:boolean; is_active:boolean; permissions:Record<string,boolean>; page_access:Record<PageAccessKey,boolean>; }
+export type SettingsSectionKey = 'system'|'users'|'lifecycle'|'fonts'|'search'|'metadata'|'upload'|'security'|'notifications'|'backup'|'readiness'|'guide'|'completion'|'integrations';
+export type SettingsAccessLevel = 'none'|'view'|'edit';
+export type SettingsAccessMap = Partial<Record<SettingsSectionKey, SettingsAccessLevel>>;
+
+export interface PortalRole { id:number; name:string; slug:string; base_role:UserRole; is_builtin:boolean; is_active:boolean; permissions:Record<string,boolean>; page_access:Record<PageAccessKey,boolean>; settings_access?:SettingsAccessMap; }
 export interface UserGroup { id:number; department_id:number|null; name:string; description:string|null; portal_role_id:number|null; is_active:boolean; department?:Department|null; portal_role?:PortalRole|null; members?:User[]; }
 export interface NetworkPolicySummary { enabled:boolean; department_admin_can_manage_external_access:boolean; }
 
@@ -127,7 +131,7 @@ export interface ToastItem { id:string; message:string; type:'success'|'error'|'
 export interface PaginatedResult<T> { data:T[]; current_page:number; last_page:number; per_page:number; total:number; from:number|null; to:number|null; }
 export interface SharedAppearance { assignments:FontAssignments; families:FontFamily[]; }
 export interface BrandingSettings { portal_name:string; login_text:string; default_language:'en'|'gu'|string; logo_path?:string|null; logo_url:string; }
-export interface SharedProps { auth:{user:User|null}; appearance:SharedAppearance; branding:BrandingSettings; locale:'en'|'gu'|string; flash?:{success?:string;warning?:string}; }
+export interface SharedProps { auth:{user:User|null}; appearance:SharedAppearance; branding:BrandingSettings; locale:'en'|'gu'|string; settingsAccess?:SettingsAccessMap; flash?:{success?:string;warning?:string}; }
 export interface DashboardProps {
     categories:Category[]; departments:Department[]; appVersion:AppVersion; files?:PaginatedResult<MediaFile>;
     users:User[]; departmentStorage:DepartmentStorage[]; visibilityRoles:VisibilityRole[]; organizationUnits:OrganizationUnit[]; permissionSets:PermissionSet[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; pageAccess:Record<PageAccessKey,boolean>; networkPolicySummary:NetworkPolicySummary; approvalDelegations:ApprovalDelegation[]; securityAuthSettings:SecurityAuthSettings; accessMaturitySettings:AccessMaturitySettings; fontFamilies:FontFamily[]; appearanceSettings:FontAssignments; searchSettings:SearchSettings; masterData:MasterDataMap; metadataSettings:MetadataSettings; notificationSettings:NotificationChannelSettings; notificationPreferences:NotificationPreferences; notificationEscalation:NotificationEscalationSettings; uploadSettings:UploadSettings; integrationConnections:IntegrationConnection[]; sourceConnections:SourceConnection[]; integrationHealthSummary:IntegrationHealthSummary; backupSettings:BackupSettings; backupRuns:BackupRunRow[]; restoreVerifications:RestoreVerificationRow[]; backupStatus:BackupStatusSummary; readinessData:ReadinessData; featureCompletionSettings?:Record<string,Record<string,unknown>>; userGuideAccess:UserGuideAccess;

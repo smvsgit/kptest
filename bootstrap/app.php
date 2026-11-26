@@ -46,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission'=>\App\Http\Middleware\EnsurePermission::class,
             '2fa'=>\App\Http\Middleware\EnsureTwoFactor::class,
             'page'=>\App\Http\Middleware\EnsurePageAccess::class,
+            'settings'=>\App\Http\Middleware\EnsureSettingsAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -409,10 +409,12 @@ class LocalePreferenceTest extends TestCase
     {
         $viewer = $this->user(['preferred_language' => 'gu', 'role' => 'viewer']);
 
+        // Since v19.14 the administration console is entered through the
+        // Settings page gate, so that is the refusal a viewer meets first.
         $this->actingAs($viewer)
             ->postJson('/departments', ['name' => 'Attempted'])
             ->assertForbidden()
-            ->assertJson(['message' => trans('messages.access.denied', [], 'gu')]);
+            ->assertJson(['message' => trans('messages.access.page_denied', [], 'gu')]);
     }
 
     /**

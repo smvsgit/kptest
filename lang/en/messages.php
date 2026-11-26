@@ -49,6 +49,7 @@ return [
         'no_department' => 'Your account is not attached to a department.',
         'department_required' => 'Department required.',
         'no_department_configured' => 'No department has been set up yet.',
+        'settings_section_denied' => 'Your role does not have access to this part of Settings.',
     ],
     'department' => [
         'created' => 'Department created successfully.',

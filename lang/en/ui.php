@@ -771,6 +771,8 @@ return [
         'master_delete_confirm' => 'Delete master value ":name"? Used values cannot be deleted.',
         'master_deactivated' => ':name deactivated.',
         'master_activated' => ':name activated.',
+        'read_only' => 'You can see this section but not change it.',
+        'no_sections' => 'No part of Settings has been granted to your role.',
     ],
     'master' => [
         'title' => 'Master Data Management',
@@ -951,6 +953,11 @@ return [
         'no_matching_user' => 'No matching user',
         'add' => 'Add',
         'apply_group_role' => 'Apply Group Role to Members',
+        'settings_sections' => 'Settings sections',
+        'settings_sections_help' => 'What this role reaches inside the Settings console. Users, security and backup are granted one by one.',
+        'level_none' => 'None',
+        'level_view' => 'View',
+        'level_edit' => 'Edit',
     ],
     'quota' => [
         'title' => 'Department Storage Quotas',
