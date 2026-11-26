@@ -227,6 +227,19 @@ return [
         'tags' => 'ટૅગ',
         'failed' => 'અપલોડ નિષ્ફળ',
         'quick_add_failed' => 'આ મૂલ્ય ઉમેરી શકાયું નહીં.',
+        'files_action' => 'ફાઇલો ચડાવો',
+        'folder_action' => 'ફોલ્ડર ચડાવો',
+        'choose_files_title' => 'ફાઇલો ચડાવો',
+        'choose_folder_title' => 'ફોલ્ડર ચડાવો',
+        'destination_help' => 'આ ફાઇલો ક્યાં મૂકવી એ પસંદ કરો. જગ્યા પસંદ કર્યા વગર કશું ચડશે નહીં.',
+        'destination' => 'કઈ જગ્યાએ',
+        'department_root' => 'વિભાગનું મૂળ',
+        'no_folders' => 'આ વિભાગમાં હજુ એક પણ ફોલ્ડર નથી. વિભાગનું મૂળ તો જગ્યા તરીકે વાપરી જ શકાય.',
+        'will_go_to' => 'ફાઇલો અહીં જશે:',
+        'pick_destination_first' => 'પહેલાં જગ્યા પસંદ કરો.',
+        'pick_files' => 'ફાઇલો પસંદ કરો…',
+        'pick_folder' => 'ફોલ્ડર પસંદ કરો…',
+        'sending_to' => ':path માં ચડાવીએ છીએ',
     ],
 
     'folders' => [
@@ -289,6 +302,7 @@ return [
         'delete_failed' => 'ફોલ્ડર કાઢી શકાયું નહીં. તેમાં હજી ફાઇલો હોઈ શકે.',
         'move_failed' => 'ફાઇલો ખસેડી શકાઈ નહીં.',
         'not_a_number' => 'એ ફોલ્ડરનો નંબર નથી.',
+        'search_folders' => 'ફોલ્ડર શોધો…',
     ],
 
     'inspector' => [

@@ -8,7 +8,6 @@ import type { AccessPolicy, Category, MasterDataMap, MetadataSettings, UploadSet
 import { formatBytes } from '../../format';
 import { getCsrf } from '../../upload';
 import { useTx } from '../../i18n';
-import FolderUploadTray, { type TrayHandle } from '../media/FolderUploadTray';
 import FolderInspector from '../media/FolderInspector';
 
 export interface FolderNode {
@@ -28,6 +27,10 @@ interface Props {
     uploadSettings:UploadSettings;
     visibilityRoles:VisibilityRole[];
     canUpload:boolean;
+    /** Hand a batch to the shared upload tray, bound to a folder. */
+    onUpload:(files:File[],folderId:number|null)=>void;
+    /** Changes whenever a transfer finishes, wherever it was started. */
+    uploadsFinished:number;
     onSuccess:(msg:string)=>void;
     onError:(msg:string)=>void;
 }
@@ -69,7 +72,6 @@ export default function FoldersPanel(p:Props){
     const [noThumb,setNoThumb]=useState<Set<number>>(new Set());
     const [history,setHistory]=useState<(number|null)[]>([null]);
     const [historyAt,setHistoryAt]=useState(0);
-    const trayRef=useRef<TrayHandle|null>(null);
     const fileInput=useRef<HTMLInputElement>(null);
     const folderInput=useRef<HTMLInputElement>(null);
 
@@ -99,6 +101,11 @@ export default function FoldersPanel(p:Props){
         // eslint-disable-next-line react-hooks/exhaustive-deps
     },[p.active,folderId]);
     useEffect(()=>{setSelected(new Set());},[folderId]);
+    // A transfer that finished anywhere - here or from Browse - may have
+    // landed in the folder on screen, so the pane refreshes either way.
+    useEffect(()=>{if(p.uploadsFinished&&p.active)void reload();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[p.uploadsFinished]);
 
     // One click anywhere else closes the context menu, as it does in Explorer.
     useEffect(()=>{
@@ -252,7 +259,7 @@ export default function FoldersPanel(p:Props){
 
     const queueUpload=(list:FileList|null)=>{
         if(!list?.length)return;
-        trayRef.current?.enqueue(Array.from(list),folderId);
+        p.onUpload(Array.from(list),folderId);
     };
 
     const treeNode=(node:FolderNode)=>{
@@ -546,13 +553,6 @@ export default function FoldersPanel(p:Props){
                 webkitdirectory=""
                 directory=""
                 onChange={e=>{queueUpload(e.target.files);e.currentTarget.value='';}}
-            />
-
-            <FolderUploadTray
-                ref={trayRef}
-                uploadSettings={p.uploadSettings}
-                onFinished={async msg=>{p.onSuccess(msg);await reload();}}
-                onError={p.onError}
             />
 
             {menu&&(
