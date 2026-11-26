@@ -1,5 +1,26 @@
 # Karyalay Portal - Changelog
 
+## v19.20 - One Navigation (2026-11-26)
+
+- The portal had two navigation structures to keep in step: a category tree in the sidebar and a
+  folder tree in the workspace, each with its own search, its own expand state and its own idea of
+  where a file lives. The review asked for one: "Use one canonical folder tree and breadcrumbs for
+  navigation, with category retained only as an optional metadata filter." The owner picked
+  option A from the wireframes. (F02.)
+- **The folder workspace is home.** The portal opens there, it is first in the navigation, and a
+  panel that is out of reach falls back to it rather than to Browse.
+- **Browse is where a search lands**, not a place you click. "Browse Files" has left the navigation;
+  typing in the header search opens the results page, and clearing the search returns to the
+  folders.
+- **The sidebar's category tree is gone** - with it its search box, its expand state and its
+  add/edit buttons. Categories are still administered in Settings, where they already were.
+- **Category is a filter now**, beside Year, Country and the rest in Advanced filters, with
+  sub-category narrowing to the chosen one. Filtering by category from a link still works exactly
+  as before.
+- A filter change keeps you where you are. `panel` used to be cleared on every filter change,
+  because an empty panel meant Browse; now an empty panel means the folder workspace, so only an
+  explicit move changes screens.
+
 ## v19.19 - Fields of Your Own (2026-11-26)
 
 - Metadata settings offered a fixed list of mandatory fields and the master-data lists. The review
