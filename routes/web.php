@@ -70,6 +70,18 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::get('/fonts/files/{fontFile}', [FontController::class, 'asset'])->name('fonts.asset');
 
 // Authenticated routes
+// The portal as an MCP server. A bearer token identifies the person every
+// call acts as; there is no session and no CSRF here, which is why this route
+// stands outside the web group. (Review F06.)
+Route::post('/mcp', [\App\Http\Controllers\McpController::class, 'handle'])
+    ->name('mcp')
+    ->middleware(['mcp.token']);
+Route::match(['get', 'delete'], '/mcp', fn () => response()->json([
+    'jsonrpc' => '2.0',
+    'error' => ['code' => -32600, 'message' => 'Send JSON-RPC 2.0 over POST.'],
+    'id' => null,
+], 405))->middleware(['mcp.token']);
+
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/user-guide', [UserGuideController::class, 'index'])->name('user-guide.index')->middleware('page:guide');
@@ -296,6 +308,11 @@ Route::middleware('auth')->group(function () {
         // disturb the native search configuration. (Review F07.)
         Route::patch('/settings/search/ai', [AiSearchSettingsController::class, 'update'])->name('settings.search.ai.update')->middleware('settings:search');
         Route::post('/settings/search/ai/test', [AiSearchSettingsController::class, 'test'])->name('settings.search.ai.test')->middleware('settings:search');
+        // MCP access tokens. A person manages their own; a Super Admin may
+        // issue one for someone else and revoke anyone's. (Review F06.)
+        Route::get('/settings/mcp/tokens', [\App\Http\Controllers\McpTokenController::class, 'index'])->name('settings.mcp.tokens');
+        Route::post('/settings/mcp/tokens', [\App\Http\Controllers\McpTokenController::class, 'store'])->name('settings.mcp.tokens.store');
+        Route::delete('/settings/mcp/tokens/{mcpToken}', [\App\Http\Controllers\McpTokenController::class, 'destroy'])->name('settings.mcp.tokens.destroy');
         Route::patch('/settings/tagging/ai', [\App\Http\Controllers\AiTaggingController::class, 'update'])->name('settings.tagging.ai.update')->middleware('settings:metadata');
         Route::post('/settings/master-data', [MasterDataController::class, 'store'])->name('settings.master-data.store')->middleware('settings:metadata');
         Route::patch('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'update'])->name('settings.master-data.update')->middleware('settings:metadata');

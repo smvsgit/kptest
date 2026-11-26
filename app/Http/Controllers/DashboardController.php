@@ -261,6 +261,8 @@ class DashboardController extends Controller
             // spend on it, and its settings without the key.
             // The administrator's own metadata fields: the whole list for the
             // builder, and the active ones for Describe. (Review F09b.)
+            // How many tools the MCP endpoint offers, for the setup card. (F06.)
+            'mcpToolCount' => count(\App\Mcp\ToolRegistry::tools()),
             'metadataFields' => \App\Models\MetadataFieldDefinition::orderBy('sort_order')->orderBy('label')->get(),
             'aiTagging' => [
                 'available' => app(\App\Services\AiTaggingService::class)->available(),
