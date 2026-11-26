@@ -1,5 +1,28 @@
 # Karyalay Portal - Changelog
 
+## v19.21 - The Portal as an MCP Server (2026-11-26)
+
+- F06 gated rollout on a demonstration and named five things the developer had to supply:
+  endpoint, transport, authentication, tool inventory and setup. All five are now answered in code.
+- **Endpoint** `POST /mcp`, served by the portal itself - no second service to deploy, no second
+  copy of the rules. **Transport** JSON-RPC 2.0 over HTTP POST, which is what a remote client
+  connects to.
+- **Authentication is a token that is one person.** `mcp_access_tokens` holds a hash and never the
+  token; the token is shown once when it is minted. The middleware turns it into that user, so every
+  role, permission, department rule, access policy and approval applies exactly as it does on the
+  screen, and every change is written to the audit trail **in their name**. A revoked, expired or
+  disabled-owner token stops working at once, and each use records when and from where.
+- **15 tools**, covering everything the review asked to see demonstrated: search, list folders, list
+  a folder's files, get one file, upload, update metadata and tags, create/rename/delete a folder,
+  move files, list/add/restore versions, request access and decide a request. Read-only tools are
+  annotated as such and `delete_folder` as destructive.
+- A refusal comes back as a **tool error the model can read**, not a protocol failure - "this folder
+  still holds 1 file(s)" rather than a 500.
+- **Setup** lives in Settings -> Security & Access: the endpoint, the transport, how many tools, and
+  minting, listing and revoking tokens with their last use and the address they were used from.
+- The inventory document handed to the reviewers is generated from the same registry, so the paper
+  and the server cannot drift apart.
+
 ## v19.20 - One Navigation (2026-11-26)
 
 - The portal had two navigation structures to keep in step: a category tree in the sidebar and a

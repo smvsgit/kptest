@@ -41,12 +41,19 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnforcePortalMode::class,
             \App\Http\Middleware\EnsureTwoFactor::class,
         ]);
+        // An MCP client carries a bearer token, not a session cookie.
+        $middleware->validateCsrfTokens(except: ['mcp']);
+
         $middleware->alias([
             'role'=>\App\Http\Middleware\EnsureRole::class,
             'permission'=>\App\Http\Middleware\EnsurePermission::class,
             '2fa'=>\App\Http\Middleware\EnsureTwoFactor::class,
             'page'=>\App\Http\Middleware\EnsurePageAccess::class,
             'settings'=>\App\Http\Middleware\EnsureSettingsAccess::class,
+            // Turns an MCP bearer token into the person it belongs to. (F06.)
+            'mcp.token'=>\App\Http\Middleware\AuthenticateMcpToken::class,
+            // Turns an MCP bearer token into the person it belongs to. (F06.)
+            'mcp.token'=>\App\Http\Middleware\AuthenticateMcpToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

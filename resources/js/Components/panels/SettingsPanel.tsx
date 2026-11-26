@@ -11,6 +11,7 @@ import UserGuideAccessSettingsPanel from './UserGuideAccessSettingsPanel';
 import UserRoleManagementPanel from './UserRoleManagementPanel';
 import MasterDataPanel from './MasterDataPanel';
 import MetadataFieldsPanel from './MetadataFieldsPanel';
+import McpAccessPanel from './McpAccessPanel';
 import DepartmentQuotaPanel from './DepartmentQuotaPanel';
 import { useT } from '../../i18n';
 import type { SettingsAccessLevel, SettingsAccessMap, SettingsSectionKey, SharedProps } from '../../types';
@@ -18,7 +19,7 @@ Chart.register(ArcElement, Tooltip, Legend);
 
 type SettingsTab='general'|'users'|'fonts'|'search'|'metadata'|'upload'|'security'|'notifications'|'backup'|'readiness'|'lifecycle'|'completion'|'guide';
 interface Props {
- active:boolean; aiSearchSettings:AiSearchSettings; aiTaggingSettings:AiTaggingSettings; metadataFields:MetadataFieldDefinition[]; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
+ active:boolean; aiSearchSettings:AiSearchSettings; aiTaggingSettings:AiTaggingSettings; metadataFields:MetadataFieldDefinition[]; mcpToolCount:number; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
  canConfigCategories:boolean; canManageDepartments:boolean; fontFamilies:FontFamily[]; appearanceSettings:FontAssignments; searchSettings:SearchSettings; masterData:MasterDataMap; metadataSettings:MetadataSettings; notificationSettings:NotificationChannelSettings; notificationEscalation:NotificationEscalationSettings; uploadSettings:UploadSettings; securityAuthSettings:SecurityAuthSettings; accessMaturitySettings:AccessMaturitySettings; backupSettings:BackupSettings; backupRuns:BackupRunRow[]; restoreVerifications:RestoreVerificationRow[]; backupStatus:BackupStatusSummary; readinessData:ReadinessData; featureCompletionSettings?:Record<string,Record<string,unknown>>;
  onCategoryModal:(s:{mode:'add-category'|'add-subcategory'|'edit-category'|'edit-subcategory';categoryId?:number|null;subcategoryId?:number|null})=>void; onSuccess:(msg:string)=>void; onError:(msg:string)=>void;
 }
@@ -320,6 +321,7 @@ export default function SettingsPanel(p:Props){
    </div>
   </div>}
 
+  {tab==='security'&&isSuper&&<div style={{marginBottom:18}}><McpAccessPanel toolCount={p.mcpToolCount} onSuccess={p.onSuccess} onError={p.onError}/></div>}
   {tab==='security'&&isSuper&&<div style={{display:'grid',gap:18}}>
    <Guide><b>{t('settings.security_guide_title')}</b> {t('settings.security_guide')}</Guide>
    <div className="settings-card"><h2 className="settings-card-title"><SlidersHorizontal size={18}/> {t('settings.login_session_policy')}</h2><div className="settings-grid"><div className="form-group"><label className="form-label">{t('settings.failed_login_limit')}</label><input className="form-input" type="number" min={3} max={20} value={securityAuth.failed_login_limit} onChange={e=>setSecurityAuth({...securityAuth,failed_login_limit:Number(e.target.value)})}/></div><div className="form-group"><label className="form-label">{t('settings.lockout_minutes')}</label><input className="form-input" type="number" min={1} max={1440} value={securityAuth.lockout_minutes} onChange={e=>setSecurityAuth({...securityAuth,lockout_minutes:Number(e.target.value)})}/></div><div className="form-group"><label className="form-label">{t('settings.session_timeout')}</label><input className="form-input" type="number" min={5} max={1440} value={securityAuth.session_timeout_minutes} onChange={e=>setSecurityAuth({...securityAuth,session_timeout_minutes:Number(e.target.value)})}/></div><div className="form-group"><label className="form-label">{t('settings.password_min_length')}</label><input className="form-input" type="number" min={8} max={64} value={securityAuth.password_min_length} onChange={e=>setSecurityAuth({...securityAuth,password_min_length:Number(e.target.value)})}/></div></div><button className="btn btn-primary" onClick={saveSecurityAuth}>{t('settings.save_login_policy')}</button></div>

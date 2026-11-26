@@ -356,4 +356,9 @@ return [
         'key_taken' => 'A field named :key already exists.',
         'select_needs_options' => 'A list field needs at least one choice.',
     ],
+
+    'mcp' => [
+        'token_created' => 'Token created. Copy it now — it is not shown again.',
+        'token_revoked' => 'Token revoked.',
+    ],
 ];
