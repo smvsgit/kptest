@@ -94,6 +94,10 @@ class User extends Authenticatable
             'manage_policy','manage_lifecycle' => in_array($this->role, ['super-admin','department-admin','department-operator'], true),
             'review_access' => in_array($this->role, ['super-admin','department-admin'], true),
             'manage_categories' => in_array($this->role, ['super-admin','department-admin'], true),
+            // Asking an AI provider for tag suggestions costs money, so it is
+            // a permission of its own that a Super Admin can take away from a
+            // role without touching anything else it does. (Review F08.)
+            'ai_tagging' => in_array($this->role, ['super-admin','department-admin','department-operator'], true),
             default => false,
         };
         if (!$base) return false;

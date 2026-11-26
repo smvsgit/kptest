@@ -821,3 +821,11 @@ a{color:inherit;text-decoration:none;}
 .upload-destination-row.active{background:rgba(42,157,143,.14);border-color:var(--color-primary);color:var(--color-primary);font-weight:600}
 .upload-destination-row .muted{color:var(--text-muted);font-weight:400}
 .btn.disabled{pointer-events:none}
+
+/* On-demand AI tag suggestions. (F08) */
+.ai-tag-box{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-color)}
+.ai-tag-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ai-tag-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:14px;font-size:11.5px;cursor:pointer;
+  background:var(--bg-input);border:1px solid var(--border-color);color:var(--text-secondary)}
+.ai-tag-chip:hover{border-color:var(--color-primary);color:var(--color-primary)}
+.ai-tag-chip.on{background:rgba(42,157,143,.16);border-color:var(--color-primary);color:var(--color-primary);font-weight:600}

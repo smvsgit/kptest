@@ -345,6 +345,13 @@ return [
         'apply_failed' => 'Could not apply the metadata.',
         'publish_failed' => 'Could not publish the folder.',
         'leave_unchanged' => 'Leave unchanged',
+        'ai_tags' => 'Suggest tags with AI',
+        'ai_tags_hint' => 'Asks once for this image. Nothing is saved until you add a suggestion.',
+        'ai_tags_working' => 'Asking…',
+        'ai_tags_suggestions' => 'Suggestions — tap to add or remove',
+        'ai_tags_add_all' => 'Add all',
+        'ai_tags_dismiss' => 'Dismiss',
+        'ai_tags_one_image' => 'Select one image to ask for suggestions.',
     ],
 
     'tray' => [
@@ -805,6 +812,12 @@ return [
         'ai_test_placeholder' => 'e.g. annakut photos',
         'ai_run_test' => 'Run test',
         'ai_save' => 'Save AI search settings',
+        'ai_tagging_title' => 'AI tagging (optional)',
+        'ai_tagging_guide' => 'Off unless you switch it on, and never called on upload. Someone with the permission presses a button on one image, sees the suggestions and chooses which to keep. Existing tags are never touched.',
+        'ai_tagging_enable' => 'Make AI tagging available',
+        'ai_tagging_max' => 'Suggestions at most',
+        'ai_tagging_save' => 'Save AI tagging settings',
+        'ai_tagging_supported' => 'Supported image types: :types',
     ],
     'master' => [
         'title' => 'Master Data Management',
@@ -990,6 +1003,7 @@ return [
         'level_none' => 'None',
         'level_view' => 'View',
         'level_edit' => 'Edit',
+        'perm_ai_tagging' => 'Ask AI for tag suggestions',
     ],
     'quota' => [
         'title' => 'Department Storage Quotas',

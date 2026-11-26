@@ -1,5 +1,29 @@
 # Karyalay Portal - Changelog
 
+## v19.18 - Tag Suggestions, Asked For One at a Time (2026-11-26)
+
+- Describe had a Tags field and add/replace controls but no way to ask for a suggestion. The review
+  asked for "an explicit AI tagging button for supported images; process only on request, show
+  editable suggestions, let user accept/reject, preserve existing tags... Do not automatically call
+  AI on every upload". (F08.)
+- **Suggest tags with AI** sits under the Tags field in Describe, for one selected image at a time.
+  It is drawn only where an administrator has configured the mode and the role carries the
+  permission for it.
+- **Nothing is written.** The endpoint returns words; they appear as chips that are tapped to add or
+  remove, with Add all and Dismiss beside them. A tag reaches the asset only when the person saves
+  Describe, through the same path as a typed one.
+- **Existing tags are preserved and never re-suggested** - the list is what to add, not a list to
+  weed.
+- **Cost is governed by a permission.** `ai_tagging` joins the role editor's permission list, on by
+  default for the three roles that could already describe assets and removable per role. Every
+  request is written to the audit trail with the model used, successful or not.
+- Nothing is wired to upload or to a queue. A file that is not a supported image, or whose bytes
+  cannot be read, is refused before any provider call.
+- Settings -> Metadata & Master Data carries the configuration: endpoint, model, write-only key,
+  timeout, a cap on suggestions, and the domain instructions. Off until switched on, and it cannot
+  be switched on without an endpoint and a model.
+- Tags remain available for every file type; only the button is image-only.
+
 ## v19.17 - AI Search, Optional and Off (2026-11-26)
 
 - Search settings said semantic/AI search was deferred, and `hybrid_semantic_enabled` was hard-wired

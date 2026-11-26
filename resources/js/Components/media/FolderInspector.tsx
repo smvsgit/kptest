@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { X, Tag, Globe2, Loader2 } from 'lucide-react';
-import type { AccessPolicy, Category, MasterDataMap, MasterDataType, MasterDataValue, MetadataSettings, VisibilityRole } from '../../types';
+import { X, Tag, Globe2, Loader2, Sparkles, Plus } from 'lucide-react';
+import type { AiTaggingState, AccessPolicy, Category, MasterDataMap, MasterDataType, MasterDataValue, MetadataSettings, VisibilityRole } from '../../types';
 import { getCsrf } from '../../upload';
 import { useTx } from '../../i18n';
 import type { FolderFile, FolderNode } from '../panels/FoldersPanel';
@@ -14,6 +14,8 @@ interface Props {
     metadataSettings:MetadataSettings;
     visibilityRoles:VisibilityRole[];
     canPublish:boolean;
+    /** Whether on-demand tag suggestions exist and this role may spend on them. (F08.) */
+    aiTagging:AiTaggingState;
     onClose:()=>void;
     onDone:(message:string)=>void;
     onError:(message:string)=>void;
@@ -49,6 +51,35 @@ export default function FolderInspector(p:Props){
     const {t,tc}=useTx();
     const [draft,setDraft]=useState<Draft>({});
     const [tags,setTags]=useState('');
+    // On-demand tag suggestions. They live here until the person adds one;
+    // nothing reaches the asset on its own. (Review F08.)
+    const [suggested,setSuggested]=useState<string[]>([]);
+    const [suggesting,setSuggesting]=useState(false);
+    const [suggestNote,setSuggestNote]=useState('');
+    const tagList=()=>tags.split(',').map(x=>x.trim()).filter(Boolean);
+    const hasTag=(tag:string)=>tagList().some(x=>x.toLowerCase()===tag.toLowerCase());
+    const toggleTag=(tag:string)=>{
+        const list=tagList();
+        const next=hasTag(tag)?list.filter(x=>x.toLowerCase()!==tag.toLowerCase()):[...list,tag];
+        setTags(next.join(', '));
+    };
+    const addAllSuggested=()=>{
+        const list=tagList();
+        const next=[...list];
+        for(const tag of suggested) if(!next.some(x=>x.toLowerCase()===tag.toLowerCase())) next.push(tag);
+        setTags(next.join(', '));
+    };
+    const askForTags=async()=>{
+        const only=p.selectedFiles.length===1?p.selectedFiles[0]:null;
+        if(!only)return setSuggestNote(t('inspector.ai_tags_one_image'));
+        setSuggesting(true);setSuggestNote('');
+        try{
+            const data=await post(`/files/${only.id}/ai-tags`,{});
+            setSuggested(data.tags||[]);
+            if(!(data.tags||[]).length)setSuggestNote(data.message||'');
+        }catch(e){setSuggestNote(e instanceof Error?e.message:'')}
+        finally{setSuggesting(false)}
+    };
     const [tagsMode,setTagsMode]=useState<'add'|'replace'>('add');
     const [recursive,setRecursive]=useState(true);
     const [onlyEmpty,setOnlyEmpty]=useState(false);
@@ -234,6 +265,26 @@ export default function FolderInspector(p:Props){
                             <input type="checkbox" checked={tagsMode==='replace'} onChange={e=>setTagsMode(e.target.checked?'replace':'add')}/>
                             {t('inspector.replace_tags')}
                         </label>
+                        {/* Suggestions are asked for one image at a time and are
+                            only words on screen until they are added. (F08.) */}
+                        {p.aiTagging.available&&p.aiTagging.permitted&&<div className="ai-tag-box">
+                            <button type="button" className="btn btn-secondary" disabled={suggesting} onClick={askForTags} title={t('inspector.ai_tags_hint')}>
+                                {suggesting?<Loader2 size={14} className="spin"/>:<Sparkles size={14}/>} {suggesting?t('inspector.ai_tags_working'):t('inspector.ai_tags')}
+                            </button>
+                            {suggestNote&&<div className="setting-help" style={{marginTop:6}}>{suggestNote}</div>}
+                            {suggested.length>0&&<>
+                                <div className="setting-help" style={{marginTop:8}}>{t('inspector.ai_tags_suggestions')}</div>
+                                <div className="ai-tag-chips">
+                                    {suggested.map(tag=><button type="button" key={tag}
+                                        className={`ai-tag-chip${hasTag(tag)?' on':''}`} onClick={()=>toggleTag(tag)}>
+                                        {hasTag(tag)?'✓':<Plus size={12}/>} {tag}</button>)}
+                                </div>
+                                <div style={{display:'flex',gap:7,marginTop:7}}>
+                                    <button type="button" className="btn btn-secondary" onClick={addAllSuggested}>{t('inspector.ai_tags_add_all')}</button>
+                                    <button type="button" className="btn btn-secondary" onClick={()=>{setSuggested([]);setSuggestNote('')}}>{t('inspector.ai_tags_dismiss')}</button>
+                                </div>
+                            </>}
+                        </div>}
                     </div>
 
                     {target==='folder'&&<>
