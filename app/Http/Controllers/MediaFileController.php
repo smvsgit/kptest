@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\MediaFolder;
 use App\Models\MediaFile;
 use App\Jobs\ProcessMediaFile;
 use App\Services\SearchIndexService;
@@ -63,13 +64,20 @@ class MediaFileController extends Controller
         $ext  = strtolower($file->getClientOriginalExtension());
         $type = $this->resolveType($ext);
         $size = $file->getSize();
-        $departmentId = $request->user()?->department_id ?? Department::where('is_system', true)->value('id');
+        // The destination folder owns the asset. Taking the department from the
+        // uploader instead put every Super Admin upload in the system
+        // "Unassigned" department, where the folder pane could not see it. (F03.)
+        $targetFolder = $request->folder_id ? MediaFolder::find((int) $request->folder_id) : null;
+        if ($targetFolder) $this->assertFolderWritable($request, $targetFolder);
+        $departmentId = $targetFolder?->department_id
+            ?? $request->user()?->department_id
+            ?? Department::where('is_system', true)->value('id');
         if ($departmentId) $quota->assertCanStore((int)$departmentId,(int)$size);
         $path = $file->store("uploads/{$type}s", 'media');
 
         // A folder upload names its own destination; a plain upload keeps
         // whatever folder the screen had open.
-        $folderId = $request->folder_id ? (int) $request->folder_id : null;
+        $folderId = $targetFolder ? (int) $targetFolder->id : null;
         if ($departmentId && $request->filled('folder_path')) {
             $folderId = app(\App\Services\FolderPathService::class)->resolveForUpload(
                 (string) $request->input('folder_path'),
@@ -217,5 +225,19 @@ class MediaFileController extends Controller
         if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'tiff', 'tif', 'ico', 'heic', 'heif', 'avif', 'raw'])) return 'image';
         if (in_array($ext, ['mp3', 'wav', 'aac', 'ogg', 'm4a', 'flac', 'wma', 'opus'])) return 'audio';
         return 'document';
+    }
+
+    /**
+     * A folder may only receive an upload from someone who can reach it:
+     * Super Admin everywhere, everyone else inside their own department.
+     */
+    private function assertFolderWritable(Request $request, MediaFolder $folder): void
+    {
+        $user = $request->user();
+        abort_unless(
+            $user && ($user->role === 'super-admin' || (int) $folder->department_id === (int) $user->department_id),
+            403,
+            __('messages.folder.own_department_only')
+        );
     }
 }

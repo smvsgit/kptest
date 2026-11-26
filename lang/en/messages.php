@@ -208,6 +208,7 @@ return [
         'parent_mismatch' => 'Parent folder mismatch.',
         'created' => 'Folder created.',
         'own_parent' => 'Folder cannot be its own parent.',
+        'not_empty_detail' => 'This folder still holds :files file(s) and :folders sub-folder(s), so it cannot be deleted. Empty it first — some of them may belong to another department and not be listed here.',
     ],
     'request' => [
         'delegate_other' => 'Choose another user as delegate.',
