@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 class RoleManagementController extends Controller
 {
     private const BASE_ROLES = ['super-admin','department-admin','department-operator','viewer'];
-    private const PERMISSION_KEYS = ['upload','delete','manage_policy','manage_lifecycle','review_access','manage_categories'];
+    private const PERMISSION_KEYS = ['upload','delete','manage_policy','manage_lifecycle','review_access','manage_categories','ai_tagging'];
     private const PAGE_KEYS = ['browse','upload','access','reports','integrations','guide','settings'];
 
     public function store(Request $request, AuditService $audit)

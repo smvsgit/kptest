@@ -120,6 +120,9 @@ Route::middleware('auth')->group(function () {
 
 
     // v05.00 immutable version history, archive and Recycle Bin lifecycle.
+    // On-demand tag suggestions for one image. Never on upload, never queued. (F08.)
+    Route::post('/files/{mediaFile}/ai-tags', [\App\Http\Controllers\AiTaggingController::class, 'suggest'])
+        ->name('files.ai-tags')->middleware(['role:super-admin,department-admin,department-operator','permission:ai_tagging']);
     Route::get('/files/{mediaFile}/versions', [MediaLifecycleController::class, 'versions'])->name('files.versions');
     Route::post('/files/{mediaFile}/versions', [MediaLifecycleController::class, 'storeVersion'])
         ->name('files.versions.store')->middleware(['role:super-admin,department-admin,department-operator','permission:manage_lifecycle']);
@@ -293,6 +296,7 @@ Route::middleware('auth')->group(function () {
         // disturb the native search configuration. (Review F07.)
         Route::patch('/settings/search/ai', [AiSearchSettingsController::class, 'update'])->name('settings.search.ai.update')->middleware('settings:search');
         Route::post('/settings/search/ai/test', [AiSearchSettingsController::class, 'test'])->name('settings.search.ai.test')->middleware('settings:search');
+        Route::patch('/settings/tagging/ai', [\App\Http\Controllers\AiTaggingController::class, 'update'])->name('settings.tagging.ai.update')->middleware('settings:metadata');
         Route::post('/settings/master-data', [MasterDataController::class, 'store'])->name('settings.master-data.store')->middleware('settings:metadata');
         Route::patch('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'update'])->name('settings.master-data.update')->middleware('settings:metadata');
         Route::delete('/settings/master-data/{masterDataValue}', [MasterDataController::class, 'destroy'])->name('settings.master-data.destroy')->middleware('settings:metadata');

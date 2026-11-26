@@ -257,6 +257,14 @@ class DashboardController extends Controller
             'searchSettings' => $searchSettings,
             // The key is deliberately absent: it is write-only, so the screen
             // cannot show it and an empty box means "keep the stored one".
+            // AI tagging: whether it is configured at all, whether this role may
+            // spend on it, and its settings without the key.
+            'aiTagging' => [
+                'available' => app(\App\Services\AiTaggingService::class)->available(),
+                'permitted' => (bool) $user->hasPermission('ai_tagging'),
+                'supported_extensions' => \App\Services\AiTaggingService::SUPPORTED,
+            ],
+            'aiTaggingSettings' => collect(app(\App\Services\AiTaggingService::class)->settings())->except('api_key')->all(),
             'aiSearchSettings' => collect(app(\App\Services\AiSearchService::class)->settings())->except('api_key')->all(),
             // Whether the optional AI mode is available at all, and what it did
             // on this request. Off unless an administrator configured it.

@@ -3,7 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Building2, FolderTree, GitBranch, Info, Pencil, PieChart, Plus, Trash2, X, Type, Search, Upload, RotateCcw, BookOpen, Database, Languages, Sparkles, SlidersHorizontal, Bell, Send, LockKeyhole, DatabaseBackup, ShieldCheck, UserCog } from 'lucide-react';
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import type { AiSearchSettings, AppVersion, Category, Department, User, Stats, FontAssignments, FontFamily, SearchSettings, MasterDataMap, MasterDataType, MetadataSettings, NotificationChannelSettings, NotificationEscalationSettings, RecycleBinItem, UploadSettings, SecurityAuthSettings, AccessMaturitySettings, BackupSettings, BackupRunRow, RestoreVerificationRow, BackupStatusSummary, ReadinessData, OrganizationUnit, PortalRole, UserGroup, NetworkPolicySummary, DepartmentStorage } from '../../types';
+import type { AiTaggingSettings, AiSearchSettings, AppVersion, Category, Department, User, Stats, FontAssignments, FontFamily, SearchSettings, MasterDataMap, MasterDataType, MetadataSettings, NotificationChannelSettings, NotificationEscalationSettings, RecycleBinItem, UploadSettings, SecurityAuthSettings, AccessMaturitySettings, BackupSettings, BackupRunRow, RestoreVerificationRow, BackupStatusSummary, ReadinessData, OrganizationUnit, PortalRole, UserGroup, NetworkPolicySummary, DepartmentStorage } from '../../types';
 import BackupSettingsPanel from './BackupSettingsPanel';
 import UatReadinessPanel from './UatReadinessPanel';
 import FeatureCompletionPanel from './FeatureCompletionPanel';
@@ -17,7 +17,7 @@ Chart.register(ArcElement, Tooltip, Legend);
 
 type SettingsTab='general'|'users'|'fonts'|'search'|'metadata'|'upload'|'security'|'notifications'|'backup'|'readiness'|'lifecycle'|'completion'|'guide';
 interface Props {
- active:boolean; aiSearchSettings:AiSearchSettings; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
+ active:boolean; aiSearchSettings:AiSearchSettings; aiTaggingSettings:AiTaggingSettings; categories:Category[]; departments:Department[]; users:User[]; departmentStorage:DepartmentStorage[]; currentUser:User; organizationUnits:OrganizationUnit[]; portalRoles:PortalRole[]; userGroups:UserGroup[]; networkPolicySummary:NetworkPolicySummary; appVersion:AppVersion; stats?:Stats; simulatedRole:string;
  canConfigCategories:boolean; canManageDepartments:boolean; fontFamilies:FontFamily[]; appearanceSettings:FontAssignments; searchSettings:SearchSettings; masterData:MasterDataMap; metadataSettings:MetadataSettings; notificationSettings:NotificationChannelSettings; notificationEscalation:NotificationEscalationSettings; uploadSettings:UploadSettings; securityAuthSettings:SecurityAuthSettings; accessMaturitySettings:AccessMaturitySettings; backupSettings:BackupSettings; backupRuns:BackupRunRow[]; restoreVerifications:RestoreVerificationRow[]; backupStatus:BackupStatusSummary; readinessData:ReadinessData; featureCompletionSettings?:Record<string,Record<string,unknown>>;
  onCategoryModal:(s:{mode:'add-category'|'add-subcategory'|'edit-category'|'edit-subcategory';categoryId?:number|null;subcategoryId?:number|null})=>void; onSuccess:(msg:string)=>void; onError:(msg:string)=>void;
 }
@@ -83,6 +83,11 @@ export default function SettingsPanel(p:Props){
  const [ai,setAi]=useState(p.aiSearchSettings);
  const [aiKey,setAiKey]=useState('');
  const [aiProbe,setAiProbe]=useState('');
+ // On-demand AI tagging. Its own setting, its own endpoint; nothing here
+ // touches search. (Review F08.)
+ const [tagAi,setTagAi]=useState(p.aiTaggingSettings);
+ const [tagAiKey,setTagAiKey]=useState('');
+ const saveTagAi=()=>router.patch('/settings/tagging/ai',{...tagAi,api_key:tagAiKey},{preserveScroll:true,onSuccess:()=>setTagAiKey('')});
  const [aiTesting,setAiTesting]=useState(false);
  const [aiResult,setAiResult]=useState('');
  const saveAi=()=>router.patch('/settings/search/ai',{...ai,api_key:aiKey},{preserveScroll:true,onSuccess:()=>setAiKey('')});
@@ -262,6 +267,31 @@ export default function SettingsPanel(p:Props){
    <div style={{display:'flex',gap:10}}><button className="btn btn-primary" onClick={saveSearch}>{t('settings.save_search')}</button><button className="btn btn-secondary" onClick={()=>router.post('/settings/search/sync',{}, {preserveScroll:true,onSuccess:()=>p.onSuccess(t('settings.sync_requested'))})}>{t('settings.sync_meili')}</button></div>
   </div>}
 
+  {tab==='metadata'&&isSuper&&<div className="settings-card" style={{marginBottom:18}}>
+    <h2 className="settings-card-title"><Sparkles size={18}/> {t('settings.ai_tagging_title')}</h2>
+    <Guide>{t('settings.ai_tagging_guide')}</Guide>
+    <div className="setting-help" style={{marginTop:6}}>{t('settings.ai_tagging_supported',{types:'JPG, PNG, WEBP, GIF'})}</div>
+    <div className="setting-row" style={{marginTop:10}}>
+     <div><div className="setting-title">{t('settings.ai_tagging_enable')}</div></div>
+     <Toggle checked={tagAi.enabled} onChange={v=>setTagAi({...tagAi,enabled:v})}/>
+    </div>
+    <div className="settings-grid" style={{marginTop:10}}>
+     <div className="form-group"><label className="form-label">{t('settings.ai_endpoint')}</label>
+      <input className="form-input" value={tagAi.endpoint} onChange={e=>setTagAi({...tagAi,endpoint:e.target.value})} placeholder="https://…/v1/chat/completions"/></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_model')}</label>
+      <input className="form-input" value={tagAi.model} onChange={e=>setTagAi({...tagAi,model:e.target.value})}/></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_key')}</label>
+      <input className="form-input" type="password" value={tagAiKey} onChange={e=>setTagAiKey(e.target.value)} placeholder="••••••••"/>
+      <div className="setting-help">{t('settings.ai_key_help')}</div></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_timeout')}</label>
+      <input className="form-input" type="number" min={5} max={60} value={tagAi.timeout_seconds} onChange={e=>setTagAi({...tagAi,timeout_seconds:Number(e.target.value)||20})}/></div>
+     <div className="form-group"><label className="form-label">{t('settings.ai_tagging_max')}</label>
+      <input className="form-input" type="number" min={1} max={25} value={tagAi.max_tags} onChange={e=>setTagAi({...tagAi,max_tags:Number(e.target.value)||8})}/></div>
+    </div>
+    <div className="form-group" style={{marginTop:10}}><label className="form-label">{t('settings.ai_instructions')}</label>
+     <textarea className="form-input" rows={3} value={tagAi.instructions} onChange={e=>setTagAi({...tagAi,instructions:e.target.value})} style={{resize:'vertical'}}/></div>
+    <button className="btn btn-primary" style={{marginTop:12}} onClick={saveTagAi}>{t('settings.ai_tagging_save')}</button>
+  </div>}
   {tab==='metadata'&&isSuper&&<div style={{display:'grid',gap:18}}>
    <Guide><b>{t('settings.metadata_guide_title')}</b> {t('settings.metadata_guide')}</Guide>
    <div className="settings-card"><h2 className="settings-card-title"><SlidersHorizontal size={18}/> {t('settings.mandatory_rules')}</h2><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:8}}>{[['year','fields.year'],['country_id','fields.country'],['state_id','fields.state'],['city_id','fields.city'],['mandir_id','fields.mandir'],['event_id','fields.event'],['person_id','fields.person'],['language_id','fields.language'],['media_type_id','fields.media_type'],['description','access.description']].map(([k,label])=><label key={k} className="admin-guide" style={{display:'flex',gap:8,alignItems:'center'}}><input type="checkbox" checked={metadata.required_fields.includes(k)} onChange={e=>setMetadata({...metadata,required_fields:e.target.checked?[...metadata.required_fields,k]:metadata.required_fields.filter(x=>x!==k)})}/>{t(label)}</label>)}</div><div className="settings-grid" style={{marginTop:12}}><div className="form-group"><label className="form-label">{t('settings.min_year')}</label><input className="form-input" type="number" value={metadata.years_min} onChange={e=>setMetadata({...metadata,years_min:Number(e.target.value)})}/></div><div className="form-group"><label className="form-label">{t('settings.max_year')}</label><input className="form-input" type="number" value={metadata.years_max} onChange={e=>setMetadata({...metadata,years_max:Number(e.target.value)})}/></div></div><div className="setting-row"><div><div className="setting-title">{t('settings.person_required')}</div><div className="setting-help">{t('settings.person_required_help')}</div></div><Toggle checked={metadata.person_required} onChange={v=>setMetadata({...metadata,person_required:v})}/></div><div className="setting-row"><div><div className="setting-title">{t('settings.free_tags')}</div><div className="setting-help">{t('settings.free_tags_help')}</div></div><Toggle checked={metadata.allow_free_tags} onChange={v=>setMetadata({...metadata,allow_free_tags:v})}/></div><button className="btn btn-primary" onClick={saveMetadata}>{t('settings.save_metadata')}</button></div>

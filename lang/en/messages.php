@@ -331,4 +331,16 @@ return [
         'all_pages_required' => 'The full Word manual requires access to all User Guide pages.',
         'not_enabled' => 'The User Guide Manual is not enabled for your account.',
     ],
+
+    'tagging' => [
+        'unavailable' => 'AI tagging is not switched on, or no endpoint and model are configured.',
+        'unsupported' => 'AI tagging works on images only.',
+        'no_image' => 'The image could not be read for tagging.',
+        'refused' => 'The AI provider refused the request (HTTP :status).',
+        'nothing_new' => 'The AI suggested nothing this asset does not already carry.',
+        'failed' => 'The AI provider could not be reached.',
+        'not_permitted' => 'Your role may not ask the AI for tag suggestions.',
+        'needs_endpoint' => 'An endpoint and a model are needed before AI tagging can be switched on.',
+        'saved' => 'AI tagging settings saved.',
+    ],
 ];
