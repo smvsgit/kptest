@@ -1,5 +1,28 @@
 # Karyalay Portal - Changelog
 
+## v19.23 - The F06 Demonstration, Scripted (2026-11-26)
+
+- F06 gated the rollout on a demonstration, not on an explanation: "Demonstrate search/list/path
+  lookup, upload, metadata/tag update, folder actions and version replacement under actual role
+  limits, audit and approval rules." v19.21 built the server; this is the demonstration itself,
+  written down so it can be run on a screen with the reviewers watching.
+- `php artisan karyalay:mcp-demo` mints a token, speaks JSON-RPC 2.0 to `POST /mcp` over real HTTP
+  exactly as a connected client would, and prints every call beside **the clause of the acceptance
+  sentence it settles**. It ends with a checklist of all twelve clauses and fails if any was not
+  shown.
+- It reaches around nothing. Every folder, upload, description, version and approval in the run
+  goes through a tool call; a test asserts that the script writes to no model directly.
+- **The governance clauses are the point.** With `--viewer=<email>` it runs the second half as a
+  restricted account: refused a folder, refused a description, shown a protected asset it may not
+  download, asking for access, refused permission to approve its own request, and finally able to
+  download once the owning department has approved. The audit table printed at the end carries
+  **each person's own name**.
+- It cleans up after itself - the demonstration files go to the Recycle Bin, the folder is deleted
+  over MCP, both tokens are revoked, and the last thing printed is the revoked token being answered
+  with 401. `--keep` leaves it all in place; `--json` writes the full transcript as evidence.
+- `Karyalay-F06-Demonstration-Runbook.html` is the sheet to run it from, with a tick box per clause
+  and a sign-off block for the reviewers.
+
 ## v19.22 - The Measurement F10 Asked For (2026-11-26)
 
 - F10 was never a defect. It said the choice between governed administrator configuration and a
